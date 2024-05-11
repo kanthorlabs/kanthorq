@@ -1,5 +1,5 @@
 BEGIN;
 
-DROP TABLE IF EXISTS kanthor_route;
+DROP TABLE IF EXISTS kanthorq_job;
 
 COMMIT;

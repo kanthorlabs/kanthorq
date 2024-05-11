@@ -1,7 +1,7 @@
 .PHONY:
 
-up:
+storage-up:
 	go run cmd/data/main.go migrate up -s file://migration -d "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable&x-migrations-table=kanthorq_migration"
 
-down:
+storage-down:
 	go run cmd/data/main.go migrate down -s file://migration -d "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable&x-migrations-table=kanthorq_migration"
