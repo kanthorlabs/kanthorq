@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  storage:
+    container_name: kanthorq-storage
+    image: postgres:16-alpine
+    restart: unless-stopped
+    networks:
+      - kanthor
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=changemenow
+    user: postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 8s
+      timeout: 4s
+      retries: 16
+
+networks:
+  kanthor:
+    name: kanthorq
