@@ -5,7 +5,6 @@ go 1.22
 toolchain go1.22.3
 
 require (
-	github.com/brianvoe/gofakeit/v7 v7.0.3
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/kanthorlabs/common v0.0.0-20240511032708-1a6ad31b37e6
 	github.com/spf13/cobra v1.8.0

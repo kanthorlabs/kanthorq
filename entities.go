@@ -1,19 +1,19 @@
 package kanthorq
 
-type StreamMessage struct {
-	StreamTopic string
-	StreamName  string
-	MessageId   string
+type Stream struct {
+	Tier    string
+	Topic   string
+	EventId string
 }
 
 type Consumer struct {
-	Name         string
-	StreamTopic  string
-	StreamCursor string
+	Name   string
+	Topic  string
+	Cursor string
 }
 
-type ConsumerMessage struct {
-	StreamTopic string
-	StreamName  string
-	MessageId   string
+type ConsumerJob struct {
+	Tier    string
+	Topic   string
+	EventId string
 }
