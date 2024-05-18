@@ -6,7 +6,7 @@ toolchain go1.22.3
 
 require (
 	github.com/jackc/pgx/v5 v5.5.4
-	github.com/kanthorlabs/common v0.0.0-20240511032708-1a6ad31b37e6
+	github.com/kanthorlabs/common v0.0.0-20240518075936-dc3bd38720e2
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 )

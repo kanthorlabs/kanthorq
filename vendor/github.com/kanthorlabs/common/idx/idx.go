@@ -9,6 +9,7 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
+// @TODO: consider usinghttps://github.com/jetify-com/typeid
 func New(ns string) string {
 	return fmt.Sprintf("%s_%s", ns, ksuid.New().String())
 }

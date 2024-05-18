@@ -57,7 +57,7 @@ github.com/jackc/pgx/v5/pgconn/internal/bgreader
 github.com/jackc/pgx/v5/pgconn/internal/ctxwatch
 github.com/jackc/pgx/v5/pgproto3
 github.com/jackc/pgx/v5/pgtype
-# github.com/kanthorlabs/common v0.0.0-20240511032708-1a6ad31b37e6
+# github.com/kanthorlabs/common v0.0.0-20240518075936-dc3bd38720e2
 ## explicit; go 1.21.7
 github.com/kanthorlabs/common/commands/migrate
 github.com/kanthorlabs/common/configuration

@@ -13,6 +13,18 @@ func NewUp() *cobra.Command {
 	command := &cobra.Command{
 		Use:  "up",
 		Args: cobra.MatchAll(cobra.NoArgs),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			step, err := cmd.Flags().GetInt("step")
+			if err != nil {
+				return err
+			}
+
+			if step < 1 {
+				return errors.New("migrate up does not allow go backward")
+			}
+
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			source, err := cmd.Flags().GetString("source")
 			if err != nil {
@@ -22,19 +34,23 @@ func NewUp() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			step, err := cmd.Flags().GetInt("step")
+			if err != nil {
+				return err
+			}
 
 			m, err := migrate.New(source, database)
 			if err != nil {
 				return err
 			}
 
-			if err := m.Up(); !errors.Is(err, migrate.ErrNoChange) {
+			if err := m.Steps(step); !errors.Is(err, migrate.ErrNoChange) {
 				return err
 			}
 			return nil
 		},
 	}
-	command.Flags().StringP("source", "s", "", "the path to a directory that contains your migration files")
-	command.Flags().StringP("database", "d", "", "the database connection string")
+	command.Flags().IntP("step", "", 1, "step you want to go forward")
+
 	return command
 }
