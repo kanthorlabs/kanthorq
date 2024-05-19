@@ -57,7 +57,7 @@ github.com/jackc/pgx/v5/pgconn/internal/bgreader
 github.com/jackc/pgx/v5/pgconn/internal/ctxwatch
 github.com/jackc/pgx/v5/pgproto3
 github.com/jackc/pgx/v5/pgtype
-# github.com/kanthorlabs/common v0.0.0-20240518075936-dc3bd38720e2
+# github.com/kanthorlabs/common v0.0.0-20240518092434-cd9ad1cab0ee
 ## explicit; go 1.21.7
 github.com/kanthorlabs/common/commands/migrate
 github.com/kanthorlabs/common/configuration
@@ -101,6 +101,7 @@ github.com/sourcegraph/conc
 github.com/sourcegraph/conc/internal/multierror
 github.com/sourcegraph/conc/iter
 github.com/sourcegraph/conc/panics
+github.com/sourcegraph/conc/pool
 # github.com/spf13/afero v1.11.0
 ## explicit; go 1.19
 github.com/spf13/afero

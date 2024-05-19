@@ -3,7 +3,7 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS kanthorq_stream (
   tier VARCHAR(128) NOT NULL,
   topic VARCHAR(128) NOT NULL,
-  event_id VARCHAR(128) NOT NULL,
+  event_id VARCHAR(64) NOT NULL,
   PRIMARY KEY (tier, topic, event_id)
 );
 
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS kanthorq_consumer (
 CREATE TABLE IF NOT EXISTS kanthorq_consumer_job (
   tier VARCHAR(128) NOT NULL,
   topic VARCHAR(128) NOT NULL,
-  event_id VARCHAR(128) NOT NULL,
+  event_id VARCHAR(64) NOT NULL,
   write_count SMALLINT NOT NULL DEFAULT 1, 
   PRIMARY KEY (tier, topic, event_id)
 );

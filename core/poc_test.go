@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -10,79 +11,88 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var uri = "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
-var tier = "default"
-var topic = "poc.testing"
-var consumer = "poc"
+func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
+	var uri = os.Getenv("TEST_DATABASE_URI")
 
-func TestPOC(t *testing.T) {
-	conn, err := pgx.Connect(context.Background(), uri)
-	require.NoError(t, err)
-	defer conn.Close(context.Background())
+	consumer := prepareConsumer(b)
+	for i := 1; i < 10; i++ {
+		size := ConsumerPullSize * i
+		b.Run(fmt.Sprintf("size %d", size), func(bs *testing.B) {
+			conn, err := pgx.Connect(context.Background(), uri)
+			require.NoError(bs, err)
+			defer conn.Close(context.Background())
 
-	seed(t, conn)
-
-	var cursor string
-	err = conn.
-		QueryRow(
-			context.Background(),
-			QueryConsumerPull,
-			pgx.NamedArgs{
-				"consumer_name": consumer,
-				"size":          100,
-			},
-		).
-		Scan(&cursor)
-	require.NoError(t, err)
-
-	require.NotEmpty(t, cursor)
+			var cursor string
+			err = conn.
+				QueryRow(
+					context.Background(),
+					QueryConsumerPull,
+					pgx.NamedArgs{
+						"consumer_name": consumer,
+						"size":          size,
+					},
+				).
+				Scan(&cursor)
+			require.NoError(bs, err)
+			require.NotEmpty(bs, cursor)
+		})
+	}
 }
 
-func seed(t *testing.T, conn *pgx.Conn) {
-	var err error
+func BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
+	var uri = os.Getenv("TEST_DATABASE_URI")
+	b.SetParallelism(10)
 
-	var count = int64(100000000)
-	var size = int64(1000000)
-	var entries = make([][]any, size)
+	b.RunParallel(func(pb *testing.PB) {
+		consumer := prepareConsumer(b)
 
-	// already seed, ignore
-	var found int64
-	err = conn.QueryRow(context.Background(), fmt.Sprintf("SELECT COUNT(*) AS found FROM %s", CollectionStream)).Scan(&found)
-	require.NoError(t, err)
+		conn, err := pgx.Connect(context.Background(), uri)
+		require.NoError(b, err)
+		defer conn.Close(context.Background())
 
-	if found >= count {
-		return
-	}
-
-	for i := int64(0); i < (count-found)/size; i++ {
-		for j := int64(0); j < size; j++ {
-			entries[j] = []any{tier, topic, idx.New("evt")}
+		var cursor string
+		for pb.Next() {
+			err = conn.
+				QueryRow(
+					context.Background(),
+					QueryConsumerPull,
+					pgx.NamedArgs{
+						"consumer_name": consumer,
+						"size":          ConsumerPullSize,
+					},
+				).
+				Scan(&cursor)
+			require.NoError(b, err)
+			require.NotEmpty(b, cursor)
 		}
+	})
+}
 
-		rows, err := conn.CopyFrom(
-			context.Background(),
-			pgx.Identifier{CollectionStream},
-			(&Stream{}).Properties(),
-			pgx.CopyFromRows(entries),
-		)
-		require.NoError(t, err)
-		require.Equal(t, int64(size), rows)
-	}
+func prepareConsumer(b *testing.B) string {
+	var uri = os.Getenv("TEST_DATABASE_URI")
+	conn, err := pgx.Connect(context.Background(), uri)
+	require.NoError(b, err)
+	defer conn.Close(context.Background())
 
-	_, err = conn.Exec(context.Background(), fmt.Sprintf("TRUNCATE TABLE public.%s CONTINUE IDENTITY RESTRICT;", CollectionConsumerJob))
-	require.NoError(t, err)
+	var consumer = idx.New("cs")
 
-	_, err = conn.Exec(context.Background(), fmt.Sprintf("TRUNCATE TABLE public.%s CONTINUE IDENTITY RESTRICT;", CollectionConsumer))
-	require.NoError(t, err)
-
+	// truncate old jobs
+	_, err = conn.Exec(context.Background(), QueryTruncate(CollectionConsumerJob))
+	require.NoError(b, err)
+	// delete old consumer
+	_, err = conn.Exec(context.Background(), QueryTruncate(CollectionConsumer))
+	require.NoError(b, err)
+	// insert a fresh consumer
 	_, err = conn.Exec(
 		context.Background(),
-		fmt.Sprintf("INSERT INTO public.%s (name, tier, topic, cursor) VALUES (@name, @tier, @topic, '');", CollectionConsumer),
+		fmt.Sprintf(`INSERT INTO %s (name, tier, topic, cursor) VALUES (@name, @tier, @topic, '')`, CollectionConsumer),
 		pgx.NamedArgs{
 			"name":  consumer,
-			"tier":  tier,
-			"topic": topic,
+			"tier":  os.Getenv("TEST_TIER"),
+			"topic": os.Getenv("TEST_TOPIC"),
 		},
 	)
-	require.NoError(t, err)
+	require.NoError(b, err)
+
+	return consumer
 }

@@ -7,11 +7,13 @@ import (
 
 	"github.com/kanthorlabs/common/commands/migrate"
 	"github.com/kanthorlabs/kanthorq/cmd/base"
+	"github.com/kanthorlabs/kanthorq/cmd/data/benchmark"
 )
 
 func main() {
 	_, command := base.New()
 	command.AddCommand(migrate.New())
+	command.AddCommand(benchmark.New())
 
 	defer func() {
 		if r := recover(); r != nil {

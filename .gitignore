@@ -20,5 +20,13 @@
 # Go workspace file
 go.work
 
+# IDE
+.vscode
+.idea
+
 # logging
 *.log
+
+# env
+!**/*.env.example
+**/*.env

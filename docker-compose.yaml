@@ -12,6 +12,8 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=changemenow
+    volumes:
+      - $PWD/data:/kanthorlabs/kanthorq/data
     user: postgres
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]

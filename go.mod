@@ -6,7 +6,8 @@ toolchain go1.22.3
 
 require (
 	github.com/jackc/pgx/v5 v5.5.4
-	github.com/kanthorlabs/common v0.0.0-20240518075936-dc3bd38720e2
+	github.com/kanthorlabs/common v0.0.0-20240518092434-cd9ad1cab0ee
+	github.com/sourcegraph/conc v0.3.0
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 )
@@ -30,7 +31,6 @@ require (
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/segmentio/ksuid v1.0.4 // indirect
-	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect

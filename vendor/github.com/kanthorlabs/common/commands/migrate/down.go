@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"errors"
+	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -44,7 +45,7 @@ func NewDown() *cobra.Command {
 				return err
 			}
 
-			if err := m.Steps(step); !errors.Is(err, migrate.ErrNoChange) {
+			if err := m.Steps(step); !errors.Is(err, migrate.ErrNoChange) && !errors.Is(err, os.ErrNotExist) {
 				return err
 			}
 			return nil
