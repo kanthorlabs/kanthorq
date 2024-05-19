@@ -22,7 +22,7 @@ func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
 			require.NoError(bs, err)
 			defer conn.Close(context.Background())
 
-			var cursor string
+			var current, next string
 			err = conn.
 				QueryRow(
 					context.Background(),
@@ -32,9 +32,9 @@ func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
 						"size":          size,
 					},
 				).
-				Scan(&cursor)
+				Scan(&current, &next)
 			require.NoError(bs, err)
-			require.NotEmpty(bs, cursor)
+			require.NotEmpty(bs, next)
 		})
 	}
 }
@@ -50,7 +50,7 @@ func BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 		require.NoError(b, err)
 		defer conn.Close(context.Background())
 
-		var cursor string
+		var current, next string
 		for pb.Next() {
 			err = conn.
 				QueryRow(
@@ -61,9 +61,9 @@ func BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 						"size":          ConsumerPullSize,
 					},
 				).
-				Scan(&cursor)
+				Scan(&current, &next)
 			require.NoError(b, err)
-			require.NotEmpty(b, cursor)
+			require.NotEmpty(b, next)
 		}
 	})
 }
