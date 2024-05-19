@@ -40,6 +40,9 @@ func NewSeed() *cobra.Command {
 						return err
 					}
 					conn, err := pgx.Connect(cmd.Context(), connection)
+					if err != nil {
+						return err
+					}
 					defer conn.Close(cmd.Context())
 
 					fmt.Println(statement)

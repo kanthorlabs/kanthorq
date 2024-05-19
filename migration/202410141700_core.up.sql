@@ -16,11 +16,12 @@ CREATE TABLE IF NOT EXISTS kanthorq_consumer (
 );
 
 CREATE TABLE IF NOT EXISTS kanthorq_consumer_job (
+  consumer_name VARCHAR(128) NOT NULL,
+  event_id VARCHAR(64) NOT NULL,
   tier VARCHAR(128) NOT NULL,
   topic VARCHAR(128) NOT NULL,
-  event_id VARCHAR(64) NOT NULL,
-  write_count SMALLINT NOT NULL DEFAULT 1, 
-  PRIMARY KEY (tier, topic, event_id)
+  pull_count SMALLINT NOT NULL DEFAULT 1, 
+  PRIMARY KEY (consumer_name, event_id)
 );
 
 COMMIT;

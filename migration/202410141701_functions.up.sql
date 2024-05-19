@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE OR REPLACE FUNCTION kanthorq_consumer_pull(consumer_name VARCHAR(128), size SMALLINT) RETURNS VARCHAR(128) AS $$
+CREATE OR REPLACE FUNCTION kanthorq_consumer_pull(cname VARCHAR(128), size SMALLINT) RETURNS VARCHAR(128) AS $$
 DECLARE 
     consumer RECORD;
     consumer_cursor_next VARCHAR(128);
@@ -10,29 +10,29 @@ BEGIN
     SELECT *
     INTO consumer
     FROM kanthorq_consumer 
-    WHERE name = consumer_name
+    WHERE name = cname
     FOR UPDATE SKIP LOCKED;
 
     IF consumer.name IS NULL THEN
-        RETURN 'ERROR.CONSUMER.NOT_FOUND';
+        RETURN 'ERROR.CONSUMER.NOT_AVAILABLE';
     END IF;
 
     -- Insert new jobs and get the new cursor value
     WITH jobs AS (
-        INSERT INTO kanthorq_consumer_job (tier, topic, event_id)
-        SELECT tier, topic, event_id 
+        INSERT INTO kanthorq_consumer_job (consumer_name, event_id ,tier, topic)
+        SELECT cname as consumer_name, event_id, tier, topic 
         FROM kanthorq_stream
         WHERE tier = consumer.tier AND topic = consumer.topic AND event_id > consumer.cursor 
         ORDER BY tier ASC, topic ASC, event_id ASC
         LIMIT size
-        ON CONFLICT(tier, topic, event_id) DO UPDATE 
-        SET write_count = kanthorq_consumer_job.write_count + 1
+        ON CONFLICT(consumer_name, event_id) DO UPDATE 
+        SET pull_count = kanthorq_consumer_job.pull_count + 1
         RETURNING event_id
     )
     SELECT max(event_id) INTO consumer_cursor_next FROM jobs;
 
     IF consumer_cursor_next IS NULL THEN
-        RETURN 'ERROR.CONSUMER_JOB.NO_JOBS';
+        RETURN 'ERROR.CONSUMER_JOB.NO_JOB';
     END IF;
     
     INSERT INTO kanthorq_consumer (name, tier, topic, cursor) 

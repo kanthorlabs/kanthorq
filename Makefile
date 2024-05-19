@@ -11,7 +11,7 @@ benchmark:
 	go test -timeout 1h -bench=. -count=3 -benchtime=10000x -run $$BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic^ github.com/kanthorlabs/kanthorq/core | tee ConsumerPull_MultipleConsumerReadSameTopic.log
 	cat ConsumerPull_MultipleConsumerReadSameTopic.log
 
-benchmark-prepare:
+benchmark-prepare: benchmark-cleanup
 	go run cmd/data/main.go benchmark prepare --storage /kanthorlabs/kanthorq/data
 
 benchmark-seed:

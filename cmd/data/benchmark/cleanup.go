@@ -66,7 +66,7 @@ func NewCleanup() *cobra.Command {
 		},
 	}
 
-	command.Flags().BoolP("database", "", false, "decide whether we should cleanup database or not")
+	command.Flags().BoolP("database", "", os.Getenv("TEST_BENCHMARK_CLEANUP_DATABASE") != "", "decide whether we should cleanup database or not")
 
 	return command
 }

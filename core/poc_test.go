@@ -41,7 +41,7 @@ func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
 
 func BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 	var uri = os.Getenv("TEST_DATABASE_URI")
-	b.SetParallelism(10)
+	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		consumer := prepareConsumer(b)
