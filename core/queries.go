@@ -1,21 +1,58 @@
 package core
 
-import "github.com/jackc/pgx/v5"
+import (
+	"context"
 
-func QueryConsumerEnsure(name, topic string) (string, pgx.NamedArgs) {
-	statement := `SELECT name, topic, cursor, created_at, updated_at FROM consumer_ensure(@consumer_name, @topic);`
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+func QueryStreamEnsure(name string) func(ctx context.Context, conn *pgxpool.Pool) (*Stream, error) {
+	statement := `SELECT name, created_at, updated_at FROM stream_ensure(@stream_name);`
 	args := pgx.NamedArgs{
-		"consumer_name": name,
-		"topic":         topic,
+		"stream_name": name,
 	}
-	return statement, args
+
+	return func(ctx context.Context, conn *pgxpool.Pool) (*Stream, error) {
+		var stream Stream
+		err := conn.
+			QueryRow(ctx, statement, args).
+			Scan(&stream.Name, &stream.CreatedAt, &stream.UpdatedAt)
+
+		return &stream, err
+	}
 }
 
-func QueryConsumerPull(name string, size int) (string, pgx.NamedArgs) {
+func QueryConsumerEnsure(name, stream, topic string) func(ctx context.Context, conn *pgxpool.Pool) (*Consumer, error) {
+	statement := `SELECT name, stream_name, topic, cursor, created_at, updated_at FROM consumer_ensure(@consumer_name, @stream_name, @topic);`
+	args := pgx.NamedArgs{
+		"consumer_name": name,
+		"stream_name":   stream,
+		"topic":         topic,
+	}
+	return func(ctx context.Context, conn *pgxpool.Pool) (*Consumer, error) {
+		var consumer Consumer
+		err := conn.
+			QueryRow(ctx, statement, args).
+			Scan(&consumer.Name, &consumer.StreamName, &consumer.Topic, &consumer.Cursor, &consumer.CreatedAt, &consumer.UpdatedAt)
+
+		return &consumer, err
+	}
+}
+
+func QueryConsumerPull(name string, size int) func(ctx context.Context, conn *pgxpool.Pool) (*ConsumerCursor, error) {
 	statement := `SELECT consumer_name, cursor_current, cursor_next FROM kanthorq_consumer_pull(@consumer_name, CAST(@size as SMALLINT));`
 	args := pgx.NamedArgs{
 		"consumer_name": name,
 		"size":          size,
 	}
-	return statement, args
+
+	return func(ctx context.Context, conn *pgxpool.Pool) (*ConsumerCursor, error) {
+		var cursor ConsumerCursor
+		err := conn.
+			QueryRow(ctx, statement, args).
+			Scan(&cursor.Name, &cursor.Current, &cursor.Next)
+
+		return &cursor, err
+	}
 }

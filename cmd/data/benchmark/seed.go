@@ -2,9 +2,10 @@ package benchmark
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/sourcegraph/conc/pool"
 	"github.com/spf13/cobra"
@@ -15,7 +16,26 @@ func NewSeed() *cobra.Command {
 		Use:  "seed",
 		Args: cobra.MatchAll(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// clean files
+			connection, err := cmd.Flags().GetString("connection")
+			if err != nil {
+				return err
+			}
+			conn, err := pgxpool.New(cmd.Context(), connection)
+			if err != nil {
+				return err
+			}
+			defer conn.Close()
+
+			// ensure stream is exist
+			streamName, err := cmd.Flags().GetString("stream")
+			if err != nil {
+				return err
+			}
+			stream, err := core.QueryStreamEnsure(streamName)(cmd.Context(), conn)
+			if err != nil {
+				return err
+			}
+
 			storage, err := cmd.Flags().GetString("storage")
 			if err != nil {
 				return err
@@ -32,27 +52,15 @@ func NewSeed() *cobra.Command {
 			p := pool.New().WithMaxGoroutines(writer).WithErrors()
 
 			for _, f := range files {
-				statement := fmt.Sprintf(`COPY %s FROM '%s' DELIMITER ',' CSV HEADER;`, core.CollectionStream, f)
-
+				statement := fmt.Sprintf(`COPY %s FROM '%s' DELIMITER ',' CSV HEADER;`, core.StreamEventCollection(stream.Name), f)
+				fmt.Println(statement)
 				p.Go(func() error {
-					connection, err := cmd.Flags().GetString("connection")
-					if err != nil {
-						return err
-					}
-					conn, err := pgx.Connect(cmd.Context(), connection)
-					if err != nil {
-						return err
-					}
-					defer conn.Close(cmd.Context())
-
-					fmt.Println(statement)
 					if _, err = conn.Exec(cmd.Context(), statement); err != nil {
 						return err
 					}
 
 					return nil
 				})
-
 			}
 
 			return p.Wait()
@@ -60,6 +68,7 @@ func NewSeed() *cobra.Command {
 	}
 
 	command.Flags().IntP("writer", "", 5, "set write concurrency")
+	command.Flags().StringP("stream", "", os.Getenv("TEST_STREAM"), "define your testing stream name")
 
 	return command
 }

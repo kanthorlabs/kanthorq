@@ -58,11 +58,11 @@ func NewPrepare() *cobra.Command {
 					defer f.Close()
 
 					w := csv.NewWriter(f)
-					w.Write((&core.Stream{}).Properties())
+					w.Write((&core.StreamEvent{}).Properties())
 
 					rows := make([][]string, limit)
 					for j := int64(0); j < limit; j++ {
-						rows[j] = []string{topic, idx.New("evt"), fmt.Sprintf("%d", now), "0"}
+						rows[j] = []string{topic, idx.New("evt"), fmt.Sprintf("%d", now)}
 					}
 
 					if err := w.WriteAll(rows); err != nil {
@@ -82,7 +82,7 @@ func NewPrepare() *cobra.Command {
 	command.Flags().Int64P("size", "s", 50000, "total record of each file")
 	command.Flags().IntP("writer", "", 5, "set write concurrency")
 
-	command.Flags().StringP("topic", "", os.Getenv("TEST_TOPIC"), "use custom topic")
+	command.Flags().StringP("topic", "", os.Getenv("TEST_TOPIC"), "define your testing topic name")
 
 	return command
 }

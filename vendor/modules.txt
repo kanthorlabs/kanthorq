@@ -57,6 +57,11 @@ github.com/jackc/pgx/v5/pgconn/internal/bgreader
 github.com/jackc/pgx/v5/pgconn/internal/ctxwatch
 github.com/jackc/pgx/v5/pgproto3
 github.com/jackc/pgx/v5/pgtype
+github.com/jackc/pgx/v5/pgxpool
+# github.com/jackc/puddle/v2 v2.2.1
+## explicit; go 1.19
+github.com/jackc/puddle/v2
+github.com/jackc/puddle/v2/internal/genstack
 # github.com/kanthorlabs/common v0.0.0-20240518092434-cd9ad1cab0ee
 ## explicit; go 1.21.7
 github.com/kanthorlabs/common/commands/migrate
@@ -151,6 +156,9 @@ golang.org/x/exp/slices
 golang.org/x/exp/slog
 golang.org/x/exp/slog/internal
 golang.org/x/exp/slog/internal/buffer
+# golang.org/x/sync v0.5.0
+## explicit; go 1.18
+golang.org/x/sync/semaphore
 # golang.org/x/sys v0.17.0
 ## explicit; go 1.18
 golang.org/x/sys/unix

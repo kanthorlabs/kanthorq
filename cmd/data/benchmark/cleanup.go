@@ -5,8 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/kanthorq/core"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/spf13/cobra"
 )
@@ -39,20 +38,21 @@ func NewCleanup() *cobra.Command {
 			}
 
 			// cleanup database
-			if truncate, err := cmd.Flags().GetBool("database"); err != nil && truncate {
+			if truncate, err := cmd.Flags().GetBool("database"); err == nil && truncate {
 				connection, err := cmd.Flags().GetString("connection")
 				if err != nil {
 					return err
 				}
-				conn, err := pgx.Connect(cmd.Context(), connection)
-				defer conn.Close(cmd.Context())
-
-				_, err = conn.Exec(cmd.Context(), testify.QueryTruncate(core.CollectionStream))
+				conn, err := pgxpool.New(cmd.Context(), connection)
 				if err != nil {
 					return err
 				}
-				_, err = conn.Exec(cmd.Context(), testify.QueryTruncateConsumer())
-				if err != nil {
+				defer conn.Close()
+
+				if err := testify.QueryTruncateConsumer()(cmd.Context(), conn); err != nil {
+					return err
+				}
+				if err := testify.QueryTruncateStream()(cmd.Context(), conn); err != nil {
 					return err
 				}
 			}

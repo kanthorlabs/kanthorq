@@ -1,14 +1,44 @@
 BEGIN;
 
-CREATE OR REPLACE FUNCTION consumer_ensure(req_consumer_name VARCHAR(128), req_topic VARCHAR(128))
+CREATE OR REPLACE FUNCTION stream_ensure(req_stream_name VARCHAR(128))
+RETURNS kanthorq_stream AS $$
+DECLARE 
+    stream kanthorq_stream;
+    stream_create_sql TEXT;
+    ts BIGINT := EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000;
+BEGIN
+    INSERT INTO kanthorq_stream(name)
+    VALUES(req_stream_name)
+    ON CONFLICT(name) DO UPDATE 
+    SET updated_at = ts
+    RETURNING * INTO stream;
+
+    stream_create_sql := FORMAT(
+        $QUERY$
+        CREATE TABLE IF NOT EXISTS kanthorq_stream_%s (
+            topic VARCHAR(128) NOT NULL,
+            event_id VARCHAR(64) NOT NULL,
+            created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
+            PRIMARY KEY (topic, event_id)
+        )
+        $QUERY$,
+        req_stream_name
+    );
+    EXECUTE stream_create_sql;
+
+    RETURN stream;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION consumer_ensure(req_consumer_name VARCHAR(128), req_stream_name VARCHAR(128), req_topic VARCHAR(128))
 RETURNS kanthorq_consumer AS $$
 DECLARE 
     consumer kanthorq_consumer;
     consumer_create_sql TEXT;
     ts BIGINT := EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000;
 BEGIN
-    INSERT INTO kanthorq_consumer(name, topic, cursor)
-    VALUES(req_consumer_name, req_topic, '')
+    INSERT INTO kanthorq_consumer(name, stream_name, topic, cursor)
+    VALUES(req_consumer_name, req_stream_name, req_topic, '')
     ON CONFLICT(name) DO UPDATE 
     SET updated_at = ts
     RETURNING * INTO consumer;
@@ -22,11 +52,13 @@ BEGIN
     consumer_create_sql := FORMAT(
         $QUERY$
         CREATE TABLE IF NOT EXISTS kanthorq_consumer_%s (
-          event_id VARCHAR(64) NOT NULL,
-          name VARCHAR(128) NOT NULL,
-          topic VARCHAR(128) NOT NULL,
-          pull_count SMALLINT NOT NULL DEFAULT 0,
-          PRIMARY KEY (event_id)
+            event_id VARCHAR(64) NOT NULL,
+            name VARCHAR(128) NOT NULL,
+            topic VARCHAR(128) NOT NULL,
+            pull_count SMALLINT NOT NULL DEFAULT 0,
+            created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
+            updated_at BIGINT NOT NULL DEFAULT 0,
+            PRIMARY KEY (event_id)
         )
         $QUERY$,
         req_consumer_name
@@ -53,7 +85,7 @@ BEGIN
     FOR UPDATE SKIP LOCKED;
 
     IF consumer.name IS NULL THEN
-        RETURN QUERY SELECT NULL, NULL, NULL;
+        RAISE EXCEPTION 'ERROR.CONSUMER.BUSY: %', consumer.name;
     END IF;
 
     -- Insert new jobs and get the new cursor value
@@ -62,7 +94,7 @@ BEGIN
         WITH jobs AS (
             INSERT INTO kanthorq_consumer_%s (name, event_id, topic)
                 SELECT %L as name, event_id, topic
-                FROM kanthorq_stream
+                FROM kanthorq_stream_%s
                 WHERE topic = %L AND event_id > %L 
                 ORDER BY event_id
                 LIMIT %s
@@ -74,6 +106,7 @@ BEGIN
         $QUERY$,
         consumer.name,
         consumer.name,
+        consumer.stream_name,
         consumer.topic,
         consumer.cursor,
         req_pull_size,
@@ -82,10 +115,7 @@ BEGIN
     EXECUTE consumer_job_insert_sql INTO consumer_cursor_next;
 
     IF consumer_cursor_next IS NOT NULL THEN
-        INSERT INTO kanthorq_consumer (name, topic, cursor) 
-        VALUES(consumer.name, consumer.topic, consumer_cursor_next)
-        ON CONFLICT(name) DO UPDATE 
-        SET cursor = EXCLUDED.cursor;
+        UPDATE kanthorq_consumer SET cursor = consumer_cursor_next WHERE name = consumer.name;
     END IF;
 
     -- we should return all NULL or all STRING

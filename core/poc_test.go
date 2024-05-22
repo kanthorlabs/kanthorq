@@ -6,76 +6,54 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kanthorlabs/common/idx"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
 )
 
-func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
-	var uri = os.Getenv("TEST_DATABASE_URI")
+var connection = os.Getenv("TEST_DATABASE_URI")
 
-	consumer := prepareConsumer(b)
+func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
+	conn, err := pgxpool.New(context.Background(), connection)
+	require.NoError(b, err)
+	defer conn.Close()
+
+	consumer := prepareConsumer(b, conn)
 	for i := 1; i < 10; i++ {
 		size := ConsumerPullSize * i
 		b.Run(fmt.Sprintf("size %d", size), func(bs *testing.B) {
-			conn, err := pgx.Connect(context.Background(), uri)
+			cursor, err := QueryConsumerPull(consumer, size)(context.Background(), conn)
 			require.NoError(bs, err)
-			defer conn.Close(context.Background())
-
-			var name, current, next *string
-			statement, args := QueryConsumerPull(consumer, size)
-			err = conn.
-				QueryRow(context.Background(), statement, args).
-				Scan(&name, &current, &next)
-
-			require.NoError(bs, err)
-			require.NotNil(bs, name)
-			require.NotEmpty(bs, *name)
+			require.NotNil(bs, cursor.Name)
 		})
 	}
 }
 
 func BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
-	var uri = os.Getenv("TEST_DATABASE_URI")
+	conn, err := pgxpool.New(context.Background(), connection)
+	require.NoError(b, err)
+	defer conn.Close()
+
 	b.ResetTimer()
-
 	b.RunParallel(func(pb *testing.PB) {
-		consumer := prepareConsumer(b)
-
-		conn, err := pgx.Connect(context.Background(), uri)
-		require.NoError(b, err)
-		defer conn.Close(context.Background())
-
+		consumer := prepareConsumer(b, conn)
 		for pb.Next() {
-
-			var name, current, next *string
-			statement, args := QueryConsumerPull(consumer, ConsumerPullSize)
-			err = conn.
-				QueryRow(context.Background(), statement, args).
-				Scan(&name, &current, &next)
-
+			cursor, err := QueryConsumerPull(consumer, ConsumerPullSize)(context.Background(), conn)
 			require.NoError(b, err)
-			require.NotNil(b, name)
-			require.NotEmpty(b, *name)
+			require.NotNil(b, cursor.Name)
 		}
 	})
 }
 
-func prepareConsumer(b *testing.B) string {
-	var uri = os.Getenv("TEST_DATABASE_URI")
-	conn, err := pgx.Connect(context.Background(), uri)
-	require.NoError(b, err)
-	defer conn.Close(context.Background())
-
+func prepareConsumer(b *testing.B, conn *pgxpool.Pool) string {
+	var err error
 	var consumer = idx.New("c")
 
 	// truncate old jobs
-	_, err = conn.Exec(context.Background(), testify.QueryTruncateConsumer())
-	require.NoError(b, err)
+	require.NoError(b, testify.QueryTruncateConsumer()(context.Background(), conn))
 	// insert a fresh consumer
-	statement, args := QueryConsumerEnsure(consumer, os.Getenv("TEST_TOPIC"))
-	_, err = conn.Exec(context.Background(), statement, args)
+	_, err = QueryConsumerEnsure(consumer, os.Getenv("TEST_STREAM"), os.Getenv("TEST_TOPIC"))(context.Background(), conn)
 	require.NoError(b, err)
 
 	return consumer
