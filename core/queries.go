@@ -3,7 +3,7 @@ package core
 import "github.com/jackc/pgx/v5"
 
 func QueryConsumerEnsure(name, topic string) (string, pgx.NamedArgs) {
-	statement := `SELECT name, topic, cursor FROM consumer_ensure(@consumer_name, @topic);`
+	statement := `SELECT name, topic, cursor, created_at, updated_at FROM consumer_ensure(@consumer_name, @topic);`
 	args := pgx.NamedArgs{
 		"consumer_name": name,
 		"topic":         topic,

@@ -6,22 +6,26 @@ var CollectionStream = "kanthorq_stream"
 var CollectionConsumer = "kanthorq_consumer"
 
 type Stream struct {
-	Topic   string
-	EventId string
+	Topic     string `json:"topic"`
+	EventId   string `json:"event_id"`
+	CreatedAt int64  `json:"created_at"`
+	UpdatedAt int64  `json:"updated_at"`
 }
 
 func (ent *Stream) Properties() []string {
-	return []string{"topic", "event_id"}
+	return []string{"topic", "event_id", "created_at", "updated_at"}
 }
 
 type Consumer struct {
-	Name   string
-	Topic  string
-	Cursor string
+	Name      string `json:"name"`
+	Topic     string `json:"topic"`
+	Cursor    string `json:"cursor"`
+	CreatedAt int64  `json:"created_at"`
+	UpdatedAt int64  `json:"updated_at"`
 }
 
 func (ent *Consumer) Properties() []string {
-	return []string{"name", "topic", "cursor"}
+	return []string{"name", "topic", "cursor", "created_at", "updated_at"}
 }
 
 type JobState int

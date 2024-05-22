@@ -15,7 +15,7 @@ func QueryTruncateConsumer() string {
 			-- Loop through each entry in the kanthorq_consumer table
 			FOR rec IN SELECT name FROM public.kanthorq_consumer LOOP
 					-- Construct the SQL statement to drop the table
-					drop_table_sql := 'DROP TABLE IF EXISTS ' || quote_ident(rec.name) || ' CASCADE;';
+					drop_table_sql := 'DROP TABLE IF EXISTS kanthorq_consumer_' || rec.name || ' CASCADE;';
 					-- Execute the drop table statement
 					EXECUTE drop_table_sql;
 			END LOOP;

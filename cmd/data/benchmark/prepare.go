@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/kanthorlabs/common/idx"
 	"github.com/kanthorlabs/common/utils"
@@ -40,6 +41,8 @@ func NewPrepare() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			var now = time.Now().UTC().UnixMilli()
 			var i int64
 			for i < count {
 				limit := utils.Min(count-i, size)
@@ -59,7 +62,7 @@ func NewPrepare() *cobra.Command {
 
 					rows := make([][]string, limit)
 					for j := int64(0); j < limit; j++ {
-						rows[j] = []string{topic, idx.New("evt")}
+						rows[j] = []string{topic, idx.New("evt"), fmt.Sprintf("%d", now), "0"}
 					}
 
 					if err := w.WriteAll(rows); err != nil {

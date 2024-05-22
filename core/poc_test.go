@@ -68,7 +68,7 @@ func prepareConsumer(b *testing.B) string {
 	require.NoError(b, err)
 	defer conn.Close(context.Background())
 
-	var consumer = idx.New("cs")
+	var consumer = idx.New("c")
 
 	// truncate old jobs
 	_, err = conn.Exec(context.Background(), testify.QueryTruncateConsumer())

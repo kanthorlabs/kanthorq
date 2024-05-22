@@ -5,20 +5,28 @@ RETURNS kanthorq_consumer AS $$
 DECLARE 
     consumer kanthorq_consumer;
     consumer_create_sql TEXT;
+    ts BIGINT := EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000;
 BEGIN
     INSERT INTO kanthorq_consumer(name, topic, cursor)
     VALUES(req_consumer_name, req_topic, '')
-    ON CONFLICT(name) DO NOTHING
+    ON CONFLICT(name) DO UPDATE 
+    SET updated_at = ts
     RETURNING * INTO consumer;
+
+    -- if the request topic is not matched with the existing topic
+    -- there is something wrong in the request
+    IF consumer.topic <> req_topic THEN
+        RAISE EXCEPTION 'ERROR.CONSUMER.REQUEST_TOPIC.NOT_MATCH: EXPECTED:% ACTUAL:%', consumer.name, req_topic;
+    END IF;
 
     consumer_create_sql := FORMAT(
         $QUERY$
         CREATE TABLE IF NOT EXISTS kanthorq_consumer_%s (
-          consumer_name VARCHAR(128) NOT NULL,
           event_id VARCHAR(64) NOT NULL,
+          name VARCHAR(128) NOT NULL,
           topic VARCHAR(128) NOT NULL,
-          pull_count SMALLINT NOT NULL DEFAULT 1, 
-          PRIMARY KEY (consumer_name, event_id)
+          pull_count SMALLINT NOT NULL DEFAULT 0,
+          PRIMARY KEY (event_id)
         )
         $QUERY$,
         req_consumer_name
@@ -52,16 +60,13 @@ BEGIN
     consumer_job_insert_sql := FORMAT(
         $QUERY$
         WITH jobs AS (
-            INSERT INTO kanthorq_consumer_%s (consumer_name, event_id, topic)
-            SELECT %L as consumer_name, event_id, topic
-            FROM (
-                SELECT DISTINCT ON (event_id) event_id, topic 
+            INSERT INTO kanthorq_consumer_%s (name, event_id, topic)
+                SELECT %L as name, event_id, topic
                 FROM kanthorq_stream
                 WHERE topic = %L AND event_id > %L 
                 ORDER BY event_id
                 LIMIT %s
-            ) sub
-            ON CONFLICT(consumer_name, event_id) DO UPDATE 
+            ON CONFLICT(event_id) DO UPDATE 
             SET pull_count = kanthorq_consumer_%s.pull_count + 1
             RETURNING event_id
         )
