@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/core"
+	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/spf13/cobra"
 )
 
@@ -46,17 +47,11 @@ func NewCleanup() *cobra.Command {
 				conn, err := pgx.Connect(cmd.Context(), connection)
 				defer conn.Close(cmd.Context())
 
-				statement := "TRUNCATE TABLE public.%s CONTINUE IDENTITY RESTRICT;"
-
-				_, err = conn.Exec(cmd.Context(), fmt.Sprintf(statement, core.CollectionStream))
+				_, err = conn.Exec(cmd.Context(), testify.QueryTruncate(core.CollectionStream))
 				if err != nil {
 					return err
 				}
-				_, err = conn.Exec(cmd.Context(), fmt.Sprintf(statement, core.CollectionConsumer))
-				if err != nil {
-					return err
-				}
-				_, err = conn.Exec(cmd.Context(), fmt.Sprintf(statement, core.CollectionConsumerJob))
+				_, err = conn.Exec(cmd.Context(), testify.QueryTruncateConsumer())
 				if err != nil {
 					return err
 				}

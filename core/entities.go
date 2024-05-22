@@ -1,17 +1,17 @@
 package core
 
+import "fmt"
+
 var CollectionStream = "kanthorq_stream"
 var CollectionConsumer = "kanthorq_consumer"
-var CollectionConsumerJob = "kanthorq_consumer_job"
 
 type Stream struct {
-	Tier    string
 	Topic   string
 	EventId string
 }
 
 func (ent *Stream) Properties() []string {
-	return []string{"tier", "topic", "event_id"}
+	return []string{"topic", "event_id"}
 }
 
 type Consumer struct {
@@ -24,13 +24,32 @@ func (ent *Consumer) Properties() []string {
 	return []string{"name", "topic", "cursor"}
 }
 
-type ConsumerJob struct {
-	Tier       string
-	Topic      string
-	EventId    string
-	WriteCount int16
-}
+type JobState int
 
-func (ent *Stream) ConsumerJob() []string {
-	return []string{"tier", "topic", "event_id", "write_count"}
+const (
+	Discarded JobState = -101
+	Cancelled JobState = -100
+	Available JobState = 0
+	Running   JobState = 1
+	Completed JobState = 100
+	Retryable JobState = 101
+)
+
+func (js JobState) String() string {
+	switch js {
+	case Discarded:
+		return "Discarded"
+	case Cancelled:
+		return "Cancelled"
+	case Available:
+		return "Available"
+	case Running:
+		return "Running"
+	case Completed:
+		return "Completed"
+	case Retryable:
+		return "Retryable"
+	default:
+		return fmt.Sprintf("Unknown JobState (%d)", js)
+	}
 }

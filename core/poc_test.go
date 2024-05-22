@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/common/idx"
+	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,19 +23,15 @@ func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
 			require.NoError(bs, err)
 			defer conn.Close(context.Background())
 
-			var current, next string
+			var name, current, next *string
+			statement, args := QueryConsumerPull(consumer, size)
 			err = conn.
-				QueryRow(
-					context.Background(),
-					QueryConsumerPull,
-					pgx.NamedArgs{
-						"consumer_name": consumer,
-						"size":          size,
-					},
-				).
-				Scan(&current, &next)
+				QueryRow(context.Background(), statement, args).
+				Scan(&name, &current, &next)
+
 			require.NoError(bs, err)
-			require.NotEmpty(bs, next)
+			require.NotNil(bs, name)
+			require.NotEmpty(bs, *name)
 		})
 	}
 }
@@ -50,20 +47,17 @@ func BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 		require.NoError(b, err)
 		defer conn.Close(context.Background())
 
-		var current, next string
 		for pb.Next() {
+
+			var name, current, next *string
+			statement, args := QueryConsumerPull(consumer, ConsumerPullSize)
 			err = conn.
-				QueryRow(
-					context.Background(),
-					QueryConsumerPull,
-					pgx.NamedArgs{
-						"consumer_name": consumer,
-						"size":          ConsumerPullSize,
-					},
-				).
-				Scan(&current, &next)
+				QueryRow(context.Background(), statement, args).
+				Scan(&name, &current, &next)
+
 			require.NoError(b, err)
-			require.NotEmpty(b, next)
+			require.NotNil(b, name)
+			require.NotEmpty(b, *name)
 		}
 	})
 }
@@ -77,21 +71,11 @@ func prepareConsumer(b *testing.B) string {
 	var consumer = idx.New("cs")
 
 	// truncate old jobs
-	_, err = conn.Exec(context.Background(), QueryTruncate(CollectionConsumerJob))
-	require.NoError(b, err)
-	// delete old consumer
-	_, err = conn.Exec(context.Background(), QueryTruncate(CollectionConsumer))
+	_, err = conn.Exec(context.Background(), testify.QueryTruncateConsumer())
 	require.NoError(b, err)
 	// insert a fresh consumer
-	_, err = conn.Exec(
-		context.Background(),
-		fmt.Sprintf(`INSERT INTO %s (name, tier, topic, cursor) VALUES (@name, @tier, @topic, '')`, CollectionConsumer),
-		pgx.NamedArgs{
-			"name":  consumer,
-			"tier":  os.Getenv("TEST_TIER"),
-			"topic": os.Getenv("TEST_TOPIC"),
-		},
-	)
+	statement, args := QueryConsumerEnsure(consumer, os.Getenv("TEST_TOPIC"))
+	_, err = conn.Exec(context.Background(), statement, args)
 	require.NoError(b, err)
 
 	return consumer

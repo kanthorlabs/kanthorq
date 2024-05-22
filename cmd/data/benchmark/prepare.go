@@ -21,10 +21,6 @@ func NewPrepare() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			tier, err := cmd.Flags().GetString("tier")
-			if err != nil {
-				return err
-			}
 			topic, err := cmd.Flags().GetString("topic")
 			if err != nil {
 				return err
@@ -63,7 +59,7 @@ func NewPrepare() *cobra.Command {
 
 					rows := make([][]string, limit)
 					for j := int64(0); j < limit; j++ {
-						rows[j] = []string{tier, topic, idx.New("evt")}
+						rows[j] = []string{topic, idx.New("evt")}
 					}
 
 					if err := w.WriteAll(rows); err != nil {
@@ -79,11 +75,10 @@ func NewPrepare() *cobra.Command {
 			return p.Wait()
 		},
 	}
-	command.Flags().Int64P("count", "c", 100000000, "total record you want to prepare")
-	command.Flags().Int64P("size", "s", 1000000, "total record of each file")
+	command.Flags().Int64P("count", "c", 1000000, "total record you want to prepare")
+	command.Flags().Int64P("size", "s", 50000, "total record of each file")
 	command.Flags().IntP("writer", "", 5, "set write concurrency")
 
-	command.Flags().StringP("tier", "", os.Getenv("TEST_TIER"), "use custom tier")
 	command.Flags().StringP("topic", "", os.Getenv("TEST_TOPIC"), "use custom topic")
 
 	return command
