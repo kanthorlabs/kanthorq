@@ -1,3 +1,3 @@
-package core
+package kanthorq
 
 var ConsumerPullSize = 500
