@@ -31,6 +31,7 @@ func Postgres(ctx context.Context, name string) (*postgres.PostgresContainer, er
 		},
 		Started: true,
 		Reuse:   true,
+		Logger:  &Logger{},
 	}
 	if name != "" {
 		req.ContainerRequest.Name = name

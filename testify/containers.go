@@ -27,7 +27,7 @@ func SpinPostgres(ctx context.Context, name string) (*postgres.PostgresContainer
 	if err != nil {
 		return nil, err
 	}
-	if err := m.Up(); errors.Is(err, migrate.ErrNoChange) || errors.Is(err, os.ErrNotExist) {
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 	defer m.Close()

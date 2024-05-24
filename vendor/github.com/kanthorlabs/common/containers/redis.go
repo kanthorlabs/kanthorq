@@ -18,6 +18,7 @@ func Redis(ctx context.Context, name string) (*redis.RedisContainer, error) {
 		},
 		Started: true,
 		Reuse:   true,
+		Logger:  &Logger{},
 	}
 	if name != "" {
 		req.ContainerRequest.Name = name
