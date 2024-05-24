@@ -44,8 +44,8 @@ func NewConsumer() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			consumer := idx.New("c")
-			if _, err := queries.EnsureConsumer(consumer, stream, topic)(cmd.Context(), conn); err != nil {
+			job := idx.New("job")
+			if _, err := queries.EnsureConsumer(job, stream, topic)(cmd.Context(), conn); err != nil {
 				return err
 			}
 
@@ -54,7 +54,7 @@ func NewConsumer() *cobra.Command {
 				return err
 			}
 
-			c, err := queries.ConsumerPull(consumer, count)(cmd.Context(), conn)
+			c, err := queries.ConsumerPull(job, count)(cmd.Context(), conn)
 			if err != nil {
 				return err
 			}

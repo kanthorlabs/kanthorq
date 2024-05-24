@@ -36,8 +36,8 @@ func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
 		panic(err)
 	}
 
-	consumer := idx.New("c")
-	if _, err := queries.EnsureConsumer(consumer, stream, topic)(ctx, conn); err != nil {
+	job := idx.New("job")
+	if _, err := queries.EnsureConsumer(job, stream, topic)(ctx, conn); err != nil {
 		panic(err)
 	}
 
@@ -45,7 +45,7 @@ func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
 	for i := 0; i < 10; i++ {
 		size := ConsumerPullSize * (i + 1)
 		b.Run(fmt.Sprintf("size %d", size), func(bs *testing.B) {
-			cursor, err := queries.ConsumerPull(consumer, size)(ctx, conn)
+			cursor, err := queries.ConsumerPull(job, size)(ctx, conn)
 			require.NoError(bs, err)
 			require.NotEmpty(bs, cursor.Name)
 			require.NotEmpty(bs, cursor.Next)
@@ -76,11 +76,11 @@ func BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			consumer := idx.New("c")
-			_, err := queries.EnsureConsumer(consumer, stream, topic)(ctx, conn)
+			job := idx.New("job")
+			_, err := queries.EnsureConsumer(job, stream, topic)(ctx, conn)
 			require.NoError(b, err)
 
-			cursor, err := queries.ConsumerPull(consumer, ConsumerPullSize)(ctx, conn)
+			cursor, err := queries.ConsumerPull(job, ConsumerPullSize)(ctx, conn)
 			require.NoError(b, err)
 			require.NotEmpty(b, cursor.Name)
 			require.NotEmpty(b, cursor.Next)
