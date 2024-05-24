@@ -27,7 +27,7 @@ func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
 	require.NoError(b, err)
 	defer conn.Close()
 
-	stream := idx.New("stream")
+	stream := idx.New("s")
 	topic := idx.New("topic")
 	if _, err := queries.EnsureStream(stream)(ctx, conn); err != nil {
 		panic(err)
@@ -36,7 +36,7 @@ func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
 		panic(err)
 	}
 
-	consumer := idx.New("consumer")
+	consumer := idx.New("c")
 	if _, err := queries.EnsureConsumer(consumer, stream, topic)(ctx, conn); err != nil {
 		panic(err)
 	}

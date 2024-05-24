@@ -7,11 +7,13 @@ import (
 
 	"github.com/kanthorlabs/common/commands/migrate"
 	"github.com/kanthorlabs/kanthorq/cmd/base"
+	"github.com/kanthorlabs/kanthorq/cmd/data/seed"
 )
 
 func main() {
 	_, command := base.New()
 	command.AddCommand(migrate.New())
+	command.AddCommand(seed.New())
 
 	defer func() {
 		if r := recover(); r != nil {

@@ -21,7 +21,7 @@ func NewDown() *cobra.Command {
 			}
 
 			if step > -1 {
-				return errors.New("migrate up does not allow go forward")
+				return errors.New("migrate down does not allow go forward")
 			}
 
 			return nil
@@ -51,7 +51,7 @@ func NewDown() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().IntP("step", "", -1, "step you want to go backward")
+	command.Flags().Int("step", -1, "step you want to go backward")
 
 	return command
 }

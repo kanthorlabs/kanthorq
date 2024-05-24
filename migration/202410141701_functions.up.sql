@@ -24,7 +24,9 @@ BEGIN
             created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
             PRIMARY KEY (topic, event_id)
         );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_event_id ON "kanthorq_stream_%s" USING btree("event_id");
         $QUERY$,
+        req_stream_name,
         req_stream_name
     );
     EXECUTE stream_create_sql;

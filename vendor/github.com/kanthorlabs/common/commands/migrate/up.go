@@ -51,7 +51,7 @@ func NewUp() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().IntP("step", "", 1, "step you want to go forward")
+	command.Flags().Int("step", 1, "step you want to go forward")
 
 	return command
 }

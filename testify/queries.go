@@ -15,7 +15,7 @@ func QueryTruncateConsumer() func(ctx context.Context, conn *pgxpool.Pool) error
 			-- Loop through each entry in the kanthorq_consumer table
 			FOR rec IN SELECT name FROM kanthorq_consumer LOOP
 					-- Construct the SQL statement to drop the table
-					drop_table_sql := 'DROP TABLE IF EXISTS kanthorq_consumer_' || rec.name || ' CASCADE;';
+					drop_table_sql := 'DROP TABLE IF EXISTS "kanthorq_consumer_' || rec.name || '" CASCADE;';
 					-- Execute the drop table statement
 					EXECUTE drop_table_sql;
 			END LOOP;
@@ -39,7 +39,7 @@ func QueryTruncateStream() func(ctx context.Context, conn *pgxpool.Pool) error {
 			-- Loop through each entry in the kanthorq_stream table
 			FOR rec IN SELECT name FROM kanthorq_stream LOOP
 					-- Construct the SQL statement to drop the table
-					drop_table_sql := 'DROP TABLE IF EXISTS kanthorq_stream_' || rec.name || ' CASCADE;';
+					drop_table_sql := 'DROP TABLE IF EXISTS "kanthorq_stream_' || rec.name || '" CASCADE;';
 					-- Execute the drop table statement
 					EXECUTE drop_table_sql;
 			END LOOP;
