@@ -10,8 +10,8 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=changemenow
+      - POSTGRES_USER=$TEST_CONTAINER_POSTGRES_USER
+      - POSTGRES_PASSWORD=$TEST_CONTAINER_POSTGRES_PASSWORD
     volumes:
       - $PWD/data:/kanthorlabs/kanthorq/data
     user: postgres
