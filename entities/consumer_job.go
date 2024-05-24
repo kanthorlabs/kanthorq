@@ -12,6 +12,7 @@ type ConsumerJob struct {
 	EventId   string `json:"event_id"`
 	Name      string `json:"name"`
 	Topic     string `json:"topic"`
+	State     int16  `json:"state"`
 	PullCount int16  `json:"pull_count"`
 	CreatedAt int64  `json:"created_at"`
 	UpdatedAt int64  `json:"updated_at"`

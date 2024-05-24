@@ -7,6 +7,9 @@ DECLARE
     stream_create_sql TEXT;
     ts BIGINT := EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000;
 BEGIN
+    -- the default configuration of PostgreSQL is to treat all unquoted identifiers (such as table names) as case-insensitive
+    -- make sure all table names are quoted
+
     INSERT INTO kanthorq_stream(name)
     VALUES(req_stream_name)
     ON CONFLICT(name) DO UPDATE 
@@ -15,12 +18,12 @@ BEGIN
 
     stream_create_sql := FORMAT(
         $QUERY$
-        CREATE TABLE IF NOT EXISTS kanthorq_stream_%s (
+        CREATE TABLE IF NOT EXISTS "kanthorq_stream_%s" (
             topic VARCHAR(128) NOT NULL,
             event_id VARCHAR(64) NOT NULL,
             created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
             PRIMARY KEY (topic, event_id)
-        )
+        );
         $QUERY$,
         req_stream_name
     );
@@ -37,6 +40,9 @@ DECLARE
     consumer_create_sql TEXT;
     ts BIGINT := EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000;
 BEGIN
+    -- the default configuration of PostgreSQL is to treat all unquoted identifiers (such as table names) as case-insensitive
+    -- make sure all table names are quoted
+
     INSERT INTO kanthorq_consumer(name, stream_name, topic, cursor)
     VALUES(req_consumer_name, req_stream_name, req_topic, '')
     ON CONFLICT(name) DO UPDATE 
@@ -51,15 +57,16 @@ BEGIN
 
     consumer_create_sql := FORMAT(
         $QUERY$
-        CREATE TABLE IF NOT EXISTS kanthorq_consumer_%s (
+        CREATE TABLE IF NOT EXISTS "kanthorq_consumer_%s" (
             event_id VARCHAR(64) NOT NULL,
             name VARCHAR(128) NOT NULL,
             topic VARCHAR(128) NOT NULL,
+            state SMALLINT NOT NULL DEFAULT 0,
             pull_count SMALLINT NOT NULL DEFAULT 0,
             created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
             updated_at BIGINT NOT NULL DEFAULT 0,
             PRIMARY KEY (event_id)
-        )
+        );
         $QUERY$,
         req_consumer_name
     );
@@ -76,6 +83,9 @@ DECLARE
     consumer_cursor_next VARCHAR(64);
     consumer_job_insert_sql TEXT;
 BEGIN
+    -- the default configuration of PostgreSQL is to treat all unquoted identifiers (such as table names) as case-insensitive
+    -- make sure all table names are quoted
+
     -- Select the topic and cursor with a lock
     -- ignore already locked row
     SELECT *
@@ -92,14 +102,14 @@ BEGIN
     consumer_job_insert_sql := FORMAT(
         $QUERY$
         WITH jobs AS (
-            INSERT INTO kanthorq_consumer_%s (name, event_id, topic)
-                SELECT %L as name, event_id, topic
-                FROM kanthorq_stream_%s
+            INSERT INTO "kanthorq_consumer_%s" (event_id, name, topic)
+                SELECT event_id, %L as name, topic
+                FROM "kanthorq_stream_%s"
                 WHERE topic = %L AND event_id > %L 
                 ORDER BY event_id
                 LIMIT %s
             ON CONFLICT(event_id) DO UPDATE 
-            SET pull_count = kanthorq_consumer_%s.pull_count + 1
+            SET pull_count = "kanthorq_consumer_%s".pull_count + 1
             RETURNING event_id
         )
         SELECT max(event_id) AS consumer_cursor_next FROM jobs;
