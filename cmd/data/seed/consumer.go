@@ -1,6 +1,7 @@
 package seed
 
 import (
+	"errors"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -44,8 +45,8 @@ func NewConsumer() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			job := idx.New("job")
-			if _, err := queries.EnsureConsumer(job, stream, topic)(cmd.Context(), conn); err != nil {
+			consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(cmd.Context(), conn)
+			if err != nil {
 				return err
 			}
 
@@ -53,18 +54,24 @@ func NewConsumer() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			c, err := queries.ConsumerPull(job, count)(cmd.Context(), conn)
+			tx, err := conn.Begin(cmd.Context())
 			if err != nil {
+				return err
+			}
+			cursor, err := queries.ConsumerPull(consumer, count)(cmd.Context(), tx)
+			if err != nil {
+				return errors.Join(err, tx.Rollback(cmd.Context()))
+			}
+			if err := tx.Commit(cmd.Context()); err != nil {
 				return err
 			}
 
 			if verbose, err := cmd.Flags().GetBool("verbose"); err == nil && verbose {
 				t := table.NewWriter()
 				t.SetOutputMirror(os.Stdout)
-				t.AppendHeader(table.Row{"#", "Consumer", "Stream", "Topic", "Records"})
+				t.AppendHeader(table.Row{"#", "Consumer", "Stream", "Topic", "Cursor", "Records"})
 				t.AppendRows([]table.Row{
-					{1, c.Name, stream, topic, count},
+					{1, consumer.Name, stream, topic, cursor, count},
 				})
 				t.Render()
 			}

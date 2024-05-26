@@ -15,9 +15,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
+func Benchmark_ConsumerPull_DifferentSize(b *testing.B) {
 	ctx := context.Background()
-	container, err := testify.SpinPostgres(ctx, "kanthorlabs-kanthorq-storage-consumer-pull-size")
+	container, err := testify.SpinPostgres(ctx, "kanthorlabs-kanthorq-storage-consumer-pull")
 	require.NoError(b, err)
 
 	uri, err := containers.PostgresConnectionString(ctx, container)
@@ -35,9 +35,8 @@ func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
 	if err := testify.SeedStreamEvents(ctx, conn, stream, topic, 1000000); err != nil {
 		panic(err)
 	}
-
-	job := idx.New("job")
-	if _, err := queries.EnsureConsumer(job, stream, topic)(ctx, conn); err != nil {
+	consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, conn)
+	if err != nil {
 		panic(err)
 	}
 
@@ -45,17 +44,19 @@ func BenchmarkPOC_ConsumerPull_DifferentSize(b *testing.B) {
 	for i := 0; i < 10; i++ {
 		size := ConsumerPullSize * (i + 1)
 		b.Run(fmt.Sprintf("size %d", size), func(bs *testing.B) {
-			cursor, err := queries.ConsumerPull(job, size)(ctx, conn)
+			tx, err := conn.Begin(ctx)
 			require.NoError(bs, err)
-			require.NotEmpty(bs, cursor.Name)
-			require.NotEmpty(bs, cursor.Next)
+			cursor, err := queries.ConsumerPull(consumer, size)(ctx, tx)
+			require.NoError(bs, err)
+			require.NotEmpty(bs, cursor)
+			require.NoError(bs, tx.Commit(ctx))
 		})
 	}
 }
 
-func BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
+func Benchmark_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 	ctx := context.Background()
-	container, err := testify.SpinPostgres(ctx, "kanthorlabs-kanthorq-storage-consumer-pull-concurrency")
+	container, err := testify.SpinPostgres(ctx, "kanthorlabs-kanthorq-storage-consumer-pull")
 	require.NoError(b, err)
 
 	uri, err := containers.PostgresConnectionString(ctx, container)
@@ -74,16 +75,64 @@ func BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 		panic(err)
 	}
 
+	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			job := idx.New("job")
-			_, err := queries.EnsureConsumer(job, stream, topic)(ctx, conn)
+			consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, conn)
 			require.NoError(b, err)
 
-			cursor, err := queries.ConsumerPull(job, ConsumerPullSize)(ctx, conn)
+			tx, err := conn.Begin(ctx)
 			require.NoError(b, err)
-			require.NotEmpty(b, cursor.Name)
-			require.NotEmpty(b, cursor.Next)
+			cursor, err := queries.ConsumerPull(consumer, ConsumerPullSize)(ctx, tx)
+			require.NoError(b, err)
+			require.NotEmpty(b, cursor)
+			require.NoError(b, tx.Commit(ctx))
 		}
 	})
+}
+
+func Benchmark_ConsumerJobPull_DifferentSize(b *testing.B) {
+	ctx := context.Background()
+	container, err := testify.SpinPostgres(ctx, "kanthorlabs-kanthorq-storage-consumer-job-pull")
+	require.NoError(b, err)
+
+	uri, err := containers.PostgresConnectionString(ctx, container)
+	require.NoError(b, err)
+
+	conn, err := pgxpool.New(ctx, uri)
+	require.NoError(b, err)
+	defer conn.Close()
+
+	stream := idx.New("s")
+	topic := idx.New("topic")
+	if _, err := queries.EnsureStream(stream)(ctx, conn); err != nil {
+		panic(err)
+	}
+	if err := testify.SeedStreamEvents(ctx, conn, stream, topic, 1000000); err != nil {
+		panic(err)
+	}
+	consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, conn)
+	if err != nil {
+		panic(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < 10; i++ {
+		size := ConsumerJobPullSize * (i + 1)
+		b.Run(fmt.Sprintf("size %d", size), func(bs *testing.B) {
+			tx, err := conn.Begin(ctx)
+			require.NoError(b, err)
+
+			cursor, err := queries.ConsumerPull(consumer, size)(ctx, tx)
+			require.NoError(b, err)
+			require.NotEmpty(b, cursor)
+
+			events, err := queries.ConsumerJobPull(consumer, size)(ctx, tx)
+
+			require.NoError(bs, err)
+			require.NotNil(bs, events)
+			require.Equal(bs, size, len(events))
+			require.NoError(b, tx.Commit(ctx))
+		})
+	}
 }

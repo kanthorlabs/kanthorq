@@ -6,11 +6,10 @@ func CollectionConsumerJob(name string) string {
 	return fmt.Sprintf("%s_%s", CollectionConsumer, name)
 }
 
-var CollectionConsumerJobProps = []string{"event_id", "name", "topic", "created_at", "updated_at"}
+var CollectionConsumerJobProps = []string{"event_id", "topic", "state", "schedule_at", "attempt_count", "attempted_at", "created_at", "updated_at"}
 
 type ConsumerJob struct {
 	EventId      string `json:"event_id"`
-	Name         string `json:"name"`
 	Topic        string `json:"topic"`
 	State        int16  `json:"state"`
 	ScheduleAt   int64  `json:"schedule_at"`
@@ -23,27 +22,27 @@ type ConsumerJob struct {
 type JobState int
 
 const (
-	Discarded JobState = -101
-	Cancelled JobState = -100
-	Available JobState = 0
-	Running   JobState = 1
-	Completed JobState = 100
-	Retryable JobState = 101
+	StateDiscarded JobState = -101
+	StateCancelled JobState = -100
+	StateAvailable JobState = 0
+	StateRunning   JobState = 1
+	StateCompleted JobState = 100
+	StateRetryable JobState = 101
 )
 
 func (js JobState) String() string {
 	switch js {
-	case Discarded:
+	case StateDiscarded:
 		return "Discarded"
-	case Cancelled:
+	case StateCancelled:
 		return "Cancelled"
-	case Available:
+	case StateAvailable:
 		return "Available"
-	case Running:
+	case StateRunning:
 		return "Running"
-	case Completed:
+	case StateCompleted:
 		return "Completed"
-	case Retryable:
+	case StateRetryable:
 		return "Retryable"
 	default:
 		return fmt.Sprintf("Unknown JobState (%d)", js)

@@ -13,11 +13,12 @@ migrate-down:
 
 benchmark: benchmark-size benchmark-concurrency
 
-benchmark-size:
-	go test -timeout 1h -count=3 -benchtime=1m -bench ^BenchmarkPOC_ConsumerPull_DifferentSize$$ github.com/kanthorlabs/kanthorq | tee BenchmarkPOC_ConsumerPull_DifferentSize.log
+benchmark-consumer-pull:
+	go test -timeout 1h -count=3 -benchmem -benchtime=1m -bench ^Benchmark_ConsumerPull_DifferentSize$$ github.com/kanthorlabs/kanthorq -cpuprofile=Benchmark_ConsumerPull_DifferentSize.prof -memprofile=Benchmark_ConsumerPull_DifferentSize.mem | tee Benchmark_ConsumerPull_DifferentSize.log
+	go test -timeout 1h -count=3 -benchmem -benchtime=1000x -bench ^Benchmark_ConsumerPull_MultipleConsumerReadSameTopic$$ github.com/kanthorlabs/kanthorq | tee Benchmark_ConsumerPull_MultipleConsumerReadSameTopic.log
 
-benchmark-concurrency:
-	go test -timeout 1h -count=3 -benchtime=1000x -bench ^BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic$$ github.com/kanthorlabs/kanthorq | tee BenchmarkPOC_ConsumerPull_MultipleConsumerReadSameTopic.log
+benchmark-consumer-job-pull:
+	go test -timeout 1h -count=3 -benchmem -benchtime=1m -bench ^Benchmark_ConsumerJobPull_DifferentSize$$ github.com/kanthorlabs/kanthorq | tee Benchmark_ConsumerJobPull_DifferentSize.log
 
 seed: seed-stream seed-consumer
 

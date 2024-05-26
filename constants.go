@@ -1,3 +1,6 @@
 package kanthorq
 
-var ConsumerPullSize = 500
+var (
+	ConsumerPullSize    = 100
+	ConsumerJobPullSize = 100
+)

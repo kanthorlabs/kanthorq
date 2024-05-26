@@ -11,9 +11,3 @@ type Consumer struct {
 	CreatedAt  int64  `json:"created_at"`
 	UpdatedAt  int64  `json:"updated_at"`
 }
-
-type ConsumerCursor struct {
-	Name    string `json:"name"`
-	Current string `json:"current"`
-	Next    string `json:"next"`
-}

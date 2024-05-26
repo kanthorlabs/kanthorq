@@ -22,3 +22,8 @@ type StreamEvent struct {
 	EventId   string `json:"event_id"`
 	CreatedAt int64  `json:"created_at"`
 }
+
+type EventPk struct {
+	Topic   string `json:"topic"`
+	EventId string `json:"event_id"`
+}

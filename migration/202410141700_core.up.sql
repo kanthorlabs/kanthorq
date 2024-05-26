@@ -1,4 +1,15 @@
 BEGIN;
+  
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'stream_event') THEN
+  CREATE TYPE stream_event AS (
+      topic varchar(128),
+      event_id varchar(64),
+      created_at BIGINT 
+  );
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS kanthorq_stream (
   name VARCHAR(128) NOT NULL,
