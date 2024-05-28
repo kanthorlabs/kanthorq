@@ -14,11 +14,26 @@ migrate-down:
 benchmark: benchmark-size benchmark-concurrency
 
 benchmark-consumer-pull:
-	go test -timeout 1h -count=3 -benchmem -benchtime=1m -bench ^Benchmark_ConsumerPull_DifferentSize$$ github.com/kanthorlabs/kanthorq -cpuprofile=Benchmark_ConsumerPull_DifferentSize.prof -memprofile=Benchmark_ConsumerPull_DifferentSize.mem | tee Benchmark_ConsumerPull_DifferentSize.log
-	go test -timeout 1h -count=3 -benchmem -benchtime=1000x -bench ^Benchmark_ConsumerPull_MultipleConsumerReadSameTopic$$ github.com/kanthorlabs/kanthorq | tee Benchmark_ConsumerPull_MultipleConsumerReadSameTopic.log
+	go test -timeout 1h -count=3 -benchmem -benchtime=1m \
+		-bench ^Benchmark_ConsumerPull_DifferentSize$$ 
+		-cpuprofile=Benchmark_ConsumerPull_DifferentSize.prof.out -memprofile=Benchmark_ConsumerPull_DifferentSize.mem.out \
+		github.com/kanthorlabs/kanthorq | tee Benchmark_ConsumerPull_DifferentSize.log
+
+	go test -timeout 1h -count=3 -benchmem -benchtime=1000x \
+		-bench ^Benchmark_ConsumerPull_MultipleConsumerReadSameTopic$$ \
+		-cpuprofile=Benchmark_ConsumerPull_MultipleConsumerReadSameTopic.prof.out -memprofile=Benchmark_ConsumerPull_MultipleConsumerReadSameTopic.mem.out \
+		github.com/kanthorlabs/kanthorq | tee Benchmark_ConsumerPull_MultipleConsumerReadSameTopic.log
 
 benchmark-consumer-job-pull:
-	go test -timeout 1h -count=3 -benchmem -benchtime=1m -bench ^Benchmark_ConsumerJobPull_DifferentSize$$ github.com/kanthorlabs/kanthorq | tee Benchmark_ConsumerJobPull_DifferentSize.log
+	go test -timeout 1h -count=3 -benchmem -benchtime=1m \
+		-bench ^Benchmark_ConsumerJobPull_DifferentSize$$ \
+		-cpuprofile=Benchmark_ConsumerJobPull_DifferentSize.prof.out -memprofile=Benchmark_ConsumerJobPull_DifferentSize.mem.out \
+		github.com/kanthorlabs/kanthorq | tee Benchmark_ConsumerJobPull_DifferentSize.log
+
+	go test -timeout 1h -count=3 -benchmem -benchtime=1000x \
+		-bench ^Benchmark_ConsumerJobPull_MultipleConsumerReadSameTopic$$ \
+		-cpuprofile=Benchmark_ConsumerJobPull_MultipleConsumerReadSameTopic.prof.out -memprofile=Benchmark_ConsumerJobPull_MultipleConsumerReadSameTopic.mem.out \
+		github.com/kanthorlabs/kanthorq | tee Benchmark_ConsumerJobPull_MultipleConsumerReadSameTopic.log
 
 seed: seed-stream seed-consumer
 
