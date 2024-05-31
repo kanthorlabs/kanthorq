@@ -15,7 +15,7 @@ benchmark: benchmark-consumer-pull benchmark-consumer-job-pull
 
 benchmark-consumer-pull:
 	go test -timeout 1h -count=3 -benchmem -benchtime=1m \
-		-bench ^Benchmark_ConsumerPull_DifferentSize$$ 
+		-bench ^Benchmark_ConsumerPull_DifferentSize$$ \
 		-cpuprofile=Benchmark_ConsumerPull_DifferentSize.prof.out -memprofile=Benchmark_ConsumerPull_DifferentSize.mem.out \
 		github.com/kanthorlabs/kanthorq | tee Benchmark_ConsumerPull_DifferentSize.log
 

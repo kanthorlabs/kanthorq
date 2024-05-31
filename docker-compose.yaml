@@ -14,7 +14,6 @@ services:
       - POSTGRES_PASSWORD=$TEST_POSTGRES_PASSWORD
     volumes:
       - $PWD/data:/kanthorlabs/kanthorq/data
-      - $PWD/logs:/kanthorlabs/kanthorq/logs
     user: postgres
     command: >
       postgres 

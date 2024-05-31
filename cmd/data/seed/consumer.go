@@ -37,6 +37,11 @@ func NewConsumer() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conn := cmd.Context().Value(connection).(*pgxpool.Pool)
 
+			tx, err := conn.Begin(cmd.Context())
+			if err != nil {
+				return err
+			}
+
 			stream, err := cmd.Flags().GetString("stream")
 			if err != nil {
 				return err
@@ -45,16 +50,12 @@ func NewConsumer() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(cmd.Context(), conn)
+			consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(cmd.Context(), tx)
 			if err != nil {
-				return err
+				return errors.Join(err, tx.Rollback(cmd.Context()))
 			}
 
 			count, err := cmd.Flags().GetInt("count")
-			if err != nil {
-				return err
-			}
-			tx, err := conn.Begin(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -62,6 +63,7 @@ func NewConsumer() *cobra.Command {
 			if err != nil {
 				return errors.Join(err, tx.Rollback(cmd.Context()))
 			}
+
 			if err := tx.Commit(cmd.Context()); err != nil {
 				return err
 			}

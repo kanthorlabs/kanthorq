@@ -2,6 +2,7 @@ package kanthorq
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -21,14 +22,19 @@ func Benchmark_ConsumerPull_DifferentSize(b *testing.B) {
 
 	stream := idx.New("s")
 	topic := idx.New("topic")
-	if _, err := queries.EnsureStream(stream)(ctx, conn); err != nil {
-		panic(err)
+
+	tx, err := conn.Begin(ctx)
+	require.NoError(b, err)
+	if _, err := queries.EnsureStream(stream)(ctx, tx); err != nil {
+		panic(errors.Join(err, tx.Rollback(ctx)))
 	}
-	if err := testify.SeedStreamEvents(ctx, conn, stream, topic, 1000000); err != nil {
-		panic(err)
-	}
-	consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, conn)
+	consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, tx)
 	if err != nil {
+		panic(errors.Join(err, tx.Rollback(ctx)))
+	}
+	require.NoError(b, tx.Commit(ctx))
+
+	if err := testify.SeedStreamEvents(ctx, conn, stream, topic, 1000000); err != nil {
 		panic(err)
 	}
 
@@ -52,11 +58,16 @@ func Benchmark_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 	require.NoError(b, err)
 	defer conn.Close()
 
-	stream := idx.New("stream")
+	stream := idx.New("s")
 	topic := idx.New("topic")
-	if _, err := queries.EnsureStream(stream)(ctx, conn); err != nil {
-		panic(err)
+
+	tx, err := conn.Begin(ctx)
+	require.NoError(b, err)
+	if _, err := queries.EnsureStream(stream)(ctx, tx); err != nil {
+		panic(errors.Join(err, tx.Rollback(ctx)))
 	}
+	require.NoError(b, tx.Commit(ctx))
+
 	if err := testify.SeedStreamEvents(ctx, conn, stream, topic, 1000000); err != nil {
 		panic(err)
 	}
@@ -64,13 +75,15 @@ func Benchmark_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, conn)
-			require.NoError(b, err)
-
 			tx, err := conn.Begin(ctx)
 			require.NoError(b, err)
+
+			consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, tx)
+			require.NoError(b, err)
+
 			cursor, err := queries.ConsumerPull(consumer, ConsumerPullSize)(ctx, tx)
 			require.NoError(b, err)
+
 			require.NotEmpty(b, cursor)
 			require.NoError(b, tx.Commit(ctx))
 		}
@@ -85,14 +98,19 @@ func Benchmark_ConsumerJobPull_DifferentSize(b *testing.B) {
 
 	stream := idx.New("s")
 	topic := idx.New("topic")
-	if _, err := queries.EnsureStream(stream)(ctx, conn); err != nil {
-		panic(err)
+
+	tx, err := conn.Begin(ctx)
+	require.NoError(b, err)
+	if _, err := queries.EnsureStream(stream)(ctx, tx); err != nil {
+		panic(errors.Join(err, tx.Rollback(ctx)))
 	}
-	if err := testify.SeedStreamEvents(ctx, conn, stream, topic, 1000000); err != nil {
-		panic(err)
-	}
-	consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, conn)
+	consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, tx)
 	if err != nil {
+		panic(errors.Join(err, tx.Rollback(ctx)))
+	}
+	require.NoError(b, tx.Commit(ctx))
+
+	if err := testify.SeedStreamEvents(ctx, conn, stream, topic, 1000000); err != nil {
 		panic(err)
 	}
 
@@ -123,11 +141,16 @@ func Benchmark_ConsumerJobPull_MultipleConsumerReadSameTopic(b *testing.B) {
 	require.NoError(b, err)
 	defer conn.Close()
 
-	stream := idx.New("stream")
+	stream := idx.New("s")
 	topic := idx.New("topic")
-	if _, err := queries.EnsureStream(stream)(ctx, conn); err != nil {
-		panic(err)
+
+	tx, err := conn.Begin(ctx)
+	require.NoError(b, err)
+	if _, err := queries.EnsureStream(stream)(ctx, tx); err != nil {
+		panic(errors.Join(err, tx.Rollback(ctx)))
 	}
+	require.NoError(b, tx.Commit(ctx))
+
 	if err := testify.SeedStreamEvents(ctx, conn, stream, topic, 1000000); err != nil {
 		panic(err)
 	}
@@ -135,10 +158,10 @@ func Benchmark_ConsumerJobPull_MultipleConsumerReadSameTopic(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, conn)
+			tx, err := conn.Begin(ctx)
 			require.NoError(b, err)
 
-			tx, err := conn.Begin(ctx)
+			consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(ctx, tx)
 			require.NoError(b, err)
 
 			cursor, err := queries.ConsumerPull(consumer, ConsumerJobPullSize)(ctx, tx)

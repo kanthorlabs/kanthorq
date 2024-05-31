@@ -1,40 +1,5 @@
 BEGIN;
 
-CREATE OR REPLACE FUNCTION stream_ensure(req_stream_name VARCHAR(128))
-RETURNS kanthorq_stream AS $$
-DECLARE 
-  stream kanthorq_stream;
-  stream_create_sql TEXT;
-  ts BIGINT := EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000;
-BEGIN
-  -- the default configuration of PostgreSQL is to treat all unquoted identifiers (such as table names) as case-insensitive
-  -- make sure all table names are quoted
-
-  INSERT INTO kanthorq_stream(name)
-  VALUES(req_stream_name)
-  ON CONFLICT(name) DO UPDATE 
-  SET updated_at = ts
-  RETURNING * INTO stream;
-
-  stream_create_sql := FORMAT(
-    $QUERY$
-      CREATE TABLE IF NOT EXISTS "kanthorq_stream_%s" (
-        topic VARCHAR(128) NOT NULL,
-        event_id VARCHAR(64) NOT NULL,
-        created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
-        PRIMARY KEY (topic, event_id)
-      );
-      CREATE UNIQUE INDEX IF NOT EXISTS idx_event_id ON "kanthorq_stream_%s" USING btree("event_id");
-    $QUERY$,
-    req_stream_name,
-    req_stream_name
-  );
-  EXECUTE stream_create_sql;
-
-  RETURN stream;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION consumer_ensure(req_consumer_name VARCHAR(128), req_stream_name VARCHAR(128), req_topic VARCHAR(128))
 RETURNS kanthorq_consumer AS $$
 DECLARE 

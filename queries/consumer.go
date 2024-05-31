@@ -15,6 +15,7 @@ func ConsumerPull(consumer *entities.Consumer, size int) func(ctx context.Contex
 		"SELECT cursor FROM %s WHERE name = @consumer_name FOR UPDATE SKIP LOCKED",
 		ctable,
 	)
+
 	statement := `
 WITH jobs AS (
 	INSERT INTO %s (event_id, topic)

@@ -1,6 +1,7 @@
 package seed
 
 import (
+	"errors"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -42,11 +43,20 @@ func NewStream() *cobra.Command {
 			}
 			defer conn.Close()
 
+			tx, err := conn.Begin(cmd.Context())
+			if err != nil {
+				return err
+			}
+
 			stream, err := cmd.Flags().GetString("stream")
 			if err != nil {
 				return err
 			}
-			if _, err := queries.EnsureStream(stream)(cmd.Context(), conn); err != nil {
+			if _, err := queries.EnsureStream(stream)(cmd.Context(), tx); err != nil {
+				return errors.Join(err, tx.Rollback(cmd.Context()))
+			}
+
+			if err := tx.Commit(cmd.Context()); err != nil {
 				return err
 			}
 
