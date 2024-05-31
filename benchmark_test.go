@@ -7,8 +7,6 @@ import (
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/kanthorlabs/common/containers"
 	"github.com/kanthorlabs/common/idx"
 	"github.com/kanthorlabs/kanthorq/queries"
 	"github.com/kanthorlabs/kanthorq/testify"
@@ -17,13 +15,7 @@ import (
 
 func Benchmark_ConsumerPull_DifferentSize(b *testing.B) {
 	ctx := context.Background()
-	container, err := testify.SpinPostgres(ctx, "kanthorlabs-kanthorq-storage-consumer-pull")
-	require.NoError(b, err)
-
-	uri, err := containers.PostgresConnectionString(ctx, container)
-	require.NoError(b, err)
-
-	conn, err := pgxpool.New(ctx, uri)
+	conn, err := testify.SetupPostgres(ctx)
 	require.NoError(b, err)
 	defer conn.Close()
 
@@ -56,13 +48,7 @@ func Benchmark_ConsumerPull_DifferentSize(b *testing.B) {
 
 func Benchmark_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 	ctx := context.Background()
-	container, err := testify.SpinPostgres(ctx, "kanthorlabs-kanthorq-storage-consumer-pull")
-	require.NoError(b, err)
-
-	uri, err := containers.PostgresConnectionString(ctx, container)
-	require.NoError(b, err)
-
-	conn, err := pgxpool.New(ctx, uri)
+	conn, err := testify.SetupPostgres(ctx)
 	require.NoError(b, err)
 	defer conn.Close()
 
@@ -93,13 +79,7 @@ func Benchmark_ConsumerPull_MultipleConsumerReadSameTopic(b *testing.B) {
 
 func Benchmark_ConsumerJobPull_DifferentSize(b *testing.B) {
 	ctx := context.Background()
-	container, err := testify.SpinPostgres(ctx, "kanthorlabs-kanthorq-storage-consumer-job-pull")
-	require.NoError(b, err)
-
-	uri, err := containers.PostgresConnectionString(ctx, container)
-	require.NoError(b, err)
-
-	conn, err := pgxpool.New(ctx, uri)
+	conn, err := testify.SetupPostgres(ctx)
 	require.NoError(b, err)
 	defer conn.Close()
 
@@ -139,13 +119,7 @@ func Benchmark_ConsumerJobPull_DifferentSize(b *testing.B) {
 
 func Benchmark_ConsumerJobPull_MultipleConsumerReadSameTopic(b *testing.B) {
 	ctx := context.Background()
-	container, err := testify.SpinPostgres(ctx, "kanthorlabs-kanthorq-storage-consumer-job-pull")
-	require.NoError(b, err)
-
-	uri, err := containers.PostgresConnectionString(ctx, container)
-	require.NoError(b, err)
-
-	conn, err := pgxpool.New(ctx, uri)
+	conn, err := testify.SetupPostgres(ctx)
 	require.NoError(b, err)
 	defer conn.Close()
 

@@ -6,10 +6,10 @@ ifneq (,$(wildcard ./.env))
 endif
 
 migrate-up:
-	go run cmd/data/main.go migrate up -s "file://migration" -d "postgres://kanthorq:changemenow@localhost:5432/kanthorq?sslmode=disable"
+	go run cmd/data/main.go migrate up -s ${TEST_MIGRATION_SOURCE} -d ${TEST_DATABASE_URI}
 
 migrate-down:
-	go run cmd/data/main.go migrate down -s "file://migration" -d "postgres://kanthorq:changemenow@localhost:5432/kanthorq?sslmode=disable"
+	go run cmd/data/main.go migrate down -s ${TEST_MIGRATION_SOURCE} -d ${TEST_DATABASE_URI}
 
 benchmark: benchmark-size benchmark-concurrency
 

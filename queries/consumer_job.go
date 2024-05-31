@@ -30,14 +30,19 @@ ORDER BY topic, event_id;
 			return []*entities.StreamEvent{}, nil
 		}
 
-		var in = make([]string, len(pks))
+		var names = make([]string, len(pks))
+		var args = pgx.NamedArgs{}
 		for i, pk := range pks {
-			in[i] = fmt.Sprintf("('%s', '%s')", pk.Topic, pk.EventId)
+			topic := fmt.Sprintf("topic_%d", i)
+			eventId := fmt.Sprintf("event_id_%d", i)
+
+			names[i] = fmt.Sprintf("(@%s, @%s)", topic, eventId)
+			args[topic] = pk.Topic
+			args[eventId] = pk.EventId
 		}
 
-		// primary key pairs are safe to pass them directly to the query
-		rewrite := fmt.Sprintf(query, strings.Join(in, ","))
-		rows, err := tx.Query(ctx, rewrite)
+		rewrite := fmt.Sprintf(query, strings.Join(names, ","))
+		rows, err := tx.Query(ctx, rewrite, args)
 		if err != nil {
 			return nil, err
 		}
