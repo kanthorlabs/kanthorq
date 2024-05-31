@@ -11,7 +11,7 @@ migrate-up:
 migrate-down:
 	go run cmd/data/main.go migrate down -s ${TEST_MIGRATION_SOURCE} -d ${TEST_DATABASE_URI}
 
-benchmark: benchmark-size benchmark-concurrency
+benchmark: benchmark-consumer-pull benchmark-consumer-job-pull
 
 benchmark-consumer-pull:
 	go test -timeout 1h -count=3 -benchmem -benchtime=1m \
