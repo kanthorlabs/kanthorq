@@ -9,17 +9,17 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func ConsumerEnsure(streamName, name, topic string) *ConsumerEnsureReq {
-	return &ConsumerEnsureReq{StreamName: streamName, Name: name, Topic: topic}
+func ConsumerEnsure(stream *entities.Stream, name, topic string) *ConsumerEnsureReq {
+	return &ConsumerEnsureReq{Stream: stream, Name: name, Topic: topic}
 }
 
 //go:embed consumer_ensure.sql
 var ConsumerEnsureSQL string
 
 type ConsumerEnsureReq struct {
-	StreamName string
-	Name       string
-	Topic      string
+	Stream *entities.Stream
+	Name   string
+	Topic  string
 }
 type ConsumerEnsureRes struct {
 	*entities.Consumer
@@ -27,7 +27,7 @@ type ConsumerEnsureRes struct {
 
 func (req *ConsumerEnsureReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerEnsureRes, error) {
 	args := pgx.NamedArgs{
-		"stream_name":   req.StreamName,
+		"stream_name":   req.Stream.Name,
 		"consumer_name": req.Name,
 		"topic":         req.Topic,
 	}

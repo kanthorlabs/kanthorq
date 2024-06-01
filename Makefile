@@ -13,11 +13,3 @@ migrate-up:
 
 migrate-down:
 	go run cmd/data/main.go migrate down -s ${TEST_MIGRATION_SOURCE} -d ${TEST_DATABASE_URI}
-
-seed: seed-stream seed-consumer
-
-seed-stream:
-	go run cmd/data/main.go seed stream --clean -v
-
-seed-consumer:
-	go run cmd/data/main.go seed consumer --clean -v

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +20,7 @@ func TestConsumerEnsure(t *testing.T) {
 		require.NoError(t, err)
 
 		ensure, err := ConsumerEnsure(
-			testify.Fake.RandomStringWithLength(32),
+			&entities.Stream{Name: testify.Fake.RandomStringWithLength(32)},
 			testify.Fake.RandomStringWithLength(32),
 			testify.Fake.RandomStringWithLength(32),
 		).Do(ctx, tx)

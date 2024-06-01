@@ -26,7 +26,7 @@ func TestConsumerJobPull(t *testing.T) {
 		require.NotNil(t, s.Stream)
 
 		c, err := ConsumerEnsure(
-			s.Name,
+			s.Stream,
 			testify.Fake.RandomStringWithLength(32),
 			testify.Fake.RandomStringWithLength(32),
 		).Do(ctx, tx)
