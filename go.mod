@@ -7,6 +7,7 @@ toolchain go1.22.3
 require (
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/jackc/pgx/v5 v5.5.5
+	github.com/jaswdr/faker/v2 v2.3.0
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/kanthorlabs/common v0.0.0-20240524142848-8ffcee55badc
 	github.com/spf13/cobra v1.8.0

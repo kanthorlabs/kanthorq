@@ -9,7 +9,7 @@ import (
 	"github.com/kanthorlabs/common/commands"
 	"github.com/kanthorlabs/common/idx"
 	"github.com/kanthorlabs/kanthorq"
-	"github.com/kanthorlabs/kanthorq/queries"
+	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/spf13/cobra"
 )
@@ -50,7 +50,7 @@ func NewConsumer() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			consumer, err := queries.EnsureConsumer(idx.New("job"), stream, topic)(cmd.Context(), tx)
+			ensure, err := (&api.ConsumerEnsureReq{stream, idx.New("job"), topic}).Do(cmd.Context(), tx)
 			if err != nil {
 				return errors.Join(err, tx.Rollback(cmd.Context()))
 			}
@@ -59,7 +59,7 @@ func NewConsumer() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cursor, err := queries.ConsumerPull(consumer, count)(cmd.Context(), tx)
+			cursor, err := (&api.ConsumerPullReq{ensure.Consumer, count}).Do(cmd.Context(), tx)
 			if err != nil {
 				return errors.Join(err, tx.Rollback(cmd.Context()))
 			}
@@ -73,7 +73,7 @@ func NewConsumer() *cobra.Command {
 				t.SetOutputMirror(os.Stdout)
 				t.AppendHeader(table.Row{"#", "Consumer", "Stream", "Topic", "Cursor", "Records"})
 				t.AppendRows([]table.Row{
-					{1, consumer.Name, stream, topic, cursor, count},
+					{1, ensure.Consumer.Name, stream, topic, cursor, count},
 				})
 				t.Render()
 			}

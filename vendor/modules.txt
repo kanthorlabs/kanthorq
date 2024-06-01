@@ -64,12 +64,16 @@ github.com/jackc/pgx/v5/pgxpool
 ## explicit; go 1.19
 github.com/jackc/puddle/v2
 github.com/jackc/puddle/v2/internal/genstack
+# github.com/jaswdr/faker/v2 v2.3.0
+## explicit; go 1.20
+github.com/jaswdr/faker/v2
 # github.com/jedib0t/go-pretty/v6 v6.5.9
 ## explicit; go 1.17
 github.com/jedib0t/go-pretty/v6/table
 github.com/jedib0t/go-pretty/v6/text
 # github.com/kanthorlabs/common v0.0.0-20240524142848-8ffcee55badc
 ## explicit; go 1.21.7
+github.com/kanthorlabs/common/clock
 github.com/kanthorlabs/common/commands
 github.com/kanthorlabs/common/commands/migrate
 github.com/kanthorlabs/common/configuration

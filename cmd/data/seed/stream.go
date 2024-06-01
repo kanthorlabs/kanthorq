@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/kanthorlabs/common/commands"
-	"github.com/kanthorlabs/kanthorq/queries"
+	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/spf13/cobra"
 )
@@ -52,7 +52,7 @@ func NewStream() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if _, err := queries.EnsureStream(stream)(cmd.Context(), tx); err != nil {
+			if _, err := (&api.StreamEnsureReq{stream}).Do(cmd.Context(), tx); err != nil {
 				return errors.Join(err, tx.Rollback(cmd.Context()))
 			}
 

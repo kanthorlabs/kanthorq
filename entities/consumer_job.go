@@ -6,7 +6,16 @@ func CollectionConsumerJob(name string) string {
 	return fmt.Sprintf("%s_%s", CollectionConsumer, name)
 }
 
-var CollectionConsumerJobProps = []string{"event_id", "topic", "state", "schedule_at", "attempt_count", "attempted_at", "created_at", "updated_at"}
+var CollectionConsumerJobProps = []string{
+	"event_id",
+	"topic",
+	"state",
+	"schedule_at",
+	"attempt_count",
+	"attempted_at",
+	"created_at",
+	"updated_at",
+}
 
 type ConsumerJob struct {
 	EventId      string `json:"event_id"`
