@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/kanthorlabs/common/clock"
@@ -40,15 +39,15 @@ func TestConsumerJobMarkRetry(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		events := testify.GenStreamEvents(ctx, testify.StreamName(5), 10)
-		var maps = make(map[string]error, 0)
-		for _, event := range events {
-			maps[event.EventId] = errors.New(event.EventId)
+		events := testify.GenStreamEvents(ctx, testify.Topic(5), 10)
+		ids := make([]string, len(events))
+		for i, event := range events {
+			ids[i] = event.EventId
 		}
 
-		r, err := ConsumerJobMarkRetry(c.Consumer, maps).Do(ctx, tx, clock.New())
+		r, err := ConsumerJobMarkRetry(c.Consumer, ids).Do(ctx, tx, clock.New())
 		require.NoError(t, err)
-		require.Equal(t, len(events), len(r.Status))
+		require.Equal(t, len(events), len(r.Updated))
 
 		require.NoError(t, tx.Commit(ctx))
 	})

@@ -18,7 +18,7 @@ func TestPublisher(t *testing.T) {
 	pub, err := Pub(context.Background(), pool, name)
 	require.NoError(t, err)
 
-	events := testify.GenStreamEvents(context.Background(), name, 1000)
+	events := testify.GenStreamEvents(context.Background(), testify.Topic(5), 1000)
 
 	err = pub.Send(context.Background(), events)
 	require.NoError(t, err)

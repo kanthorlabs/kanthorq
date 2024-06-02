@@ -37,8 +37,8 @@ func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx, clock clock.Cl
 	command := ConsumerJobStateChange(
 		req.Consumer,
 		req.Size,
+		entities.StateAvailable,
 		entities.StateRunning,
-		entities.StateCompleted,
 		req.VisibilityTimeout,
 	)
 	changes, err := command.Do(ctx, tx, clock)

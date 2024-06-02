@@ -10,9 +10,10 @@ var CollectionConsumerJobProps = []string{
 	"event_id",
 	"topic",
 	"state",
-	"schedule_at",
 	"attempt_count",
 	"attempted_at",
+	"schedule_at",
+	"finalized_at",
 	"created_at",
 	"updated_at",
 }
@@ -21,9 +22,10 @@ type ConsumerJob struct {
 	EventId      string `json:"event_id"`
 	Topic        string `json:"topic"`
 	State        int16  `json:"state"`
-	ScheduleAt   int64  `json:"schedule_at"`
 	AttemptCount int16  `json:"attempt_count"`
 	AttemptedAt  int64  `json:"attempted_at"`
+	ScheduleAt   int64  `json:"schedule_at"`
+	FinalizedAt  int64  `json:"finalized_at"`
 	CreatedAt    int64  `json:"created_at"`
 	UpdatedAt    int64  `json:"updated_at"`
 }
@@ -39,8 +41,8 @@ const (
 	StateRetryable JobState = 101
 )
 
-func (js JobState) String() string {
-	switch js {
+func (state JobState) String() string {
+	switch state {
 	case StateDiscarded:
 		return "Discarded"
 	case StateCancelled:
@@ -54,6 +56,6 @@ func (js JobState) String() string {
 	case StateRetryable:
 		return "Retryable"
 	default:
-		return fmt.Sprintf("Unknown JobState (%d)", js)
+		return fmt.Sprintf("Unknown JobState (%d)", state)
 	}
 }

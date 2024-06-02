@@ -32,7 +32,7 @@ type ConsumerPullRes struct {
 }
 
 func (req *ConsumerPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPullRes, error) {
-	cur, err := req.cursor().Do(ctx, tx)
+	cur, err := ConsumerCursorRead(req.Consumer).Do(ctx, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -58,10 +58,4 @@ func (req *ConsumerPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPullRes
 	}
 
 	return &ConsumerPullRes{CurrentCursor: cur.Cursor, NextCursor: next}, nil
-}
-
-func (req *ConsumerPullReq) cursor() *ConsumerCursorReadReq {
-	return &ConsumerCursorReadReq{
-		Consumer: req.Consumer,
-	}
 }

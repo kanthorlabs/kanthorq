@@ -29,7 +29,7 @@ func TestStreamEventPush(t *testing.T) {
 		require.NoError(t, err)
 
 		count := testify.Fake.Int64Between(1000, 5000)
-		events := testify.GenStreamEvents(ctx, testify.StreamName(5), count)
+		events := testify.GenStreamEvents(ctx, testify.Topic(5), count)
 		p, err := StreamEventPush(s.Stream, events).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, p)

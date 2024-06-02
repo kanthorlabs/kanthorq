@@ -11,10 +11,10 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func ConsumerJobMarkRetry(consumer *entities.Consumer, reports map[string]error) *ConsumerJobMarkRetryReq {
+func ConsumerJobMarkRetry(consumer *entities.Consumer, eventIds []string) *ConsumerJobMarkRetryReq {
 	return &ConsumerJobMarkRetryReq{
 		Consumer: consumer,
-		Reports:  reports,
+		EventIds: eventIds,
 	}
 }
 
@@ -23,33 +23,30 @@ var ConsumerJobMarkRetrySQL string
 
 type ConsumerJobMarkRetryReq struct {
 	Consumer *entities.Consumer
-	Reports  map[string]error
+	EventIds []string
 }
 
 type ConsumerJobMarkRetryRes struct {
-	Status map[string]bool
+	Updated map[string]bool
 }
 
 func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx, clock clock.Clock) (*ConsumerJobMarkRetryRes, error) {
-	res := &ConsumerJobMarkRetryRes{Status: make(map[string]bool)}
+	res := &ConsumerJobMarkRetryRes{Updated: make(map[string]bool)}
 
-	var names = make([]string, len(req.Reports))
+	var names = make([]string, len(req.EventIds))
 	var args = pgx.NamedArgs{
-		"complete_state": entities.StateRetryable,
-		"running_state":  entities.StateRunning,
-		"attempt_at":     clock.Now().UnixMilli(),
+		"retry_state":   entities.StateRetryable,
+		"running_state": entities.StateRunning,
+		"attempt_at":    clock.Now().UnixMilli(),
 	}
-	var i = 0
-	for id := range req.Reports {
+	for i, id := range req.EventIds {
 		// we assume that events are not able to update firstly
 		// later if we can update its state, we can set it back to true
-		res.Status[id] = false
+		res.Updated[id] = false
 
 		eventIdBind := fmt.Sprintf("event_id_%d", i)
 		names[i] = fmt.Sprintf("@%s", eventIdBind)
 		args[eventIdBind] = id
-
-		i++
 	}
 
 	table := pgx.Identifier{entities.CollectionConsumerJob(req.Consumer.Name)}.Sanitize()
@@ -67,7 +64,7 @@ func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx, clock clo
 			return nil, err
 		}
 
-		res.Status[id] = true
+		res.Updated[id] = true
 	}
 	if rows.Err() != nil {
 		return nil, rows.Err()

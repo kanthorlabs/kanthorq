@@ -9,8 +9,8 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func ConsumerCursorRead(Consumer *entities.Consumer) *ConsumerCursorReadReq {
-	return &ConsumerCursorReadReq{Consumer}
+func ConsumerCursorRead(consumer *entities.Consumer) *ConsumerCursorReadReq {
+	return &ConsumerCursorReadReq{Consumer: consumer}
 }
 
 //go:embed consumer_cursor_read.sql

@@ -10,8 +10,8 @@ import (
 
 var _ Publisher = (*publisher)(nil)
 
-func Pub(ctx context.Context, pool *pgxpool.Pool, name string) (Publisher, error) {
-	stream, err := Stream(ctx, pool, name)
+func Pub(ctx context.Context, pool *pgxpool.Pool, streamName string) (Publisher, error) {
+	stream, err := Stream(ctx, pool, streamName)
 	if err != nil {
 		return nil, err
 	}
@@ -24,8 +24,9 @@ type Publisher interface {
 }
 
 type publisher struct {
+	pool *pgxpool.Pool
+
 	stream *entities.Stream
-	pool   *pgxpool.Pool
 }
 
 func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) error {

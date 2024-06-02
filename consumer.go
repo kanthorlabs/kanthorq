@@ -19,10 +19,10 @@ func Consumer(ctx context.Context, pool *pgxpool.Pool, consumer *entities.Consum
 		return nil, err
 	}
 
-	r, err := api.ConsumerEnsure(s.Stream, consumer.Name, consumer.Topic).Do(ctx, tx)
+	c, err := api.ConsumerEnsure(s.Stream, consumer.Name, consumer.Topic).Do(ctx, tx)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.Consumer, tx.Commit(ctx)
+	return c.Consumer, tx.Commit(ctx)
 }
