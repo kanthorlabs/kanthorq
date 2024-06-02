@@ -20,9 +20,9 @@ func TestConsumerEnsure(t *testing.T) {
 		require.NoError(t, err)
 
 		ensure, err := ConsumerEnsure(
-			&entities.Stream{Name: testify.Fake.RandomStringWithLength(32)},
-			testify.Fake.RandomStringWithLength(32),
-			testify.Fake.RandomStringWithLength(32),
+			&entities.Stream{Name: testify.StreamName(5)},
+			testify.ConsumerName(5),
+			testify.Topic(5),
 		).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, ensure)

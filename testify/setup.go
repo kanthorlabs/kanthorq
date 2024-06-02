@@ -27,13 +27,5 @@ func SetupPostgres(ctx context.Context) (*pgxpool.Pool, error) {
 	}
 	defer m.Close()
 
-	// cleanup
-	if err := QueryTruncateConsumer()(ctx, conn); err != nil {
-		return nil, err
-	}
-	if err := QueryTruncateStream()(ctx, conn); err != nil {
-		return nil, err
-	}
-
 	return conn, nil
 }

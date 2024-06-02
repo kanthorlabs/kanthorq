@@ -21,15 +21,15 @@ func TestConsumerJobStateChange(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		s, err := StreamEnsure(testify.Fake.RandomStringWithLength(32)).Do(ctx, tx)
+		s, err := StreamEnsure(testify.StreamName(5)).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 		require.NotNil(t, s.Stream)
 
 		c, err := ConsumerEnsure(
 			s.Stream,
-			testify.Fake.RandomStringWithLength(32),
-			testify.Fake.RandomStringWithLength(32),
+			testify.ConsumerName(5),
+			testify.Topic(5),
 		).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, c)

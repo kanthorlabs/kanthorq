@@ -9,12 +9,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStream(t *testing.T) {
+func TestPublisher(t *testing.T) {
 	pool, err := Connection(context.Background(), os.Getenv("TEST_DATABASE_URI"))
 	require.NoError(t, err)
-	require.NotNil(t, pool)
 
-	stream, err := Stream(context.Background(), pool, testify.StreamName(5))
+	name := testify.StreamName(5)
+
+	pub, err := Pub(context.Background(), pool, name)
 	require.NoError(t, err)
-	require.NotNil(t, stream)
+
+	events := testify.GenStreamEvents(context.Background(), name, 1000)
+
+	err = pub.Send(context.Background(), events)
+	require.NoError(t, err)
 }

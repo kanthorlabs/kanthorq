@@ -16,9 +16,9 @@ func TestConsumer(t *testing.T) {
 	require.NotNil(t, pool)
 
 	c := &entities.Consumer{
-		StreamName: testify.Fake.RandomStringWithLength(32),
-		Name:       testify.Fake.RandomStringWithLength(32),
-		Topic:      testify.Fake.RandomStringWithLength(32),
+		StreamName: testify.StreamName(5),
+		Name:       testify.ConsumerName(5),
+		Topic:      testify.Topic(5),
 	}
 	consuemr, err := Consumer(context.Background(), pool, c)
 	require.NoError(t, err)
