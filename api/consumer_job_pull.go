@@ -34,7 +34,14 @@ type ConsumerJobPullRes struct {
 }
 
 func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx, clock clock.Clock) (*ConsumerJobPullRes, error) {
-	changes, err := req.changes().Do(ctx, tx, clock)
+	command := ConsumerJobStateChange(
+		req.Consumer,
+		req.Size,
+		entities.StateRunning,
+		entities.StateCompleted,
+		req.VisibilityTimeout,
+	)
+	changes, err := command.Do(ctx, tx, clock)
 	if err != nil {
 		return nil, err
 	}
@@ -45,18 +52,18 @@ func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx, clock clock.Cl
 	}
 
 	// PostgreSQL doesn't explicitly limit the number of arguments,
-	// but some drivers may set a limit of 32767 bind arguments
-	// Because our Primary Key need 2 bind arguments for each condition
-	// we are totally safe to use all Primary Keys at once. no need to chunking
+	// but some drivers may set a limit of 32767 bind arguments.
+	// Because each Primary Key needs 2 bind arguments for each condition,
+	// we are totally safe to use all Primary Keys at once. No need to chunk.
 	var names = make([]string, len(changes.PrimaryKeys))
 	var args = pgx.NamedArgs{}
 	for i, pk := range changes.PrimaryKeys {
-		topic := fmt.Sprintf("topic_%d", i)
-		eventId := fmt.Sprintf("event_id_%d", i)
+		topicBind := fmt.Sprintf("topic_%d", i)
+		eventIdBind := fmt.Sprintf("event_id_%d", i)
 
-		names[i] = fmt.Sprintf("(@%s, @%s)", topic, eventId)
-		args[topic] = pk.Topic
-		args[eventId] = pk.EventId
+		names[i] = fmt.Sprintf("(@%s, @%s)", topicBind, eventIdBind)
+		args[topicBind] = pk.Topic
+		args[eventIdBind] = pk.EventId
 	}
 
 	table := pgx.Identifier{entities.CollectionStreamEvent(req.Consumer.StreamName)}.Sanitize()
@@ -76,14 +83,4 @@ func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx, clock clock.Cl
 	}
 
 	return res, nil
-}
-
-func (req *ConsumerJobPullReq) changes() *ConsumerJobStateChangeReq {
-	return &ConsumerJobStateChangeReq{
-		Consumer:          req.Consumer,
-		Size:              req.Size,
-		FromState:         entities.StateAvailable,
-		ToState:           entities.StateRunning,
-		VisibilityTimeout: req.VisibilityTimeout,
-	}
 }

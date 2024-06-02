@@ -2,15 +2,15 @@ package api
 
 import (
 	"context"
+	"errors"
 	"testing"
-	"time"
 
 	"github.com/kanthorlabs/common/clock"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
 )
 
-func TestConsumerJobPull(t *testing.T) {
+func TestConsumerJobMarkRetry(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -40,13 +40,15 @@ func TestConsumerJobPull(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		pull, err := ConsumerJobPull(
-			c.Consumer,
-			testify.Fake.IntBetween(10, 100),
-			time.Hour,
-		).Do(ctx, tx, clock.New())
+		events := testify.GenStreamEvents(ctx, testify.StreamName(5), 10)
+		var maps = make(map[string]error, 0)
+		for _, event := range events {
+			maps[event.EventId] = errors.New(event.EventId)
+		}
+
+		r, err := ConsumerJobMarkRetry(c.Consumer, maps).Do(ctx, tx, clock.New())
 		require.NoError(t, err)
-		require.NotNil(t, pull)
+		require.Equal(t, len(events), len(r.Status))
 
 		require.NoError(t, tx.Commit(ctx))
 	})
