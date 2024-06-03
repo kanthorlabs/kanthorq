@@ -8,13 +8,13 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func Stream(ctx context.Context, pool *pgxpool.Pool, name string) (*entities.Stream, error) {
+func Stream(ctx context.Context, pool *pgxpool.Pool, stream *entities.Stream) (*entities.Stream, error) {
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	r, err := api.StreamEnsure(name).Do(ctx, tx)
+	r, err := api.StreamEnsure(stream.Name).Do(ctx, tx)
 	if err != nil {
 		return nil, err
 	}

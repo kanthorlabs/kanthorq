@@ -5,9 +5,9 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/common/clock"
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
@@ -30,14 +30,14 @@ type ConsumerJobMarkCompleteRes struct {
 	Updated map[string]bool
 }
 
-func (req *ConsumerJobMarkCompleteReq) Do(ctx context.Context, tx pgx.Tx, clock clock.Clock) (*ConsumerJobMarkCompleteRes, error) {
+func (req *ConsumerJobMarkCompleteReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobMarkCompleteRes, error) {
 	res := &ConsumerJobMarkCompleteRes{Updated: make(map[string]bool)}
 
 	var names = make([]string, len(req.EventIds))
 	var args = pgx.NamedArgs{
 		"complete_state": entities.StateCompleted,
 		"running_state":  entities.StateRunning,
-		"attempt_at":     clock.Now().UnixMilli(),
+		"finalized_at":   time.Now().UnixMilli(),
 	}
 	for i, id := range req.EventIds {
 		// we assume that events are not able to update firstly

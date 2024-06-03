@@ -1,71 +1,75 @@
-package kanthorq
+package subscriber
 
 import (
 	"context"
 	"errors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/kanthorlabs/common/clock"
+	"github.com/kanthorlabs/kanthorq"
 	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
 var _ Subscriber = (*subscriber)(nil)
 
-func Sub(ctx context.Context, pool *pgxpool.Pool, clock clock.Clock, streamName, consumerName, topic string) (Subscriber, error) {
-	consumer, err := Consumer(ctx, pool, &entities.Consumer{
-		StreamName: streamName,
-		Name:       consumerName,
-		Topic:      topic,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &subscriber{pool: pool, clock: clock, consumer: consumer}, nil
+func New(conf *Config, pool *pgxpool.Pool) Subscriber {
+	return &subscriber{conf: conf, pool: pool}
 }
-
-type Subscriber interface {
-	Receive(ctx context.Context, handler SubscriberHandler, options ...SubscribeOption) (chan map[string]error, chan error)
-}
-
-type SubscriberHandler func(ctx context.Context, events map[string]*entities.StreamEvent) map[string]error
 
 type subscriber struct {
-	pool  *pgxpool.Pool
-	clock clock.Clock
+	conf *Config
+	pool *pgxpool.Pool
 
 	consumer *entities.Consumer
+	reportc  chan map[string]error
+	errorc   chan error
 }
 
-func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler, options ...SubscribeOption) (chan map[string]error, chan error) {
-	var opts = &SubscriberOptions{
-		Size:              DefaultSubscriberSize,
-		VisibilityTimeout: DefaultSubscriberVisibilityTimeout,
+func (sub *subscriber) Start(ctx context.Context) error {
+	consumer, err := kanthorq.Consumer(ctx, sub.pool, &entities.Consumer{
+		StreamName: sub.conf.StreamName,
+		Name:       sub.conf.ConsumerName,
+		Topic:      sub.conf.Topic,
+	})
+	if err != nil {
+		return err
 	}
-	for _, config := range options {
-		config(opts)
-	}
 
-	var reportc = make(chan map[string]error, 100)
-	var errorc = make(chan error, 1)
+	sub.consumer = consumer
+	sub.reportc = make(chan map[string]error)
+	sub.errorc = make(chan error)
 
-	go sub.receive(ctx, handler, opts, reportc, errorc)
-
-	return reportc, errorc
+	return nil
 }
 
-func (sub *subscriber) receive(
-	ctx context.Context,
-	handler SubscriberHandler,
-	opts *SubscriberOptions,
-	reportc chan map[string]error,
-	errorc chan error,
-) {
+func (sub *subscriber) Stop(ctx context.Context) error {
+	return nil
+}
+
+func (sub *subscriber) Error() <-chan error {
+	return sub.errorc
+}
+
+func (sub *subscriber) Report() <-chan map[string]error {
+	return sub.reportc
+}
+
+func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, options ...Option) {
+	var opts = &Options{
+		Size:              DefaultSize,
+		VisibilityTimeout: DefaultVisibilityTimeout,
+	}
+	for _, configure := range options {
+		configure(opts)
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
-			errorc <- ctx.Err()
+			close(sub.errorc)
+			close(sub.reportc)
+			// @TODO: log context error
+			return
 		default:
 			// We assume that the subscriber handler needs to process events for a long time,
 			// hence, we should not hold a transaction too long.
@@ -79,29 +83,33 @@ func (sub *subscriber) receive(
 			// pull job transaction
 			tx, err := sub.pool.Begin(ctx)
 			if err != nil {
-				errorc <- err
+				sub.errorc <- err
+				continue
 			}
 
 			c, err := api.ConsumerPull(sub.consumer, opts.Size).Do(ctx, tx)
 			if err != nil {
-				errorc <- errors.Join(err, tx.Rollback(ctx))
+				sub.errorc <- errors.Join(err, tx.Rollback(ctx))
+				continue
 			}
 
 			// there is no more job in stream
 			if c.NextCursor == "" {
 				if err := tx.Commit(ctx); err != nil {
-					errorc <- err
+					sub.errorc <- err
 				}
 				// @TODO: sleep or do something to avoid busy loop
 				continue
 			}
 
-			j, err := api.ConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx, sub.clock)
+			j, err := api.ConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
 			if err != nil {
-				errorc <- errors.Join(err, tx.Rollback(ctx))
+				sub.errorc <- errors.Join(err, tx.Rollback(ctx))
+				continue
 			}
 			if err := tx.Commit(ctx); err != nil {
-				errorc <- err
+				sub.errorc <- err
+				continue
 			}
 
 			if len(j.Events) == 0 {
@@ -119,12 +127,18 @@ func (sub *subscriber) receive(
 			// comfirm job transaction
 			tx, err = sub.pool.Begin(subctx)
 			if err != nil {
-				errorc <- err
+				sub.errorc <- err
+				continue
 			}
 
 			var completed []string
 			var retryable []string
 			for _, event := range j.Events {
+				if len(reports) == 0 {
+					completed = append(completed, event.EventId)
+					continue
+				}
+
 				if err, exist := reports[event.EventId]; exist && err != nil {
 					retryable = append(retryable, event.EventId)
 					continue
@@ -139,9 +153,9 @@ func (sub *subscriber) receive(
 				// mark complete may try to update not running job (because their state were updated in other transaction)
 				// so the returning helps use determine what event status is updated successfully
 				// TODO: report what update is successful
-				if _, err := command.Do(subctx, tx, sub.clock); err != nil {
-					errorc <- errors.Join(err, tx.Rollback(ctx))
-					return
+				if _, err := command.Do(subctx, tx); err != nil {
+					sub.errorc <- errors.Join(err, tx.Rollback(ctx))
+					continue
 				}
 			}
 
@@ -150,17 +164,18 @@ func (sub *subscriber) receive(
 				command := api.ConsumerJobMarkRetry(sub.consumer, retryable)
 				// same as ConsumerJobMarkRetry, the returning helps use determine what event status is updated successfully
 				// TODO: report what update is successful
-				if _, err := command.Do(subctx, tx, sub.clock); err != nil {
-					errorc <- errors.Join(err, tx.Rollback(ctx))
-					return
+				if _, err := command.Do(subctx, tx); err != nil {
+					sub.errorc <- errors.Join(err, tx.Rollback(ctx))
+					continue
 				}
 			}
 
 			if err := tx.Commit(subctx); err != nil {
-				errorc <- err
+				sub.errorc <- err
+				continue
 			}
 
-			reportc <- reports
+			sub.reportc <- reports
 		}
 	}
 }

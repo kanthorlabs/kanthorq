@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kanthorlabs/common/clock"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
@@ -47,7 +46,7 @@ func TestConsumerJobStateChange(t *testing.T) {
 			entities.StateAvailable,
 			entities.StateRunning,
 			time.Hour,
-		).Do(ctx, tx, clock.New())
+		).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, changes)
 

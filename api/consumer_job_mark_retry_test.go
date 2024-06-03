@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kanthorlabs/common/clock"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +44,7 @@ func TestConsumerJobMarkRetry(t *testing.T) {
 			ids[i] = event.EventId
 		}
 
-		r, err := ConsumerJobMarkRetry(c.Consumer, ids).Do(ctx, tx, clock.New())
+		r, err := ConsumerJobMarkRetry(c.Consumer, ids).Do(ctx, tx)
 		require.NoError(t, err)
 		require.Equal(t, len(events), len(r.Updated))
 

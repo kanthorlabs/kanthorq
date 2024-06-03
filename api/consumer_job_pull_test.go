@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kanthorlabs/common/clock"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
 )
@@ -44,7 +43,7 @@ func TestConsumerJobPull(t *testing.T) {
 			c.Consumer,
 			testify.Fake.IntBetween(10, 100),
 			time.Hour,
-		).Do(ctx, tx, clock.New())
+		).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, pull)
 

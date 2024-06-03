@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/common/clock"
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
@@ -33,7 +32,7 @@ type ConsumerJobPullRes struct {
 	Events map[string]*entities.StreamEvent
 }
 
-func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx, clock clock.Clock) (*ConsumerJobPullRes, error) {
+func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobPullRes, error) {
 	command := ConsumerJobStateChange(
 		req.Consumer,
 		req.Size,
@@ -41,7 +40,7 @@ func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx, clock clock.Cl
 		entities.StateRunning,
 		req.VisibilityTimeout,
 	)
-	changes, err := command.Do(ctx, tx, clock)
+	changes, err := command.Do(ctx, tx)
 	if err != nil {
 		return nil, err
 	}

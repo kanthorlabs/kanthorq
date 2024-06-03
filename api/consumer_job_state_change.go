@@ -8,7 +8,6 @@ import (
 	_ "embed"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/common/clock"
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
@@ -43,14 +42,13 @@ type ConsumerJobStateChangeRes struct {
 	PrimaryKeys []*entities.EventPrimaryKey
 }
 
-func (req *ConsumerJobStateChangeReq) Do(ctx context.Context, tx pgx.Tx, clock clock.Clock) (*ConsumerJobStateChangeRes, error) {
+func (req *ConsumerJobStateChangeReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobStateChangeRes, error) {
 	args := pgx.NamedArgs{
-		"attempt_at": clock.Now().UnixMilli(),
-		"from_state": req.FromState,
-		"to_state":   req.ToState,
-		"size":       req.Size,
-		// vt means visibility timeout
-		"next_schedule_at": clock.Now().Add(req.VisibilityTimeout).UnixMilli(),
+		"attempt_at":       time.Now().UnixMilli(),
+		"from_state":       req.FromState,
+		"to_state":         req.ToState,
+		"size":             req.Size,
+		"next_schedule_at": time.Now().Add(req.VisibilityTimeout).UnixMilli(),
 	}
 
 	table := pgx.Identifier{entities.CollectionConsumerJob(req.Consumer.Name)}.Sanitize()

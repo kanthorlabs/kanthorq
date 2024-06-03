@@ -5,9 +5,9 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/common/clock"
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
@@ -30,14 +30,14 @@ type ConsumerJobMarkRetryRes struct {
 	Updated map[string]bool
 }
 
-func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx, clock clock.Clock) (*ConsumerJobMarkRetryRes, error) {
+func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobMarkRetryRes, error) {
 	res := &ConsumerJobMarkRetryRes{Updated: make(map[string]bool)}
 
 	var names = make([]string, len(req.EventIds))
 	var args = pgx.NamedArgs{
 		"retry_state":   entities.StateRetryable,
 		"running_state": entities.StateRunning,
-		"attempt_at":    clock.Now().UnixMilli(),
+		"attempt_at":    time.Now().UnixMilli(),
 	}
 	for i, id := range req.EventIds {
 		// we assume that events are not able to update firstly

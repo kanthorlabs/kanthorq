@@ -5,9 +5,6 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-test: 
-	go test -timeout 1m30s --count=1 -cover -coverprofile cover.out $$(go list ./... | grep github.com/kanthorlabs/kanthorq | grep -v 'github.com/kanthorlabs/kanthorq/\(cmd\|testify\)')
-
 clean:
 	docker compose exec storage psql -d postgres -f /kanthorlabs/kanthorq/data/consumer_clean.sql
 	docker compose exec storage psql -d postgres -f /kanthorlabs/kanthorq/data/stream_clean.sql
