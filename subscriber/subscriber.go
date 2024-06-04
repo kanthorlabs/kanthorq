@@ -4,46 +4,45 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/kanthorlabs/kanthorq"
+	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/q"
 )
 
 var _ Subscriber = (*subscriber)(nil)
 
-func New(conf *Config, pool *pgxpool.Pool) Subscriber {
-	return &subscriber{conf: conf, pool: pool}
+func New(ctx context.Context, conf *Config) (Subscriber, error) {
+	conn, err := pgx.Connect(ctx, conf.ConnectionUri)
+	if err != nil {
+		return nil, err
+	}
+
+	consumer, err := q.Consumer(ctx, conn, &entities.Consumer{
+		StreamName: conf.StreamName,
+		Name:       conf.ConsumerName,
+		Topic:      conf.Topic,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &subscriber{
+		conf:     conf,
+		conn:     conn,
+		consumer: consumer,
+		reportc:  make(chan map[string]error),
+		errorc:   make(chan error),
+	}, nil
 }
 
 type subscriber struct {
 	conf *Config
-	pool *pgxpool.Pool
 
+	conn     *pgx.Conn
 	consumer *entities.Consumer
 	reportc  chan map[string]error
 	errorc   chan error
-}
-
-func (sub *subscriber) Start(ctx context.Context) error {
-	consumer, err := kanthorq.Consumer(ctx, sub.pool, &entities.Consumer{
-		StreamName: sub.conf.StreamName,
-		Name:       sub.conf.ConsumerName,
-		Topic:      sub.conf.Topic,
-	})
-	if err != nil {
-		return err
-	}
-
-	sub.consumer = consumer
-	sub.reportc = make(chan map[string]error)
-	sub.errorc = make(chan error)
-
-	return nil
-}
-
-func (sub *subscriber) Stop(ctx context.Context) error {
-	return nil
 }
 
 func (sub *subscriber) Error() <-chan error {
@@ -81,7 +80,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			subctx := context.Background()
 
 			// pull job transaction
-			tx, err := sub.pool.Begin(ctx)
+			tx, err := sub.conn.Begin(ctx)
 			if err != nil {
 				sub.errorc <- err
 				continue
@@ -125,7 +124,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			reports := handler(subctx, events)
 
 			// comfirm job transaction
-			tx, err = sub.pool.Begin(subctx)
+			tx, err = sub.conn.Begin(subctx)
 			if err != nil {
 				sub.errorc <- err
 				continue

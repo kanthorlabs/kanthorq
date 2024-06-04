@@ -9,6 +9,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/jaswdr/faker/v2 v2.3.0
 	github.com/kanthorlabs/common v0.0.0-20240524142848-8ffcee55badc
+	github.com/oklog/ulid/v2 v2.1.0
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 )
@@ -32,7 +33,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
-	github.com/segmentio/ksuid v1.0.4 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect

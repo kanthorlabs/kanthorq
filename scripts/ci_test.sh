@@ -11,7 +11,7 @@ CHECKSUM_OLD=$(cat $CHECKSUM_FILE || true)
 if [ "$CHECKSUM_NEW" != "$CHECKSUM_OLD" ];
 then
   echo "--> coverage"
-  go test -timeout 1m30s --count=1 -cover -coverprofile cover.out $(go list ./... | grep github.com/kanthorlabs/kanthorq | grep -v 'github.com/kanthorlabs/kanthorq/(cmd\|testify)')
+  go test -timeout 1m30s --count=1 -cover -coverprofile cover.out $(go list ./... | grep github.com/kanthorlabs/kanthorq | grep -v 'github.com/kanthorlabs/kanthorq/\(cmd\|testify\)')
 fi
 
 if [ "$CI" = "" ];

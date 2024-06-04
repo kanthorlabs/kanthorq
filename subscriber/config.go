@@ -1,7 +1,8 @@
 package subscriber
 
 type Config struct {
-	StreamName   string
-	ConsumerName string
-	Topic        string
+	ConnectionUri string
+	StreamName    string
+	ConsumerName  string
+	Topic         string
 }

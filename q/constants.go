@@ -1,4 +1,4 @@
-package kanthorq
+package q
 
 var (
 	ConsumerPullSize    = 100

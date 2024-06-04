@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kanthorlabs/kanthorq"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/publisher"
 	"github.com/kanthorlabs/kanthorq/testify"
@@ -16,34 +15,29 @@ import (
 func TestSubscriber(t *testing.T) {
 	ctx := context.Background()
 
-	pool, err := kanthorq.Connection(ctx, os.Getenv("TEST_DATABASE_URI"))
-	require.NoError(t, err)
-
 	var streamName = testify.StreamName(5)
 	var consumerName = testify.ConsumerName(5)
 	var topic = testify.Topic(5)
 
 	// publish first
-	pub := publisher.New(&publisher.Config{StreamName: streamName}, pool)
-	require.NoError(t, pub.Start(ctx))
-	defer require.NoError(t, pub.Stop(ctx))
+	pub, err := publisher.New(ctx, &publisher.Config{
+		ConnectionUri: os.Getenv("TEST_DATABASE_URI"),
+		StreamName:    streamName,
+	})
+	require.NoError(t, err)
 
 	events := testify.GenStreamEvents(ctx, topic, 1000)
 	require.NoError(t, pub.Send(ctx, events))
 
 	// then subscribe
-	conf := &Config{
-		StreamName:   streamName,
-		ConsumerName: consumerName,
-		Topic:        topic,
-	}
-	sub := New(conf, pool)
-	require.NoError(t, sub.Start(ctx))
-	// don't use defer here to stop the subscriber
-	// otherwise the select state could not receive data
+	sub, err := New(ctx, &Config{
+		ConnectionUri: os.Getenv("TEST_DATABASE_URI"),
+		StreamName:    streamName,
+		ConsumerName:  consumerName,
+		Topic:         topic,
+	})
 
 	cancelling, cancel := context.WithCancel(context.Background())
-
 	// receiving events
 	go sub.Consume(cancelling, func(ctx context.Context, events map[string]*entities.StreamEvent) map[string]error {
 		var reports = make(map[string]error, len(events))
@@ -75,6 +69,4 @@ func TestSubscriber(t *testing.T) {
 		require.Greater(t, len(reports), 0)
 		require.Less(t, len(reports), DefaultSize)
 	}
-
-	require.NoError(t, sub.Stop(ctx))
 }

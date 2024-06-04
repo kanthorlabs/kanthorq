@@ -8,15 +8,15 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/kanthorlabs/common/idx"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/oklog/ulid/v2"
 )
 
 func SeedStreamEvents(ctx context.Context, conn *pgxpool.Pool, stream, topic string, count int) error {
 	events := make([][]any, count)
 	for i := 0; i < count; i++ {
 		var now = time.Now().UTC().UnixMilli()
-		events[i] = []any{topic, idx.New("evt"), fmt.Sprintf("%d", now)}
+		events[i] = []any{topic, ulid.Make().String(), fmt.Sprintf("%d", now)}
 	}
 
 	_, err := conn.CopyFrom(
@@ -35,7 +35,7 @@ func GenStreamEvents(ctx context.Context, topic string, count int64) []*entities
 		var now = time.Now().UTC().UnixMilli()
 		events[i] = &entities.StreamEvent{
 			Topic:     topic,
-			EventId:   idx.New("evt"),
+			EventId:   ulid.Make().String(),
 			CreatedAt: now,
 		}
 	}

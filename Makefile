@@ -5,7 +5,14 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-clean:
+default: 
+	$(warning oops, select specific command pls)
+
+test:
+	rm -rf ./checksum
+	./scripts/ci_test.sh
+
+clean: migrate-up
 	docker compose exec storage psql -d postgres -f /kanthorlabs/kanthorq/data/consumer_clean.sql
 	docker compose exec storage psql -d postgres -f /kanthorlabs/kanthorq/data/stream_clean.sql
 

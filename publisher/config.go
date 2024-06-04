@@ -1,5 +1,6 @@
 package publisher
 
 type Config struct {
-	StreamName string
+	ConnectionUri string
+	StreamName    string
 }
