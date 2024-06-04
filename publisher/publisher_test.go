@@ -12,11 +12,14 @@ import (
 func TestPublisher(t *testing.T) {
 	ctx := context.Background()
 
-	pub, err := New(ctx, &Config{
+	pub := New(&Config{
 		ConnectionUri: os.Getenv("TEST_DATABASE_URI"),
 		StreamName:    testify.StreamName(5),
 	})
-	require.NoError(t, err)
+	require.NoError(t, pub.Start(ctx))
+	defer func() {
+		require.NoError(t, pub.Stop(ctx))
+	}()
 
 	events := testify.GenStreamEvents(ctx, testify.Topic(5), 1000)
 	require.NoError(t, pub.Send(ctx, events))

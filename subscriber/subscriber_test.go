@@ -19,23 +19,29 @@ func TestSubscriber(t *testing.T) {
 	var consumerName = testify.ConsumerName(5)
 	var topic = testify.Topic(5)
 
-	// publish first
-	pub, err := publisher.New(ctx, &publisher.Config{
+	pub := publisher.New(&publisher.Config{
 		ConnectionUri: os.Getenv("TEST_DATABASE_URI"),
 		StreamName:    streamName,
 	})
-	require.NoError(t, err)
+	require.NoError(t, pub.Start(ctx))
+	defer func() {
+		require.NoError(t, pub.Stop(ctx))
+	}()
 
 	events := testify.GenStreamEvents(ctx, topic, 1000)
 	require.NoError(t, pub.Send(ctx, events))
 
 	// then subscribe
-	sub, err := New(ctx, &Config{
+	sub := New(&Config{
 		ConnectionUri: os.Getenv("TEST_DATABASE_URI"),
 		StreamName:    streamName,
 		ConsumerName:  consumerName,
 		Topic:         topic,
 	})
+	require.NoError(t, sub.Start(ctx))
+	defer func() {
+		require.NoError(t, sub.Stop(ctx))
+	}()
 
 	cancelling, cancel := context.WithCancel(context.Background())
 	// receiving events
@@ -55,18 +61,13 @@ func TestSubscriber(t *testing.T) {
 	})
 
 	select {
-	case err, ok := <-sub.Error():
-		if !ok {
-			panic("oops, something went wrong")
-		}
+	case err := <-sub.Error():
 		cancel()
 		require.NoError(t, err)
-	case reports, ok := <-sub.Report():
-		if !ok {
-			panic("oops, something went wrong")
-		}
+	case reports := <-sub.Report():
 		cancel()
 		require.Greater(t, len(reports), 0)
 		require.Less(t, len(reports), DefaultSize)
 	}
+
 }

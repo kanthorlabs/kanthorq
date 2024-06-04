@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
@@ -12,37 +12,55 @@ import (
 
 var _ Subscriber = (*subscriber)(nil)
 
-func New(ctx context.Context, conf *Config) (Subscriber, error) {
-	conn, err := pgx.Connect(ctx, conf.ConnectionUri)
-	if err != nil {
-		return nil, err
-	}
-
-	consumer, err := q.Consumer(ctx, conn, &entities.Consumer{
-		StreamName: conf.StreamName,
-		Name:       conf.ConsumerName,
-		Topic:      conf.Topic,
-	})
-	if err != nil {
-		return nil, err
-	}
-
+func New(conf *Config) Subscriber {
 	return &subscriber{
-		conf:     conf,
-		conn:     conn,
-		consumer: consumer,
-		reportc:  make(chan map[string]error),
-		errorc:   make(chan error),
-	}, nil
+		conf:    conf,
+		reportc: make(chan map[string]error),
+		errorc:  make(chan error),
+	}
 }
 
 type subscriber struct {
-	conf *Config
+	conf    *Config
+	reportc chan map[string]error
+	errorc  chan error
 
-	conn     *pgx.Conn
+	pool     *pgxpool.Pool
 	consumer *entities.Consumer
-	reportc  chan map[string]error
-	errorc   chan error
+}
+
+func (sub *subscriber) Start(ctx context.Context) error {
+	pool, err := pgxpool.New(ctx, sub.conf.ConnectionUri)
+	if err != nil {
+		return err
+	}
+	sub.pool = pool
+
+	consumer, err := q.Consumer(ctx, sub.pool, &entities.Consumer{
+		StreamName: sub.conf.StreamName,
+		Name:       sub.conf.ConsumerName,
+		Topic:      sub.conf.Topic,
+	})
+	if err != nil {
+		return err
+	}
+	sub.consumer = consumer
+
+	return nil
+}
+
+func (sub *subscriber) Stop(ctx context.Context) error {
+	sub.pool.Close()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+		// wait for reportc and errorc to be closed
+		<-sub.Error()
+		<-sub.Report()
+		return nil
+	}
 }
 
 func (sub *subscriber) Error() <-chan error {
@@ -80,7 +98,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			subctx := context.Background()
 
 			// pull job transaction
-			tx, err := sub.conn.Begin(ctx)
+			tx, err := sub.pool.Begin(ctx)
 			if err != nil {
 				sub.errorc <- err
 				continue
@@ -124,7 +142,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			reports := handler(subctx, events)
 
 			// comfirm job transaction
-			tx, err = sub.conn.Begin(subctx)
+			tx, err = sub.pool.Begin(subctx)
 			if err != nil {
 				sub.errorc <- err
 				continue

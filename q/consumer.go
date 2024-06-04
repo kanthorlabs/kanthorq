@@ -3,13 +3,13 @@ package q
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func Consumer(ctx context.Context, conn *pgx.Conn, consumer *entities.Consumer) (*entities.Consumer, error) {
-	tx, err := conn.Begin(ctx)
+func Consumer(ctx context.Context, pool *pgxpool.Pool, consumer *entities.Consumer) (*entities.Consumer, error) {
+	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
