@@ -2,26 +2,18 @@ package base
 
 import (
 	_ "embed"
+	"fmt"
 
-	"github.com/kanthorlabs/common/configuration"
-	"github.com/kanthorlabs/common/project"
 	"github.com/spf13/cobra"
 )
 
 //go:embed .version
 var version string
 
-func New() (configuration.Provider, *cobra.Command) {
-	project.SetVersion(version)
-
-	provider, err := configuration.New(project.Namespace())
-	if err != nil {
-		panic(err)
-	}
-
+func New() *cobra.Command {
 	command := &cobra.Command{
 		Short: short,
-		Long:  long,
+		Long:  long + short,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.Help()
@@ -29,7 +21,15 @@ func New() (configuration.Provider, *cobra.Command) {
 		},
 	}
 
+	command.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Print the version number",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf(long + version + "\n")
+		},
+	})
+
 	command.PersistentFlags().BoolP("verbose", "v", false, "show verbose output including debug information")
 
-	return provider, command
+	return command
 }

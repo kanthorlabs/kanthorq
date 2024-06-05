@@ -13,7 +13,7 @@ import (
 
 func TestConsumer(t *testing.T) {
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, os.Getenv("TEST_DATABASE_URI"))
+	pool, err := pgxpool.New(ctx, os.Getenv("TEST_POSTGRES_URI"))
 	require.NoError(t, err)
 
 	c := &entities.Consumer{

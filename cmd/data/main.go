@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	_, command := base.New()
+	command := base.New()
 	command.AddCommand(migrate.New())
 
 	defer func() {

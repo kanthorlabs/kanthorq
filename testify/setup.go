@@ -12,13 +12,13 @@ import (
 )
 
 func SetupPostgres(ctx context.Context) (*pgxpool.Pool, error) {
-	conn, err := pgxpool.New(ctx, os.Getenv("TEST_DATABASE_URI"))
+	conn, err := pgxpool.New(ctx, os.Getenv("TEST_POSTGRES_URI"))
 	if err != nil {
 		return nil, err
 	}
 
 	// run a migration
-	m, err := migrate.New(os.Getenv("TEST_MIGRATION_SOURCE"), os.Getenv("TEST_DATABASE_URI"))
+	m, err := migrate.New(os.Getenv("TEST_MIGRATION_SOURCE"), os.Getenv("TEST_POSTGRES_URI"))
 	if err != nil {
 		return nil, err
 	}
