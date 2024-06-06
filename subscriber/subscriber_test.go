@@ -20,7 +20,7 @@ func TestSubscriber(t *testing.T) {
 	var topic = testify.Topic(5)
 
 	pub := publisher.New(&publisher.Config{
-		ConnectionUri: os.Getenv("TEST_POSTGRES_URI"),
+		ConnectionUri: os.Getenv("KANTHORQ_POSTGRES_URI"),
 		StreamName:    streamName,
 	})
 	require.NoError(t, pub.Start(ctx))
@@ -33,7 +33,7 @@ func TestSubscriber(t *testing.T) {
 
 	// then subscribe
 	sub := New(&Config{
-		ConnectionUri: os.Getenv("TEST_POSTGRES_URI"),
+		ConnectionUri: os.Getenv("KANTHORQ_POSTGRES_URI"),
 		StreamName:    streamName,
 		ConsumerName:  consumerName,
 		Topic:         topic,
@@ -69,5 +69,4 @@ func TestSubscriber(t *testing.T) {
 		require.Greater(t, len(reports), 0)
 		require.Less(t, len(reports), DefaultSize)
 	}
-
 }

@@ -2,11 +2,13 @@ package publisher
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/kanthorlabs/kanthorq/publisher"
 	"github.com/kanthorlabs/kanthorq/testify"
@@ -19,18 +21,13 @@ func Publish() *cobra.Command {
 		Use:   "publish",
 		Short: "publish messages to a message stream",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			pub := publisher.New(&publisher.Config{
-				ConnectionUri: cmd.Flags().Lookup("connection").Value.String(),
-				StreamName:    cmd.Flags().Lookup("stream").Value.String(),
-			})
+			connection := cmd.Flags().Lookup("connection").Value.String()
 
-			ctx := cmd.Context()
-			if err := pub.Start(ctx); err != nil {
+			size, err := cmd.Flags().GetInt64("size")
+			if err != nil {
 				return err
 			}
-			defer pub.Stop(ctx)
-
-			count, err := cmd.Flags().GetInt64("count")
+			streams, err := cmd.Flags().GetStringSlice("streams")
 			if err != nil {
 				return err
 			}
@@ -44,43 +41,63 @@ func Publish() *cobra.Command {
 
 			var counter = sync.Map{}
 
-			p := pool.New().WithContext(ctx).WithMaxGoroutines(len(topics))
-			for i := range topics {
-				topic := topics[i]
-				p.Go(func(ctx context.Context) error {
-					select {
-					case <-ctx.Done():
-						return nil
-					default:
+			p := pool.New().WithErrors().WithContext(ctx)
+			for i := range streams {
+				stream := streams[i]
+
+				for j := range topics {
+					topic := topics[j]
+					counterKey := fmt.Sprintf("%s -> %s", stream, topic)
+
+					p.Go(func(ctx context.Context) error {
+						pub := publisher.New(&publisher.Config{
+							ConnectionUri: connection,
+							StreamName:    stream,
+						})
+
+						if err := pub.Start(ctx); err != nil {
+							return err
+						}
+						defer func() {
+							cancelling, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+							defer cancel()
+							if err := pub.Stop(cancelling); err != nil {
+								log.Println(err)
+							}
+						}()
+
 						for {
 							if ctx.Err() != nil {
 								return nil
 							}
 
-							events := testify.GenStreamEvents(ctx, topic, count)
+							events := testify.GenStreamEvents(ctx, topic, size)
 							if err := pub.Send(ctx, events); err != nil {
-								log.Println(err)
 								continue
 							}
 
-							total, ok := counter.Load(topic)
+							total, ok := counter.Load(counterKey)
 							if ok {
 								total = total.(int) + len(events)
 							} else {
 								total = len(events)
 							}
-							counter.Store(topic, total)
-							log.Printf("[%s] %d", topic, total)
+							counter.Store(counterKey, total)
+							log.Printf("[%s] %d", counterKey, total)
 						}
-					}
-				})
+					})
+				}
 			}
 
-			return p.Wait()
+			if err := p.Wait(); err != nil {
+				log.Println(err)
+			}
+
+			return nil
 		},
 	}
 
-	command.Flags().Int64("count", 100, "number of messages to send")
+	command.Flags().Int64("size", 100, "number of messages to send per batch")
 	return command
 }
 

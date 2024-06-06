@@ -13,7 +13,7 @@ import (
 
 func TestStream(t *testing.T) {
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, os.Getenv("TEST_POSTGRES_URI"))
+	pool, err := pgxpool.New(ctx, os.Getenv("KANTHORQ_POSTGRES_URI"))
 	require.NoError(t, err)
 
 	stream, err := Stream(context.Background(), pool, &entities.Stream{Name: testify.StreamName(5)})

@@ -13,7 +13,7 @@ func TestPublisher(t *testing.T) {
 	ctx := context.Background()
 
 	pub := New(&Config{
-		ConnectionUri: os.Getenv("TEST_POSTGRES_URI"),
+		ConnectionUri: os.Getenv("KANTHORQ_POSTGRES_URI"),
 		StreamName:    testify.StreamName(5),
 	})
 	require.NoError(t, pub.Start(ctx))

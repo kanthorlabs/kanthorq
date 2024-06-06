@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	_ "embed"
 
@@ -15,9 +17,25 @@ func main() {
 	command.AddCommand(publisher.New())
 
 	command.PersistentFlags().StringP("connection", "c", os.Getenv("KANTHORQ_POSTGRES_URI"), "name of the stream")
-	command.PersistentFlags().StringP("stream", "s", "testing", "name of the stream")
 
-	topics := []string{"testing.benchmark_1", "testing.benchmark_2", "testing.benchmark_3"}
+	s := 5
+	if x, err := strconv.Atoi(os.Getenv("KANTHORQ_STREAM_COUNT")); err == nil && x > 0 {
+		s = x
+	}
+	streams := []string{}
+	for i := 0; i < s; i++ {
+		streams = append(streams, fmt.Sprintf("testing_%d", i))
+	}
+	command.PersistentFlags().StringSliceP("streams", "s", streams, "name of the stream")
+
+	t := 5
+	if x, err := strconv.Atoi(os.Getenv("KANTHORQ_TOPIC_COUNT")); err == nil && x > 0 {
+		t = x
+	}
+	topics := []string{}
+	for i := 0; i < t; i++ {
+		topics = append(topics, fmt.Sprintf("benchmark.no_%d", i))
+	}
 	command.PersistentFlags().StringSliceP("topics", "t", topics, "name of the topic")
 
 	defer func() {
