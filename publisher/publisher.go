@@ -3,7 +3,7 @@ package publisher
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
@@ -18,18 +18,18 @@ func New(conf *Config) Publisher {
 type publisher struct {
 	conf *Config
 
-	pool   *pgxpool.Pool
+	conn   *pgx.Conn
 	stream *entities.Stream
 }
 
 func (pub *publisher) Start(ctx context.Context) error {
-	pool, err := pgxpool.New(ctx, pub.conf.ConnectionUri)
+	conn, err := pgx.Connect(ctx, pub.conf.ConnectionUri)
 	if err != nil {
 		return err
 	}
-	pub.pool = pool
+	pub.conn = conn
 
-	stream, err := q.Stream(ctx, pub.pool, &entities.Stream{Name: pub.conf.StreamName})
+	stream, err := q.Stream(ctx, pub.conn, &entities.Stream{Name: pub.conf.StreamName})
 	if err != nil {
 		return err
 	}
@@ -39,12 +39,11 @@ func (pub *publisher) Start(ctx context.Context) error {
 }
 
 func (pub *publisher) Stop(ctx context.Context) error {
-	pub.pool.Close()
-	return nil
+	return pub.conn.Close(ctx)
 }
 
 func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) error {
-	tx, err := pub.pool.Begin(ctx)
+	tx, err := pub.conn.Begin(ctx)
 	if err != nil {
 		return err
 	}

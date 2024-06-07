@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
@@ -13,7 +13,7 @@ import (
 
 func TestConsumer(t *testing.T) {
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, os.Getenv("KANTHORQ_POSTGRES_URI"))
+	conn, err := pgx.Connect(ctx, os.Getenv("KANTHORQ_POSTGRES_URI"))
 	require.NoError(t, err)
 
 	c := &entities.Consumer{
@@ -21,7 +21,7 @@ func TestConsumer(t *testing.T) {
 		Name:       testify.ConsumerName(5),
 		Topic:      testify.Topic(5),
 	}
-	consuemr, err := Consumer(ctx, pool, c)
+	consuemr, err := Consumer(ctx, conn, c)
 	require.NoError(t, err)
 	require.NotNil(t, consuemr)
 }

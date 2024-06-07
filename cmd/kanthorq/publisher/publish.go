@@ -73,6 +73,7 @@ func Publish() *cobra.Command {
 
 							events := testify.GenStreamEvents(ctx, topic, size)
 							if err := pub.Send(ctx, events); err != nil {
+								log.Println(err)
 								continue
 							}
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
@@ -25,18 +25,18 @@ type subscriber struct {
 	reportc chan map[string]error
 	errorc  chan error
 
-	pool     *pgxpool.Pool
+	conn     *pgx.Conn
 	consumer *entities.Consumer
 }
 
 func (sub *subscriber) Start(ctx context.Context) error {
-	pool, err := pgxpool.New(ctx, sub.conf.ConnectionUri)
+	conn, err := pgx.Connect(ctx, sub.conf.ConnectionUri)
 	if err != nil {
 		return err
 	}
-	sub.pool = pool
+	sub.conn = conn
 
-	consumer, err := q.Consumer(ctx, sub.pool, &entities.Consumer{
+	consumer, err := q.Consumer(ctx, sub.conn, &entities.Consumer{
 		StreamName: sub.conf.StreamName,
 		Name:       sub.conf.ConsumerName,
 		Topic:      sub.conf.Topic,
@@ -50,17 +50,10 @@ func (sub *subscriber) Start(ctx context.Context) error {
 }
 
 func (sub *subscriber) Stop(ctx context.Context) error {
-	sub.pool.Close()
-
-	select {
-	case <-ctx.Done():
-		return nil
-	default:
-		// wait for reportc and errorc to be closed
-		<-sub.Error()
-		<-sub.Report()
-		return nil
-	}
+	// wait for reportc and errorc to be closed
+	<-sub.Error()
+	<-sub.Report()
+	return sub.conn.Close(ctx)
 }
 
 func (sub *subscriber) Error() <-chan error {
@@ -98,7 +91,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			subctx := context.Background()
 
 			// pull job transaction
-			tx, err := sub.pool.Begin(ctx)
+			tx, err := sub.conn.Begin(ctx)
 			if err != nil {
 				sub.errorc <- err
 				continue
@@ -142,7 +135,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			reports := handler(subctx, events)
 
 			// comfirm job transaction
-			tx, err = sub.pool.Begin(subctx)
+			tx, err = sub.conn.Begin(subctx)
 			if err != nil {
 				sub.errorc <- err
 				continue
