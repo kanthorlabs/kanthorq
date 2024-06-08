@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -68,8 +69,13 @@ func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobP
 	table := pgx.Identifier{entities.CollectionStreamEvent(req.Consumer.StreamName)}.Sanitize()
 	query := fmt.Sprintf(ConsumerJobPullSQL, table, strings.Join(names, ","))
 	rows, err := tx.Query(ctx, query, args)
-	if err != nil {
+	// in the initial state, there is no rows to pull
+	// so pgx will return ErrNoRows, need to cast it as successful case
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
+	}
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return res, nil
 	}
 	defer rows.Close()
 

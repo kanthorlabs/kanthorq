@@ -48,14 +48,17 @@ func (req *ConsumerPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPullRes
 	stable := pgx.Identifier{entities.CollectionStreamEvent(req.Consumer.StreamName)}.Sanitize()
 	query := fmt.Sprintf(ConsumerPullSQL, jtable, stable)
 
-	var next string
-	err = tx.QueryRow(ctx, query, args).Scan(&next)
+	res := &ConsumerPullRes{CurrentCursor: cur.Cursor, NextCursor: ""}
+	err = tx.QueryRow(ctx, query, args).Scan(&res.NextCursor)
 
 	// in the initial state, there is no rows to pull
 	// so pgx will return ErrNoRows, need to cast it as successful case
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
 	}
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return res, nil
+	}
 
-	return &ConsumerPullRes{CurrentCursor: cur.Cursor, NextCursor: next}, nil
+	return res, nil
 }

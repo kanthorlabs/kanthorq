@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -43,6 +44,8 @@ type ConsumerJobStateChangeRes struct {
 }
 
 func (req *ConsumerJobStateChangeReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobStateChangeRes, error) {
+	res := &ConsumerJobStateChangeRes{}
+
 	args := pgx.NamedArgs{
 		"attempt_at":       time.Now().UnixMilli(),
 		"from_state":       req.FromState,
@@ -54,12 +57,16 @@ func (req *ConsumerJobStateChangeReq) Do(ctx context.Context, tx pgx.Tx) (*Consu
 	table := pgx.Identifier{entities.CollectionConsumerJob(req.Consumer.Name)}.Sanitize()
 	query := fmt.Sprintf(ConsumerJobStateChangeSQL, table, table)
 	rows, err := tx.Query(ctx, query, args)
-	if err != nil {
+	// in the initial state, there is no rows to pull
+	// so pgx will return ErrNoRows, need to cast it as successful case
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
+	}
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return res, nil
 	}
 	defer rows.Close()
 
-	res := &ConsumerJobStateChangeRes{}
 	for rows.Next() {
 		var pk entities.EventPrimaryKey
 		err = rows.Scan(&pk.Topic, &pk.EventId)

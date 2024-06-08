@@ -10,11 +10,13 @@ import (
 
 	"github.com/kanthorlabs/kanthorq/cmd/base"
 	"github.com/kanthorlabs/kanthorq/cmd/kanthorq/publisher"
+	"github.com/kanthorlabs/kanthorq/cmd/kanthorq/subscriber"
 )
 
 func main() {
 	command := base.New()
 	command.AddCommand(publisher.New())
+	command.AddCommand(subscriber.New())
 
 	command.PersistentFlags().StringP("connection", "c", os.Getenv("KANTHORQ_POSTGRES_URI"), "name of the stream")
 

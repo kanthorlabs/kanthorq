@@ -3,6 +3,7 @@ package subscriber
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/api"
@@ -14,9 +15,12 @@ var _ Subscriber = (*subscriber)(nil)
 
 func New(conf *Config) Subscriber {
 	return &subscriber{
-		conf:    conf,
-		reportc: make(chan map[string]error),
-		errorc:  make(chan error),
+		conf: conf,
+		// don't use unbuffer channel because it will block .Consume method
+		// because when you send a value on an unbuffered channel,
+		// the sending goroutine is blocked until another goroutine receives the value from the channel
+		reportc: make(chan map[string]error, 1),
+		errorc:  make(chan error, 1),
 	}
 }
 
@@ -38,8 +42,8 @@ func (sub *subscriber) Start(ctx context.Context) error {
 
 	consumer, err := q.Consumer(ctx, sub.conn, &entities.Consumer{
 		StreamName: sub.conf.StreamName,
-		Name:       sub.conf.ConsumerName,
 		Topic:      sub.conf.Topic,
+		Name:       sub.conf.ConsumerName,
 	})
 	if err != nil {
 		return err
@@ -80,7 +84,22 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			close(sub.reportc)
 			// @TODO: log context error
 			return
+			// @TODO: move channel handling to another place
+		case err := <-sub.errorc:
+			// @TODO: better error handler
+			fmt.Println(err)
+			continue
+		case report := <-sub.reportc:
+			// @TODO: better event error handler
+			for eventId, err := range report {
+				fmt.Println(eventId, err)
+			}
 		default:
+			if ctx.Err() != nil {
+				close(sub.errorc)
+				close(sub.reportc)
+				return
+			}
 			// We assume that the subscriber handler needs to process events for a long time,
 			// hence, we should not hold a transaction too long.
 			// Therefore, we move events from StateAvailable to StateRunning first,
@@ -91,33 +110,33 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			subctx := context.Background()
 
 			// pull job transaction
-			tx, err := sub.conn.Begin(ctx)
+			tx, err := sub.conn.Begin(subctx)
 			if err != nil {
 				sub.errorc <- err
 				continue
 			}
 
-			c, err := api.ConsumerPull(sub.consumer, opts.Size).Do(ctx, tx)
+			c, err := api.ConsumerPull(sub.consumer, opts.Size).Do(subctx, tx)
 			if err != nil {
-				sub.errorc <- errors.Join(err, tx.Rollback(ctx))
+				sub.errorc <- errors.Join(err, tx.Rollback(subctx))
 				continue
 			}
 
 			// there is no more job in stream
 			if c.NextCursor == "" {
-				if err := tx.Commit(ctx); err != nil {
+				if err := tx.Commit(subctx); err != nil {
 					sub.errorc <- err
 				}
 				// @TODO: sleep or do something to avoid busy loop
 				continue
 			}
 
-			j, err := api.ConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
+			j, err := api.ConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(subctx, tx)
 			if err != nil {
-				sub.errorc <- errors.Join(err, tx.Rollback(ctx))
+				sub.errorc <- errors.Join(err, tx.Rollback(subctx))
 				continue
 			}
-			if err := tx.Commit(ctx); err != nil {
+			if err := tx.Commit(subctx); err != nil {
 				sub.errorc <- err
 				continue
 			}

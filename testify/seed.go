@@ -43,22 +43,22 @@ func GenStreamEvents(ctx context.Context, topic string, count int64) []*entities
 	return events
 }
 
-func Topic(length int) string {
-	words := Fake.Lorem().Words(length)
+func Topic(wc int) string {
+	words := Fake.Lorem().Words(wc)
 
-	var segments = make([]string, length)
+	var segments = make([]string, wc)
 	for i, word := range words {
 		segments[i] = strings.ToLower(word)
 	}
 	return strings.Join(segments, ".")
 }
 
-func StreamName(length int) string {
-	words := Fake.Lorem().Words(length)
+func StreamName(wc int) string {
+	words := Fake.Lorem().Words(wc)
 	return strings.Join(words, "_")
 }
 
-func ConsumerName(length int) string {
-	words := Fake.Lorem().Words(length)
+func ConsumerName(wc int) string {
+	words := Fake.Lorem().Words(wc)
 	return strings.Join(words, "_")
 }
