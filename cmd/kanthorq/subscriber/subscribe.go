@@ -27,10 +27,6 @@ func Subscribe() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			workers, err := cmd.Flags().GetInt("worker-per-consumer")
-			if err != nil {
-				return err
-			}
 
 			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
@@ -44,32 +40,29 @@ func Subscribe() *cobra.Command {
 				for j := range topics {
 					topic := topics[j]
 
-					for k := 0; k < workers; k++ {
-						conf := &subscriber.Config{
-							ConnectionUri: connection,
-							StreamName:    stream,
-							Topic:         topic,
-							ConsumerName:  fmt.Sprintf("%s-%s-worker", stream, topic),
-						}
-						sub := subscriber.New(conf)
-
-						if err := sub.Start(ctx); err != nil {
-							return err
-						}
-
-						subscribers = append(subscribers, sub)
-
-						c := fmt.Sprintf("%s -> %s -> %s", conf.StreamName, conf.Topic, conf.ConsumerName)
-						fmt.Printf("[%s] subscribing...\n", c)
-
-						go sub.Consume(ctx, func(subctx context.Context, events map[string]*entities.StreamEvent) map[string]error {
-							for _, event := range events {
-								datac <- fmt.Sprintf("[%s] %s", c, event.EventId)
-							}
-							return nil
-						})
-
+					conf := &subscriber.Config{
+						ConnectionUri: connection,
+						StreamName:    stream,
+						Topic:         topic,
+						ConsumerName:  fmt.Sprintf("%s-%s-worker", stream, topic),
 					}
+					sub := subscriber.New(conf)
+
+					if err := sub.Start(ctx); err != nil {
+						return err
+					}
+
+					subscribers = append(subscribers, sub)
+
+					c := fmt.Sprintf("%s -> %s -> %s", conf.StreamName, conf.Topic, conf.ConsumerName)
+					fmt.Printf("[%s] subscribing...\n", c)
+
+					go sub.Consume(ctx, func(subctx context.Context, events map[string]*entities.StreamEvent) map[string]error {
+						for _, event := range events {
+							datac <- fmt.Sprintf("[%s] %s", c, event.EventId)
+						}
+						return nil
+					})
 				}
 			}
 
@@ -94,6 +87,5 @@ func Subscribe() *cobra.Command {
 		},
 	}
 
-	command.Flags().Int("worker-per-consumer", 2, "how many workers subscribing to a consumer simultaneously")
 	return command
 }

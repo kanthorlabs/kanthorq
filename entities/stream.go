@@ -15,15 +15,20 @@ func CollectionStreamEvent(name string) string {
 	return fmt.Sprintf("%s_%s", CollectionStream, name)
 }
 
-var CollectionStreamEventProps = []string{"topic", "event_id", "created_at"}
+var CollectionStreamEventProps = []string{
+	"event_id",
+	"topic",
+	"body",
+	"metadata",
+	"created_at",
+}
 
 type StreamEvent struct {
-	Topic     string `json:"topic"`
 	EventId   string `json:"event_id"`
+	Topic     string `json:"topic"`
+	Body      []byte `json:"body"`
+	Metadata  []byte `json:"metadata"`
 	CreatedAt int64  `json:"created_at"`
 }
 
-type EventPrimaryKey struct {
-	Topic   string `json:"topic"`
-	EventId string `json:"event_id"`
-}
+var DefaultEventBodySize = 64 * 1024

@@ -31,7 +31,13 @@ func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventP
 
 	var entries = make([][]any, len(req.Events))
 	for i, event := range req.Events {
-		entries[i] = []any{event.Topic, event.EventId, event.CreatedAt}
+		entries[i] = []any{
+			event.EventId,
+			event.Topic,
+			event.Body,
+			event.Metadata,
+			event.CreatedAt,
+		}
 	}
 
 	inserted, err := tx.CopyFrom(

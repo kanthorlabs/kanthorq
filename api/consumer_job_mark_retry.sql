@@ -3,6 +3,6 @@ UPDATE %s
 SET state = @retry_state
 WHERE 
   event_id IN (%s)
-  -- make sure we only move job that are in running state to completed state
+  -- make sure we only move job that are in running state to retryable state
   AND state = @running_state
 RETURNING event_id

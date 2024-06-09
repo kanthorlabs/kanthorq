@@ -20,4 +20,4 @@ SET
   schedule_at = @next_schedule_at
 FROM locked_jobs
 WHERE u_jobs.event_id = locked_jobs.event_id 
-RETURNING u_jobs.topic, u_jobs.event_id
+RETURNING u_jobs.event_id

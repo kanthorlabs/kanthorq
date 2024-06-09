@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/api"
@@ -72,6 +73,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 	var opts = &Options{
 		Size:              DefaultSize,
 		VisibilityTimeout: DefaultVisibilityTimeout,
+		WaitingTime:       DefaultWaitingTime,
 	}
 	for _, configure := range options {
 		configure(opts)
@@ -118,31 +120,36 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 
 			c, err := api.ConsumerPull(sub.consumer, opts.Size).Do(subctx, tx)
 			if err != nil {
-				sub.errorc <- errors.Join(err, tx.Rollback(subctx))
+				if errors.Is(err, pgx.ErrNoRows) {
+					sub.error(tx.Rollback(subctx))
+					time.Sleep(opts.WaitingTime)
+					continue
+				}
+
+				sub.error(err, tx.Rollback(subctx))
 				continue
 			}
 
 			// there is no more job in stream
 			if c.NextCursor == "" {
-				if err := tx.Commit(subctx); err != nil {
-					sub.errorc <- err
-				}
-				// @TODO: sleep or do something to avoid busy loop
+				sub.error(tx.Rollback(subctx))
+				time.Sleep(opts.WaitingTime)
 				continue
 			}
 
 			j, err := api.ConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(subctx, tx)
 			if err != nil {
-				sub.errorc <- errors.Join(err, tx.Rollback(subctx))
-				continue
-			}
-			if err := tx.Commit(subctx); err != nil {
-				sub.errorc <- err
+				sub.error(err, tx.Rollback(subctx))
 				continue
 			}
 
 			if len(j.Events) == 0 {
-				// @TODO: sleep or do something to avoid busy loop
+				sub.error(err, tx.Rollback(subctx))
+				time.Sleep(opts.WaitingTime)
+				continue
+			}
+
+			if sub.error(tx.Commit(subctx)) {
 				continue
 			}
 
@@ -156,7 +163,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			// comfirm job transaction
 			tx, err = sub.conn.Begin(subctx)
 			if err != nil {
-				sub.errorc <- err
+				sub.error(err)
 				continue
 			}
 
@@ -183,7 +190,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 				// so the returning helps use determine what event status is updated successfully
 				// TODO: report what update is successful
 				if _, err := command.Do(subctx, tx); err != nil {
-					sub.errorc <- errors.Join(err, tx.Rollback(ctx))
+					sub.error(err, tx.Rollback(subctx))
 					continue
 				}
 			}
@@ -194,17 +201,30 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 				// same as ConsumerJobMarkRetry, the returning helps use determine what event status is updated successfully
 				// TODO: report what update is successful
 				if _, err := command.Do(subctx, tx); err != nil {
-					sub.errorc <- errors.Join(err, tx.Rollback(ctx))
+					sub.error(err, tx.Rollback(subctx))
 					continue
 				}
 			}
 
-			if err := tx.Commit(subctx); err != nil {
-				sub.errorc <- err
+			if sub.error(tx.Commit(subctx)) {
 				continue
 			}
 
 			sub.reportc <- reports
 		}
 	}
+}
+
+func (sub *subscriber) error(errors ...error) bool {
+	var any bool
+
+	for _, err := range errors {
+		if err == nil {
+			continue
+		}
+		any = true
+		sub.errorc <- err
+	}
+
+	return any
 }

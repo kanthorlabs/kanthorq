@@ -30,13 +30,11 @@ func (req *ConsumerCursorReadReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerC
 	table := pgx.Identifier{entities.CollectionConsumer}.Sanitize()
 	query := fmt.Sprintf(ConsumerCursorReadSQL, table)
 
-	var cursor *string
-	if err := tx.QueryRow(ctx, query, args).Scan(&cursor); err != nil {
+	var cursor string
+	var err = tx.QueryRow(ctx, query, args).Scan(&cursor)
+	if err != nil {
 		return nil, err
 	}
-	if cursor == nil {
-		return nil, fmt.Errorf("ERROR.CONSUMER.BUSY: %s", req.Consumer.Name)
-	}
 
-	return &ConsumerCursorReadRes{Cursor: *cursor}, nil
+	return &ConsumerCursorReadRes{Cursor: cursor}, nil
 }

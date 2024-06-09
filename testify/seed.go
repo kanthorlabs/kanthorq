@@ -2,7 +2,11 @@ package testify
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"math/rand"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,16 +35,44 @@ func SeedStreamEvents(ctx context.Context, conn *pgxpool.Pool, stream, topic str
 func GenStreamEvents(ctx context.Context, topic string, count int64) []*entities.StreamEvent {
 	events := make([]*entities.StreamEvent, count)
 
+	var size = 64 * 1024
+	s, err := strconv.ParseInt(os.Getenv("KANTHORQ_EVENT_SIZE"), 10, 64)
+	if err == nil && s > 0 {
+		size = int(s)
+	}
+
 	for i := 0; i < int(count); i++ {
 		var now = time.Now().UTC().UnixMilli()
 		events[i] = &entities.StreamEvent{
-			Topic:     topic,
 			EventId:   ulid.Make().String(),
+			Topic:     topic,
+			Body:      GenBytes(size),
+			Metadata:  GenBytes(size),
 			CreatedAt: now,
 		}
 	}
 
 	return events
+}
+
+func GenBytes(size int) []byte {
+	if size <= 0 {
+		panic("size must be greater than 0")
+	}
+
+	// Generate a random string of the given size
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	s := make([]rune, size)
+	for i := range s {
+		s[i] = letters[rand.Intn(len(letters))]
+	}
+
+	bytes, err := json.Marshal(string(s))
+	if err != nil {
+		panic(err)
+	}
+
+	return bytes
 }
 
 func Topic(wc int) string {

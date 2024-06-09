@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	_ "embed"
@@ -50,14 +49,8 @@ func (req *ConsumerPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPullRes
 
 	res := &ConsumerPullRes{CurrentCursor: cur.Cursor, NextCursor: ""}
 	err = tx.QueryRow(ctx, query, args).Scan(&res.NextCursor)
-
-	// in the initial state, there is no rows to pull
-	// so pgx will return ErrNoRows, need to cast it as successful case
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	if err != nil {
 		return nil, err
-	}
-	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		return res, nil
 	}
 
 	return res, nil

@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -40,7 +39,7 @@ type ConsumerJobStateChangeReq struct {
 }
 
 type ConsumerJobStateChangeRes struct {
-	PrimaryKeys []*entities.EventPrimaryKey
+	EventIds []string
 }
 
 func (req *ConsumerJobStateChangeReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobStateChangeRes, error) {
@@ -57,23 +56,17 @@ func (req *ConsumerJobStateChangeReq) Do(ctx context.Context, tx pgx.Tx) (*Consu
 	table := pgx.Identifier{entities.CollectionConsumerJob(req.Consumer.Name)}.Sanitize()
 	query := fmt.Sprintf(ConsumerJobStateChangeSQL, table, table)
 	rows, err := tx.Query(ctx, query, args)
-	// in the initial state, there is no rows to pull
-	// so pgx will return ErrNoRows, need to cast it as successful case
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	if err != nil {
 		return nil, err
-	}
-	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		return res, nil
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var pk entities.EventPrimaryKey
-		err = rows.Scan(&pk.Topic, &pk.EventId)
-		if err != nil {
+		var id string
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		res.PrimaryKeys = append(res.PrimaryKeys, &pk)
+		res.EventIds = append(res.EventIds, id)
 	}
 
 	return res, rows.Err()

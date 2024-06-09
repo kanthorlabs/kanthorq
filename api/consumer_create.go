@@ -23,7 +23,7 @@ type ConsumerCreateReq struct {
 
 func (req *ConsumerCreateReq) Do(ctx context.Context, tx pgx.Tx) error {
 	table := pgx.Identifier{entities.CollectionConsumerJob(req.Name)}.Sanitize()
-	query := fmt.Sprintf(ConsumerCreateSQL, table)
+	query := fmt.Sprintf(ConsumerCreateSQL, table, table)
 
 	_, err := tx.Exec(ctx, query)
 	return err
