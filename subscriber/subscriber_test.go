@@ -28,7 +28,7 @@ func TestSubscriber(t *testing.T) {
 		require.NoError(t, pub.Stop(ctx))
 	}()
 
-	events := testify.GenStreamEvents(ctx, topic, 1000)
+	events := testify.GenStreamEvents(topic, 1000)
 	require.NoError(t, pub.Send(ctx, events))
 
 	// then subscribe

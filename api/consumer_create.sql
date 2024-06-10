@@ -1,4 +1,5 @@
--- consumer_create
+-- >>> consumer_create
+
 CREATE TABLE IF NOT EXISTS %s (
 	event_id VARCHAR(64) NOT NULL,
 	topic VARCHAR(128) NOT NULL,
@@ -11,4 +12,7 @@ CREATE TABLE IF NOT EXISTS %s (
 	updated_at BIGINT NOT NULL DEFAULT 0,
 	PRIMARY KEY (event_id)
 );
+
 CREATE INDEX IF NOT EXISTS idx_state_scheduler ON %s USING btree("state", "schedule_at");
+
+-- <<< consumer_create

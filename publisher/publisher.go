@@ -2,6 +2,7 @@ package publisher
 
 import (
 	"context"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/api"
@@ -17,12 +18,16 @@ func New(conf *Config) Publisher {
 
 type publisher struct {
 	conf *Config
+	mu   sync.Mutex
 
 	conn   *pgx.Conn
 	stream *entities.Stream
 }
 
 func (pub *publisher) Start(ctx context.Context) error {
+	pub.mu.Lock()
+	defer pub.mu.Unlock()
+
 	conn, err := pgx.Connect(ctx, pub.conf.ConnectionUri)
 	if err != nil {
 		return err
@@ -39,19 +44,32 @@ func (pub *publisher) Start(ctx context.Context) error {
 }
 
 func (pub *publisher) Stop(ctx context.Context) error {
+	pub.mu.Lock()
+	defer pub.mu.Unlock()
+
 	return pub.conn.Close(ctx)
 }
 
 func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) error {
-	tx, err := pub.conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
+	pub.mu.Lock()
+	defer pub.mu.Unlock()
 
-	_, err = api.StreamEventPush(pub.stream, events).Do(ctx, tx)
-	if err != nil {
-		return err
-	}
+	// wait for the transaction is done
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		tx, err := pub.conn.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback(ctx)
 
-	return tx.Commit(ctx)
+		_, err = api.StreamEventPush(pub.stream, events).Do(ctx, tx)
+		if err != nil {
+			return err
+		}
+
+		return tx.Commit(ctx)
+	}
 }

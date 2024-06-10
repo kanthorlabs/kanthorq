@@ -56,13 +56,14 @@ func Publish() *cobra.Command {
 						})
 
 						if err := pub.Start(ctx); err != nil {
+							fmt.Printf("[%s] start error %s\n", counterKey, err)
 							return err
 						}
 						defer func() {
 							cancelling, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 							defer cancel()
 							if err := pub.Stop(cancelling); err != nil {
-								log.Println(err)
+								fmt.Printf("[%s] stop error %s\n", counterKey, err)
 							}
 						}()
 
@@ -71,9 +72,9 @@ func Publish() *cobra.Command {
 								return nil
 							}
 
-							events := testify.GenStreamEvents(ctx, topic, size)
+							events := testify.GenStreamEvents(topic, size)
 							if err := pub.Send(ctx, events); err != nil {
-								log.Println(err)
+								fmt.Printf("[%s] send error %s\n", counterKey, err)
 								continue
 							}
 

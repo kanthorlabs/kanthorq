@@ -21,6 +21,6 @@ func TestPublisher(t *testing.T) {
 		require.NoError(t, pub.Stop(ctx))
 	}()
 
-	events := testify.GenStreamEvents(ctx, testify.Topic(5), 1000)
+	events := testify.GenStreamEvents(testify.Topic(5), 1000)
 	require.NoError(t, pub.Send(ctx, events))
 }

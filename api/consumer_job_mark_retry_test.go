@@ -38,7 +38,7 @@ func TestConsumerJobMarkRetry(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		events := testify.GenStreamEvents(ctx, testify.Topic(5), 10)
+		events := testify.GenStreamEvents(testify.Topic(5), 10)
 		ids := make([]string, len(events))
 		for i, event := range events {
 			ids[i] = event.EventId

@@ -32,7 +32,7 @@ func SeedStreamEvents(ctx context.Context, conn *pgxpool.Pool, stream, topic str
 	return err
 }
 
-func GenStreamEvents(ctx context.Context, topic string, count int64) []*entities.StreamEvent {
+func GenStreamEvents(topic string, count int64) []*entities.StreamEvent {
 	events := make([]*entities.StreamEvent, count)
 
 	var size = 64 * 1024

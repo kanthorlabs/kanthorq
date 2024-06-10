@@ -11,6 +11,7 @@ require (
 	github.com/kanthorlabs/common v0.0.0-20240524142848-8ffcee55badc
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/sourcegraph/conc v0.3.0
+	github.com/spaolacci/murmur3 v1.1.0
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 )
