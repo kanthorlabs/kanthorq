@@ -177,10 +177,10 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			// if the underlying connection is closed or context timeout
 			// so we need an helper to check our connection status before start consuming
 			if err := sub.connect(ctx); err != nil {
-				sub.errorc <- err
 				close(sub.errorc)
 				close(sub.failurec)
-				return
+				// if we still can't connect, throw the error
+				panic(err)
 			}
 
 			if err := sub.consume(handler, opts); err != nil {
