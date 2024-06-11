@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/subscriber"
@@ -18,6 +19,11 @@ func Subscribe() *cobra.Command {
 		Short: "subscribe messages of a topic from a consumer",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			connection := cmd.Flags().Lookup("connection").Value.String()
+
+			wait, err := cmd.Flags().GetInt64("wait")
+			if err != nil {
+				return err
+			}
 
 			streams, err := cmd.Flags().GetStringSlice("streams")
 			if err != nil {
@@ -57,12 +63,18 @@ func Subscribe() *cobra.Command {
 					c := fmt.Sprintf("%s -> %s -> %s", conf.StreamName, conf.Topic, conf.ConsumerName)
 					fmt.Printf("[%s] subscribing...\n", c)
 
-					go sub.Consume(ctx, func(subctx context.Context, events map[string]*entities.StreamEvent) map[string]error {
-						for _, event := range events {
-							datac <- fmt.Sprintf("[%s] %s", c, event.EventId)
-						}
-						return nil
-					})
+					go sub.Consume(
+						ctx,
+						func(subctx context.Context, events map[string]*entities.StreamEvent) map[string]error {
+							time.Sleep(time.Millisecond * time.Duration(wait))
+
+							for _, event := range events {
+								datac <- fmt.Sprintf("[%s] %s", c, event.EventId)
+							}
+							return nil
+						},
+						subscriber.Timeout(time.Second*10),
+					)
 				}
 			}
 
@@ -75,17 +87,20 @@ func Subscribe() *cobra.Command {
 
 			// wait for interrupt signal
 			<-ctx.Done()
-			fmt.Println("terminating...")
 
 			for _, sub := range subscribers {
 				if err := sub.Stop(ctx); err != nil {
 					fmt.Println(err.Error())
 				}
+				fmt.Println("terminating...")
 			}
 
+			fmt.Println("terminated")
 			return nil
 		},
 	}
+
+	command.Flags().Int64("wait", 5000, "handler simulation wait time in milliseconds")
 
 	return command
 }

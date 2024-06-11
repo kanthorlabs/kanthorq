@@ -26,21 +26,6 @@ services:
       timeout: 4s
       retries: 16
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.102.1
-    restart: unless-stopped
-    networks:
-      - kanthor
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - $PWD/docker/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-      - $PWD/docker/opentelemetry:/opentelemetry:rwz
-    ports:
-      - "8889:8889"   # Prometheus exporter 
-    environment:
-      - POSTGRES_USER=$POSTGRES_USER
-      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
-
 networks:
   kanthor:
     name: kanthorq

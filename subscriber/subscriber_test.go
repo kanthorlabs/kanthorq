@@ -64,9 +64,9 @@ func TestSubscriber(t *testing.T) {
 	case err := <-sub.Error():
 		cancel()
 		require.NoError(t, err)
-	case reports := <-sub.Report():
+	case failures := <-sub.Failurec():
 		cancel()
-		require.Greater(t, len(reports), 0)
-		require.Less(t, len(reports), DefaultSize)
+		require.Greater(t, len(failures), 0)
+		require.Less(t, len(failures), DefaultSize)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -20,27 +21,28 @@ func New(conf *Config) Subscriber {
 		// don't use unbuffer channel because it will block .Consume method
 		// because when you send a value on an unbuffered channel,
 		// the sending goroutine is blocked until another goroutine receives the value from the channel
-		reportc: make(chan map[string]error, 1),
-		errorc:  make(chan error, 1),
+		failurec: make(chan map[string]error, 1),
+		errorc:   make(chan error, 1),
 	}
 }
 
 type subscriber struct {
-	conf    *Config
-	reportc chan map[string]error
-	errorc  chan error
+	conf     *Config
+	failurec chan map[string]error
+	errorc   chan error
+	mu       sync.Mutex
 
 	conn     *pgx.Conn
 	consumer *entities.Consumer
 }
 
 func (sub *subscriber) Start(ctx context.Context) error {
-	conn, err := pgx.Connect(ctx, sub.conf.ConnectionUri)
-	if err != nil {
+	if err := sub.connect(ctx); err != nil {
 		return err
 	}
-	sub.conn = conn
 
+	sub.mu.Lock()
+	defer sub.mu.Unlock()
 	consumer, err := q.Consumer(ctx, sub.conn, &entities.Consumer{
 		StreamName: sub.conf.StreamName,
 		Topic:      sub.conf.Topic,
@@ -54,24 +56,37 @@ func (sub *subscriber) Start(ctx context.Context) error {
 	return nil
 }
 
+func (sub *subscriber) connect(ctx context.Context) error {
+	sub.mu.Lock()
+	defer sub.mu.Unlock()
+
+	if sub.conn != nil && !sub.conn.IsClosed() {
+		return nil
+	}
+
+	conn, err := pgx.Connect(ctx, sub.conf.ConnectionUri)
+	if err != nil {
+		return err
+	}
+	sub.conn = conn
+
+	return nil
+}
+
 func (sub *subscriber) Stop(ctx context.Context) error {
-	// wait for reportc and errorc to be closed
+	sub.mu.Lock()
+	defer sub.mu.Unlock()
+
+	// wait for failurec and errorc to be closed
 	<-sub.Error()
-	<-sub.Report()
+	<-sub.Failurec()
 	return sub.conn.Close(ctx)
 }
 
-func (sub *subscriber) Error() <-chan error {
-	return sub.errorc
-}
-
-func (sub *subscriber) Report() <-chan map[string]error {
-	return sub.reportc
-}
-
-func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, options ...Option) {
-	var opts = &Options{
+func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) (map[string]*entities.StreamEvent, error) {
+	var opts = &SubscribeOptions{
 		Size:              DefaultSize,
+		Timeout:           DefaultTimeout,
 		VisibilityTimeout: DefaultVisibilityTimeout,
 		WaitingTime:       DefaultWaitingTime,
 	}
@@ -79,152 +94,197 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 		configure(opts)
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
+	defer cancel()
+
+	// both .Begin and .Rollback will teriminate the underlying connection
+	// if the underlying connection is closed or context timeout
+	tx, err := sub.conn.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := api.ConsumerPull(sub.consumer, opts.Size).Do(ctx, tx)
+	// no new events to pull
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return nil, tx.Rollback(ctx)
+	}
+	if err != nil {
+		return nil, errors.Join(err, tx.Rollback(ctx))
+	}
+
+	// no more events to pull
+	if c.NextCursor == "" {
+		return nil, tx.Rollback(ctx)
+	}
+
+	j, err := api.ConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
+	// no new events to pull
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		return nil, tx.Rollback(ctx)
+	}
+	if err != nil {
+		return nil, errors.Join(err, tx.Rollback(ctx))
+	}
+
+	// no event was found
+	if len(j.Events) == 0 {
+		return nil, tx.Rollback(ctx)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	events := make(map[string]*entities.StreamEvent, len(j.Events))
+	for _, event := range j.Events {
+		events[event.EventId] = event
+	}
+
+	return events, nil
+}
+
+func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, options ...SubscribeOption) {
+	var opts = &SubscribeOptions{
+		Size:              DefaultSize,
+		Timeout:           DefaultTimeout,
+		VisibilityTimeout: DefaultVisibilityTimeout,
+		WaitingTime:       DefaultWaitingTime,
+	}
+	for _, configure := range options {
+		configure(opts)
+	}
+
+	// start error handler
+	go sub.errorh()
+	// start failure handler
+	go sub.failureh()
+
 	for {
 		select {
 		case <-ctx.Done():
 			close(sub.errorc)
-			close(sub.reportc)
-			// @TODO: log context error
+			close(sub.failurec)
 			return
-			// @TODO: move channel handling to another place
-		case err := <-sub.errorc:
-			// @TODO: better error handler
-			fmt.Println(err)
-			continue
-		case report := <-sub.reportc:
-			// @TODO: better event error handler
-			for eventId, err := range report {
-				fmt.Println(eventId, err)
-			}
 		default:
 			if ctx.Err() != nil {
 				close(sub.errorc)
-				close(sub.reportc)
+				close(sub.failurec)
 				return
 			}
-			// We assume that the subscriber handler needs to process events for a long time,
-			// hence, we should not hold a transaction too long.
-			// Therefore, we move events from StateAvailable to StateRunning first,
-			// then push them to the SubscriberHandler to handle the business logic.
-			// If something goes wrong, we need to clean it up later.
 
-			// @TODO: handle timeout
-			subctx := context.Background()
-
-			// pull job transaction
-			tx, err := sub.conn.Begin(subctx)
-			if err != nil {
+			// both .Begin and .Rollback will teriminate the underlying connection
+			// if the underlying connection is closed or context timeout
+			// so we need an helper to check our connection status before start consuming
+			if err := sub.connect(ctx); err != nil {
 				sub.errorc <- err
-				continue
+				close(sub.errorc)
+				close(sub.failurec)
+				return
 			}
 
-			c, err := api.ConsumerPull(sub.consumer, opts.Size).Do(subctx, tx)
-			if err != nil {
-				if errors.Is(err, pgx.ErrNoRows) {
-					sub.error(tx.Rollback(subctx))
-					time.Sleep(opts.WaitingTime)
-					continue
-				}
-
-				sub.error(err, tx.Rollback(subctx))
-				continue
-			}
-
-			// there is no more job in stream
-			if c.NextCursor == "" {
-				sub.error(tx.Rollback(subctx))
+			if err := sub.consume(handler, opts); err != nil {
+				fmt.Printf("waiting for %s before retrying\n", opts.WaitingTime)
 				time.Sleep(opts.WaitingTime)
-				continue
 			}
-
-			j, err := api.ConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(subctx, tx)
-			if err != nil {
-				sub.error(err, tx.Rollback(subctx))
-				continue
-			}
-
-			if len(j.Events) == 0 {
-				sub.error(err, tx.Rollback(subctx))
-				time.Sleep(opts.WaitingTime)
-				continue
-			}
-
-			if sub.error(tx.Commit(subctx)) {
-				continue
-			}
-
-			events := make(map[string]*entities.StreamEvent, len(j.Events))
-			for _, event := range j.Events {
-				events[event.EventId] = event
-			}
-
-			reports := handler(subctx, events)
-
-			// comfirm job transaction
-			tx, err = sub.conn.Begin(subctx)
-			if err != nil {
-				sub.error(err)
-				continue
-			}
-
-			var completed []string
-			var retryable []string
-			for _, event := range j.Events {
-				if len(reports) == 0 {
-					completed = append(completed, event.EventId)
-					continue
-				}
-
-				if err, exist := reports[event.EventId]; exist && err != nil {
-					retryable = append(retryable, event.EventId)
-					continue
-				}
-
-				completed = append(completed, event.EventId)
-			}
-
-			// no error reports, mark jobs as completed
-			if len(completed) > 0 {
-				command := api.ConsumerJobMarkComplete(sub.consumer, completed)
-				// mark complete may try to update not running job (because their state were updated in other transaction)
-				// so the returning helps use determine what event status is updated successfully
-				// TODO: report what update is successful
-				if _, err := command.Do(subctx, tx); err != nil {
-					sub.error(err, tx.Rollback(subctx))
-					continue
-				}
-			}
-
-			if len(retryable) > 0 {
-				// error reports, mark jobs as retryable
-				command := api.ConsumerJobMarkRetry(sub.consumer, retryable)
-				// same as ConsumerJobMarkRetry, the returning helps use determine what event status is updated successfully
-				// TODO: report what update is successful
-				if _, err := command.Do(subctx, tx); err != nil {
-					sub.error(err, tx.Rollback(subctx))
-					continue
-				}
-			}
-
-			if sub.error(tx.Commit(subctx)) {
-				continue
-			}
-
-			sub.reportc <- reports
 		}
 	}
 }
 
-func (sub *subscriber) error(errors ...error) bool {
-	var any bool
+func (sub *subscriber) consume(handler SubscriberHandler, opts *SubscribeOptions) error {
+	ctx, cancel := context.WithTimeout(context.Background(), opts.Timeout)
+	defer cancel()
 
-	for _, err := range errors {
+	events, err := sub.Pull(ctx)
+	if err != nil {
+		return sub.error(err)
+	}
+
+	failures := handler(ctx, events)
+
+	// both .Begin and .Rollback will teriminate the underlying connection
+	// if the underlying connection is closed or context timeout
+	tx, err := sub.conn.Begin(ctx)
+	if err != nil {
+		return sub.error(err)
+	}
+
+	var completed []string
+	var retryable []string
+	for _, event := range events {
+		if len(failures) == 0 {
+			completed = append(completed, event.EventId)
+			continue
+		}
+
+		if err, exist := failures[event.EventId]; exist && err != nil {
+			retryable = append(retryable, event.EventId)
+			continue
+		}
+
+		completed = append(completed, event.EventId)
+	}
+
+	// no error reports, mark jobs as completed
+	if len(completed) > 0 {
+		command := api.ConsumerJobMarkComplete(sub.consumer, completed)
+		// mark complete may try to update not running job (because their state were updated in other transaction)
+		// so the returning helps use determine what event status is updated successfully
+		// TODO: report what update is successful
+		if _, err := command.Do(ctx, tx); err != nil {
+			return sub.error(err, tx.Rollback(ctx))
+		}
+	}
+
+	if len(retryable) > 0 {
+		// error reports, mark jobs as retryable
+		command := api.ConsumerJobMarkRetry(sub.consumer, retryable)
+		// same as ConsumerJobMarkRetry, the returning helps use determine what event status is updated successfully
+		// TODO: report what update is successful
+		if _, err := command.Do(ctx, tx); err != nil {
+			return sub.error(err, tx.Rollback(ctx))
+		}
+	}
+
+	if err := sub.error(tx.Commit(ctx)); err != nil {
+		return err
+	}
+	sub.failurec <- failures
+	return nil
+}
+
+func (sub *subscriber) Failurec() <-chan map[string]error {
+	return sub.failurec
+}
+
+func (sub *subscriber) Error() <-chan error {
+	return sub.errorc
+}
+
+func (sub *subscriber) error(errs ...error) error {
+	var merged error
+
+	for _, err := range errs {
 		if err == nil {
 			continue
 		}
-		any = true
+		merged = errors.Join(merged, err)
 		sub.errorc <- err
 	}
 
-	return any
+	return merged
+}
+
+func (sub *subscriber) errorh() {
+	for err := range sub.errorc {
+		fmt.Println("===errorh", err)
+	}
+}
+
+func (sub *subscriber) failureh() {
+	for failures := range sub.failurec {
+		for eventId, err := range failures {
+			fmt.Println("failureh===", eventId, err)
+		}
+	}
 }
