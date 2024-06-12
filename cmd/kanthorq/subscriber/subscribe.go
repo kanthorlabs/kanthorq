@@ -65,7 +65,7 @@ func Subscribe() *cobra.Command {
 
 					go sub.Consume(
 						ctx,
-						func(subctx context.Context, events map[string]*entities.StreamEvent) map[string]error {
+						func(subctx context.Context, events []*entities.StreamEvent) map[string]error {
 							time.Sleep(time.Millisecond * time.Duration(wait))
 
 							for _, event := range events {

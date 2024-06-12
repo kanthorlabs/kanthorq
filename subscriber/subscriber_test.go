@@ -45,7 +45,7 @@ func TestSubscriber(t *testing.T) {
 
 	cancelling, cancel := context.WithCancel(context.Background())
 	// receiving events
-	go sub.Consume(cancelling, func(ctx context.Context, events map[string]*entities.StreamEvent) map[string]error {
+	go sub.Consume(cancelling, func(ctx context.Context, events []*entities.StreamEvent) map[string]error {
 		var reports = make(map[string]error, len(events))
 
 		var i = 1

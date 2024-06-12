@@ -60,6 +60,7 @@ func (sub *subscriber) connect(ctx context.Context) error {
 	sub.mu.Lock()
 	defer sub.mu.Unlock()
 
+	// @TODO: test what will happen if pgbouncer terminate a connection
 	if sub.conn != nil && !sub.conn.IsClosed() {
 		return nil
 	}
@@ -83,7 +84,7 @@ func (sub *subscriber) Stop(ctx context.Context) error {
 	return sub.conn.Close(ctx)
 }
 
-func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) (map[string]*entities.StreamEvent, error) {
+func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) ([]*entities.StreamEvent, error) {
 	var opts = &SubscribeOptions{
 		Size:              DefaultSize,
 		Timeout:           DefaultTimeout,
@@ -136,12 +137,7 @@ func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) (ma
 		return nil, err
 	}
 
-	events := make(map[string]*entities.StreamEvent, len(j.Events))
-	for _, event := range j.Events {
-		events[event.EventId] = event
-	}
-
-	return events, nil
+	return j.Events, nil
 }
 
 func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, options ...SubscribeOption) {

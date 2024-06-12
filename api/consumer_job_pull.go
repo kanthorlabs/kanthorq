@@ -29,7 +29,7 @@ type ConsumerJobPullReq struct {
 }
 
 type ConsumerJobPullRes struct {
-	Events map[string]*entities.StreamEvent
+	Events []*entities.StreamEvent
 }
 
 func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobPullRes, error) {
@@ -45,7 +45,7 @@ func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobP
 		return nil, err
 	}
 
-	res := &ConsumerJobPullRes{Events: make(map[string]*entities.StreamEvent)}
+	res := &ConsumerJobPullRes{Events: make([]*entities.StreamEvent, 0)}
 	if len(changes.EventIds) == 0 {
 		return res, nil
 	}
@@ -82,7 +82,7 @@ func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobP
 		if err != nil {
 			return nil, err
 		}
-		res.Events[event.EventId] = &event
+		res.Events = append(res.Events, &event)
 	}
 
 	return res, nil
