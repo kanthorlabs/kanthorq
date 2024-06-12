@@ -47,7 +47,7 @@ func GenStreamEvents(topic string, count int64) []*entities.StreamEvent {
 			EventId:   ulid.Make().String(),
 			Topic:     topic,
 			Body:      GenBytes(size),
-			Metadata:  GenBytes(size),
+			Metadata:  make(map[string]any),
 			CreatedAt: now,
 		}
 	}

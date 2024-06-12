@@ -6,6 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
@@ -24,6 +25,12 @@ func init() {
 			sdktrace.WithResource(resource.Default()),
 		)
 		otel.SetTracerProvider(tracer)
+
+		var propagator = propagation.NewCompositeTextMapPropagator(
+			propagation.TraceContext{},
+			propagation.Baggage{},
+		)
+		otel.SetTextMapPropagator(propagator)
 	})
 }
 

@@ -7,7 +7,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/telemetry"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -28,7 +30,7 @@ type StreamEventPushRes struct {
 }
 
 func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventPushRes, error) {
-	ctx, span := telemetry.Tracer.Start(ctx, "api.StreamEventPush")
+	ctx, span := telemetry.Tracer.Start(ctx, "api.StreamEventPush", trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
 	if len(req.Events) == 0 {
@@ -38,6 +40,13 @@ func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventP
 
 	var entries = make([][]any, len(req.Events))
 	for i, event := range req.Events {
+		// inject tracing context into metadata
+		carrier := propagation.MapCarrier{}
+		otel.GetTextMapPropagator().Inject(ctx, carrier)
+		for k, v := range carrier {
+			event.Metadata[k] = v
+		}
+
 		entries[i] = []any{
 			event.EventId,
 			event.Topic,

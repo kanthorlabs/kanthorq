@@ -24,11 +24,11 @@ var CollectionStreamEventProps = []string{
 }
 
 type StreamEvent struct {
-	EventId   string `json:"event_id"`
-	Topic     string `json:"topic"`
-	Body      []byte `json:"body"`
-	Metadata  []byte `json:"metadata"`
-	CreatedAt int64  `json:"created_at"`
+	EventId   string         `json:"event_id"`
+	Topic     string         `json:"topic"`
+	Body      []byte         `json:"body"`
+	Metadata  map[string]any `json:"metadata"`
+	CreatedAt int64          `json:"created_at"`
 }
 
 var DefaultEventBodySize = 64 * 1024

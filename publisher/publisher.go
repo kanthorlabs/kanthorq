@@ -10,6 +10,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var _ Publisher = (*publisher)(nil)
@@ -56,7 +57,7 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
 
-	ctx, span := telemetry.Tracer.Start(ctx, "publisher.Send")
+	ctx, span := telemetry.Tracer.Start(ctx, "publisher.Send", trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
 	// wait for the transaction is done
