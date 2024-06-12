@@ -8,6 +8,8 @@ import (
 	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
+	"github.com/kanthorlabs/kanthorq/telemetry"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var _ Publisher = (*publisher)(nil)
@@ -54,9 +56,13 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
 
+	ctx, span := telemetry.Tracer.Start(ctx, "publisher.Send")
+	defer span.End()
+
 	// wait for the transaction is done
 	select {
 	case <-ctx.Done():
+		span.SetAttributes(attribute.String("ERROR.PUBLISHER.CONTEXT", ctx.Err().Error()))
 		return ctx.Err()
 	default:
 		tx, err := pub.conn.Begin(ctx)

@@ -6,6 +6,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/telemetry"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func StreamEventPush(stream *entities.Stream, events []*entities.StreamEvent) *StreamEventPushReq {
@@ -25,7 +28,11 @@ type StreamEventPushRes struct {
 }
 
 func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventPushRes, error) {
+	ctx, span := telemetry.Tracer.Start(ctx, "api.StreamEventPush")
+	defer span.End()
+
 	if len(req.Events) == 0 {
+		span.SetAttributes(attribute.Bool("ERROR.STREAM_EVENTS.EMPTY", true))
 		return nil, fmt.Errorf("ERROR.STREAM_EVENTS.EMPTY: %s", req.Stream.Name)
 	}
 
@@ -39,6 +46,7 @@ func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventP
 			event.CreatedAt,
 		}
 	}
+	span.SetAttributes(attribute.Int("event_count", len(entries)))
 
 	inserted, err := tx.CopyFrom(
 		ctx,
@@ -47,6 +55,7 @@ func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventP
 		pgx.CopyFromRows(entries),
 	)
 	if err != nil {
+		span.RecordError(err, trace.WithStackTrace(true))
 		return nil, err
 	}
 
