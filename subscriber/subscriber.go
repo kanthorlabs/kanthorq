@@ -11,6 +11,11 @@ import (
 	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
+	"github.com/kanthorlabs/kanthorq/telemetry"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var _ Subscriber = (*subscriber)(nil)
@@ -85,6 +90,7 @@ func (sub *subscriber) Stop(ctx context.Context) error {
 }
 
 func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) ([]*entities.StreamEvent, error) {
+	// @TODO: open then close connection
 	var opts = &SubscribeOptions{
 		Size:              DefaultSize,
 		Timeout:           DefaultTimeout,
@@ -98,42 +104,53 @@ func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) ([]
 	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
 	defer cancel()
 
+	ctx, span := telemetry.Tracer.Start(ctx, "subscriber.Pull", trace.WithSpanKind(trace.SpanKindConsumer))
+	defer span.End()
+
 	// both .Begin and .Rollback will teriminate the underlying connection
 	// if the underlying connection is closed or context timeout
 	tx, err := sub.conn.Begin(ctx)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
 	c, err := api.ConsumerPull(sub.consumer, opts.Size).Do(ctx, tx)
 	// no new events to pull
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		span.RecordError(err)
 		return nil, tx.Rollback(ctx)
 	}
 	if err != nil {
+		span.RecordError(err)
 		return nil, errors.Join(err, tx.Rollback(ctx))
 	}
 
 	// no more events to pull
 	if c.NextCursor == "" {
+		span.SetAttributes(attribute.Bool("api.ConsumerPull/ErrNoNextCursor", true))
 		return nil, tx.Rollback(ctx)
 	}
 
 	j, err := api.ConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
 	// no new events to pull
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+		span.RecordError(err)
 		return nil, tx.Rollback(ctx)
 	}
 	if err != nil {
+		span.RecordError(err)
 		return nil, errors.Join(err, tx.Rollback(ctx))
 	}
 
+	span.SetAttributes(attribute.Int("api.ConsumerJobPull/Events", len(j.Events)))
 	// no event was found
 	if len(j.Events) == 0 {
 		return nil, tx.Rollback(ctx)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
@@ -188,37 +205,63 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 }
 
 func (sub *subscriber) consume(handler SubscriberHandler, opts *SubscribeOptions) error {
+	// @TODO: open then close connection
+
 	ctx, cancel := context.WithTimeout(context.Background(), opts.Timeout)
 	defer cancel()
 
+	ctx, span := telemetry.Tracer.Start(ctx, "subscriber.Consume", trace.WithSpanKind(trace.SpanKindConsumer))
+	defer span.End()
+
 	events, err := sub.Pull(ctx)
 	if err != nil {
+		span.RecordError(err)
 		return sub.error(err)
 	}
 
-	failures := handler(ctx, events)
-
-	// both .Begin and .Rollback will teriminate the underlying connection
-	// if the underlying connection is closed or context timeout
-	tx, err := sub.conn.Begin(ctx)
-	if err != nil {
-		return sub.error(err)
-	}
-
-	var completed []string
+	var failures = make(map[string]error)
 	var retryable []string
+	var completed []string
+	// loop through each event to guarantee the order of events
 	for _, event := range events {
-		if len(failures) == 0 {
-			completed = append(completed, event.EventId)
-			continue
+		// extract traceparent from metadata into context
+		carrier := propagation.MapCarrier{}
+		for k, v := range event.Metadata {
+			if k == "traceparent" {
+				carrier.Set(k, v.(string))
+			}
 		}
+		traceCtx := otel.GetTextMapPropagator().Extract(ctx, carrier)
 
-		if err, exist := failures[event.EventId]; exist && err != nil {
+		_, consumeSpan := telemetry.Tracer.Start(traceCtx, "subscriber.Consume/handler", trace.WithSpanKind(trace.SpanKindConsumer))
+		consumeSpan.SetAttributes(attribute.String("event_id", event.EventId))
+
+		// continue tracing from the publisher
+		continuousContext, continuousSpan := telemetry.Tracer.Start(traceCtx, "subscriber.Consume/handler", trace.WithSpanKind(trace.SpanKindConsumer))
+		continuousSpan.SetAttributes(attribute.String("event_id", event.EventId))
+
+		if err := handler(continuousContext, event); err != nil {
+			consumeSpan.RecordError(err)
+			consumeSpan.End()
+			continuousSpan.RecordError(err)
+			continuousSpan.End()
+
+			failures[event.EventId] = err
 			retryable = append(retryable, event.EventId)
 			continue
 		}
 
 		completed = append(completed, event.EventId)
+		consumeSpan.End()
+		continuousSpan.End()
+	}
+
+	// both .Begin and .Rollback will teriminate the underlying connection
+	// if the underlying connection is closed or context timeout
+	tx, err := sub.conn.Begin(ctx)
+	if err != nil {
+		span.RecordError(err)
+		return sub.error(err)
 	}
 
 	// no error reports, mark jobs as completed
@@ -228,6 +271,7 @@ func (sub *subscriber) consume(handler SubscriberHandler, opts *SubscribeOptions
 		// so the returning helps use determine what event status is updated successfully
 		// TODO: report what update is successful
 		if _, err := command.Do(ctx, tx); err != nil {
+			span.RecordError(err)
 			return sub.error(err, tx.Rollback(ctx))
 		}
 	}
@@ -238,11 +282,13 @@ func (sub *subscriber) consume(handler SubscriberHandler, opts *SubscribeOptions
 		// same as ConsumerJobMarkRetry, the returning helps use determine what event status is updated successfully
 		// TODO: report what update is successful
 		if _, err := command.Do(ctx, tx); err != nil {
+			span.RecordError(err)
 			return sub.error(err, tx.Rollback(ctx))
 		}
 	}
 
 	if err := sub.error(tx.Commit(ctx)); err != nil {
+		span.RecordError(err)
 		return err
 	}
 	sub.failurec <- failures
@@ -273,14 +319,14 @@ func (sub *subscriber) error(errs ...error) error {
 
 func (sub *subscriber) errorh() {
 	for err := range sub.errorc {
-		fmt.Println("===errorh", err)
+		fmt.Println(err)
 	}
 }
 
 func (sub *subscriber) failureh() {
 	for failures := range sub.failurec {
 		for eventId, err := range failures {
-			fmt.Println("failureh===", eventId, err)
+			fmt.Printf("%s error:%s\n", eventId, err.Error())
 		}
 	}
 }

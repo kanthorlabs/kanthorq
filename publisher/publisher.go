@@ -56,6 +56,7 @@ func (pub *publisher) Stop(ctx context.Context) error {
 func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) error {
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
+	// @TODO: open then close connection
 
 	ctx, span := telemetry.Tracer.Start(ctx, "publisher.Send", trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()

@@ -7,6 +7,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/telemetry"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func ConsumerCursorRead(consumer *entities.Consumer) *ConsumerCursorReadReq {
@@ -25,6 +28,10 @@ type ConsumerCursorReadRes struct {
 }
 
 func (req *ConsumerCursorReadReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerCursorReadRes, error) {
+	ctx, span := telemetry.Tracer.Start(ctx, "api.ConsumerCursorRead", trace.WithSpanKind(trace.SpanKindConsumer))
+	defer span.End()
+
+	span.SetAttributes(attribute.String("consumer_name", req.Consumer.Name))
 	args := pgx.NamedArgs{"consumer_name": req.Consumer.Name}
 
 	table := pgx.Identifier{entities.CollectionConsumer}.Sanitize()
@@ -33,6 +40,7 @@ func (req *ConsumerCursorReadReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerC
 	var cursor string
 	var err = tx.QueryRow(ctx, query, args).Scan(&cursor)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 

@@ -40,7 +40,7 @@ func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventP
 
 	var entries = make([][]any, len(req.Events))
 	for i, event := range req.Events {
-		// inject tracing context into metadata
+		// inject traceparent from context into metadata
 		carrier := propagation.MapCarrier{}
 		otel.GetTextMapPropagator().Inject(ctx, carrier)
 		for k, v := range carrier {

@@ -9,6 +9,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/telemetry"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func ConsumerJobMarkRetry(consumer *entities.Consumer, eventIds []string) *ConsumerJobMarkRetryReq {
@@ -31,6 +34,9 @@ type ConsumerJobMarkRetryRes struct {
 }
 
 func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobMarkRetryRes, error) {
+	ctx, span := telemetry.Tracer.Start(ctx, "api.ConsumerJobMarkRetry", trace.WithSpanKind(trace.SpanKindConsumer))
+	defer span.End()
+
 	res := &ConsumerJobMarkRetryRes{Updated: make(map[string]bool)}
 
 	var names = make([]string, len(req.EventIds))
@@ -54,6 +60,7 @@ func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*Consume
 
 	rows, err := tx.Query(ctx, query, args)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -61,13 +68,23 @@ func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*Consume
 	for rows.Next() {
 		var id string
 		if err := rows.Scan(&id); err != nil {
+			span.RecordError(err)
 			return nil, err
 		}
 
 		res.Updated[id] = true
 	}
 	if rows.Err() != nil {
+		span.RecordError(err)
 		return nil, rows.Err()
+	}
+
+	for id, updated := range res.Updated {
+		if !updated {
+			span.SetAttributes(attribute.String("api.ConsumerJobMarkComplete/updated", id))
+		} else {
+			span.SetAttributes(attribute.String("api.ConsumerJobMarkComplete/excluded", id))
+		}
 	}
 
 	return res, nil

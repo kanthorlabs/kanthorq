@@ -9,6 +9,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/publisher"
 	"github.com/kanthorlabs/kanthorq/testify"
+	"github.com/kanthorlabs/kanthorq/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,19 +46,12 @@ func TestSubscriber(t *testing.T) {
 
 	cancelling, cancel := context.WithCancel(context.Background())
 	// receiving events
-	go sub.Consume(cancelling, func(ctx context.Context, events []*entities.StreamEvent) map[string]error {
-		var reports = make(map[string]error, len(events))
-
-		var i = 1
-		for _, event := range events {
-			if i%2 == 0 {
-				continue
-			}
-
-			reports[event.EventId] = errors.New(testify.Fake.Emoji().EmojiCode())
-			i++
+	go sub.Consume(cancelling, func(ctx context.Context, events *entities.StreamEvent) error {
+		if hash := utils.AdvisoryLockHash(events.EventId); hash%2 == 0 {
+			return nil
 		}
-		return reports
+
+		return errors.New(testify.Fake.Emoji().Emoji())
 	})
 
 	select {

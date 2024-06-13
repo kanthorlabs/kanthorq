@@ -65,12 +65,9 @@ func Subscribe() *cobra.Command {
 
 					go sub.Consume(
 						ctx,
-						func(subctx context.Context, events []*entities.StreamEvent) map[string]error {
+						func(subctx context.Context, event *entities.StreamEvent) error {
 							time.Sleep(time.Millisecond * time.Duration(wait))
-
-							for _, event := range events {
-								datac <- fmt.Sprintf("[%s] %s", c, event.EventId)
-							}
+							datac <- fmt.Sprintf("[%s] %s", c, event.EventId)
 							return nil
 						},
 						subscriber.Timeout(time.Second*10),
@@ -100,7 +97,7 @@ func Subscribe() *cobra.Command {
 		},
 	}
 
-	command.Flags().Int64("wait", 5000, "handler simulation wait time in milliseconds")
+	command.Flags().Int64("wait", 100, "handler simulation wait time in milliseconds")
 
 	return command
 }

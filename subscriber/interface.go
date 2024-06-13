@@ -17,4 +17,4 @@ type Subscriber interface {
 	Error() <-chan error
 }
 
-type SubscriberHandler func(ctx context.Context, events []*entities.StreamEvent) map[string]error
+type SubscriberHandler func(ctx context.Context, event *entities.StreamEvent) error

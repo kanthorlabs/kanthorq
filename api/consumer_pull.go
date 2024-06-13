@@ -8,6 +8,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/telemetry"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func ConsumerPull(consumer *entities.Consumer, size int) *ConsumerPullReq {
@@ -31,11 +34,19 @@ type ConsumerPullRes struct {
 }
 
 func (req *ConsumerPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPullRes, error) {
+	ctx, span := telemetry.Tracer.Start(ctx, "api.ConsumerPull", trace.WithSpanKind(trace.SpanKindConsumer))
+	defer span.End()
+
 	cur, err := ConsumerCursorRead(req.Consumer).Do(ctx, tx)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
+	span.SetAttributes(attribute.String("consumer_name", req.Consumer.Name))
+	span.SetAttributes(attribute.String("consumer_topic", req.Consumer.Topic))
+	span.SetAttributes(attribute.Int("size", req.Size))
+	span.SetAttributes(attribute.String("consumer_cursor", cur.Cursor))
 	args := pgx.NamedArgs{
 		"consumer_name":   req.Consumer.Name,
 		"consumer_topic":  req.Consumer.Topic,
@@ -50,6 +61,7 @@ func (req *ConsumerPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPullRes
 	res := &ConsumerPullRes{CurrentCursor: cur.Cursor, NextCursor: ""}
 	err = tx.QueryRow(ctx, query, args).Scan(&res.NextCursor)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
