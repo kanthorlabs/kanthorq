@@ -12,9 +12,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -90,7 +88,6 @@ func (sub *subscriber) Stop(ctx context.Context) error {
 }
 
 func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) ([]*entities.StreamEvent, error) {
-	// @TODO: open then close connection
 	var opts = &SubscribeOptions{
 		Size:              DefaultSize,
 		Timeout:           DefaultTimeout,
@@ -118,7 +115,7 @@ func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) ([]
 	c, err := api.ConsumerPull(sub.consumer, opts.Size).Do(ctx, tx)
 	// no new events to pull
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		span.RecordError(err)
+		span.SetAttributes(attribute.Bool("api.ConsumerPull/ErrNoRows", true))
 		return nil, tx.Rollback(ctx)
 	}
 	if err != nil {
@@ -135,7 +132,7 @@ func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) ([]
 	j, err := api.ConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
 	// no new events to pull
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		span.RecordError(err)
+		span.SetAttributes(attribute.Bool("api.ConsumerJobPull/ErrNoRows", true))
 		return nil, tx.Rollback(ctx)
 	}
 	if err != nil {
@@ -192,7 +189,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			if err := sub.connect(ctx); err != nil {
 				close(sub.errorc)
 				close(sub.failurec)
-				// if we still can't connect, throw the error
+				// if we still can't connect, throw it
 				panic(err)
 			}
 
@@ -205,8 +202,6 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 }
 
 func (sub *subscriber) consume(handler SubscriberHandler, opts *SubscribeOptions) error {
-	// @TODO: open then close connection
-
 	ctx, cancel := context.WithTimeout(context.Background(), opts.Timeout)
 	defer cancel()
 
@@ -224,40 +219,15 @@ func (sub *subscriber) consume(handler SubscriberHandler, opts *SubscribeOptions
 	var completed []string
 	// loop through each event to guarantee the order of events
 	for _, event := range events {
-		// extract traceparent from metadata into context
-		carrier := propagation.MapCarrier{}
-		for k, v := range event.Metadata {
-			if k == "traceparent" {
-				carrier.Set(k, v.(string))
-			}
-		}
-		traceCtx := otel.GetTextMapPropagator().Extract(ctx, carrier)
-
-		_, consumeSpan := telemetry.Tracer.Start(traceCtx, "subscriber.Consume/handler", trace.WithSpanKind(trace.SpanKindConsumer))
-		consumeSpan.SetAttributes(attribute.String("event_id", event.EventId))
-
-		// continue tracing from the publisher
-		continuousContext, continuousSpan := telemetry.Tracer.Start(traceCtx, "subscriber.Consume/handler", trace.WithSpanKind(trace.SpanKindConsumer))
-		continuousSpan.SetAttributes(attribute.String("event_id", event.EventId))
-
-		if err := handler(continuousContext, event); err != nil {
-			consumeSpan.RecordError(err)
-			consumeSpan.End()
-			continuousSpan.RecordError(err)
-			continuousSpan.End()
-
+		if err := handler(ctx, event); err != nil {
 			failures[event.EventId] = err
 			retryable = append(retryable, event.EventId)
 			continue
 		}
 
 		completed = append(completed, event.EventId)
-		consumeSpan.End()
-		continuousSpan.End()
 	}
 
-	// both .Begin and .Rollback will teriminate the underlying connection
-	// if the underlying connection is closed or context timeout
 	tx, err := sub.conn.Begin(ctx)
 	if err != nil {
 		span.RecordError(err)

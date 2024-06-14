@@ -79,13 +79,17 @@ func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*Consume
 		return nil, rows.Err()
 	}
 
-	for id, updated := range res.Updated {
-		if !updated {
-			span.SetAttributes(attribute.String("api.ConsumerJobMarkComplete/updated", id))
-		} else {
-			span.SetAttributes(attribute.String("api.ConsumerJobMarkComplete/excluded", id))
+	var updated = make([]string, 0)
+	var excluded = make([]string, 0)
+	for id, ok := range res.Updated {
+		if ok {
+			updated = append(updated, id)
+			continue
 		}
+		excluded = append(excluded, id)
 	}
+	span.SetAttributes(attribute.StringSlice("api.ConsumerJobMarkComplete/updated", updated))
+	span.SetAttributes(attribute.StringSlice("api.ConsumerJobMarkComplete/excluded", excluded))
 
 	return res, nil
 }

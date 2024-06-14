@@ -32,6 +32,7 @@ type StreamEventPushRes struct {
 func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventPushRes, error) {
 	ctx, span := telemetry.Tracer.Start(ctx, "api.StreamEventPush", trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
+	span.SetAttributes(attribute.String("stream_name", req.Stream.Name))
 
 	if len(req.Events) == 0 {
 		span.SetAttributes(attribute.Bool("ERROR.STREAM_EVENTS.EMPTY", true))
@@ -55,7 +56,7 @@ func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventP
 			event.CreatedAt,
 		}
 	}
-	span.SetAttributes(attribute.Int("event_count", len(entries)))
+	span.SetAttributes(attribute.Int("events", len(entries)))
 
 	inserted, err := tx.CopyFrom(
 		ctx,

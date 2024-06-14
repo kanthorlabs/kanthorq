@@ -9,7 +9,6 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -28,15 +27,12 @@ type publisher struct {
 }
 
 func (pub *publisher) Start(ctx context.Context) error {
-	pub.mu.Lock()
-	defer pub.mu.Unlock()
-
-	conn, err := pgx.Connect(ctx, pub.conf.ConnectionUri)
-	if err != nil {
+	if err := pub.connect(ctx); err != nil {
 		return err
 	}
-	pub.conn = conn
 
+	pub.mu.Lock()
+	defer pub.mu.Unlock()
 	stream, err := q.Stream(ctx, pub.conn, &entities.Stream{Name: pub.conf.StreamName})
 	if err != nil {
 		return err
@@ -46,6 +42,23 @@ func (pub *publisher) Start(ctx context.Context) error {
 	return nil
 }
 
+func (pub *publisher) connect(ctx context.Context) error {
+	pub.mu.Lock()
+	defer pub.mu.Unlock()
+
+	// @TODO: test what will happen if pgbouncer terminate a connection
+	if pub.conn != nil && !pub.conn.IsClosed() {
+		return nil
+	}
+
+	conn, err := pgx.Connect(ctx, pub.conf.ConnectionUri)
+	if err != nil {
+		return err
+	}
+	pub.conn = conn
+
+	return nil
+}
 func (pub *publisher) Stop(ctx context.Context) error {
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
@@ -54,30 +67,42 @@ func (pub *publisher) Stop(ctx context.Context) error {
 }
 
 func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) error {
-	pub.mu.Lock()
-	defer pub.mu.Unlock()
-	// @TODO: open then close connection
-
 	ctx, span := telemetry.Tracer.Start(ctx, "publisher.Send", trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
 	// wait for the transaction is done
 	select {
 	case <-ctx.Done():
-		span.SetAttributes(attribute.String("ERROR.PUBLISHER.CONTEXT", ctx.Err().Error()))
+		span.RecordError(ctx.Err())
 		return ctx.Err()
 	default:
-		tx, err := pub.conn.Begin(ctx)
-		if err != nil {
+		if err := pub.connect(ctx); err != nil {
+			span.RecordError(ctx.Err())
 			return err
 		}
-		defer tx.Rollback(ctx)
+
+		tx, err := pub.conn.Begin(ctx)
+		if err != nil {
+			span.RecordError(ctx.Err())
+			return err
+		}
+		defer func() {
+			if err := tx.Rollback(ctx); err != nil {
+				span.RecordError(err)
+			}
+		}()
 
 		_, err = api.StreamEventPush(pub.stream, events).Do(ctx, tx)
 		if err != nil {
+			span.RecordError(ctx.Err())
 			return err
 		}
 
-		return tx.Commit(ctx)
+		if err := tx.Commit(ctx); err != nil {
+			span.RecordError(ctx.Err())
+			return err
+		}
+
+		return nil
 	}
 }

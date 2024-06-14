@@ -44,5 +44,6 @@ func (req *ConsumerCursorReadReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerC
 		return nil, err
 	}
 
+	span.SetAttributes(attribute.String("consumer_cursor", cursor))
 	return &ConsumerCursorReadRes{Cursor: cursor}, nil
 }
