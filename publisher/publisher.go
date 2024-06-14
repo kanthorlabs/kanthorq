@@ -9,6 +9,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -83,11 +84,13 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 
 		tx, err := pub.conn.Begin(ctx)
 		if err != nil {
-			span.RecordError(ctx.Err())
+			span.SetAttributes(attribute.Bool("ERROR.BEGIN", true))
+			span.RecordError(err)
 			return err
 		}
 		defer func() {
 			if err := tx.Rollback(ctx); err != nil {
+				span.SetAttributes(attribute.Bool("ERROR.ROLLBACK", true))
 				span.RecordError(err)
 			}
 		}()
@@ -99,6 +102,7 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 		}
 
 		if err := tx.Commit(ctx); err != nil {
+			span.SetAttributes(attribute.Bool("ERROR.COMMIT", true))
 			span.RecordError(ctx.Err())
 			return err
 		}
