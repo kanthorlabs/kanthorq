@@ -2,8 +2,6 @@ package subscriber
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"sync"
@@ -81,11 +79,6 @@ func (sub *subscriber) connect(ctx context.Context) error {
 
 		return nil
 	}
-}
-
-func StatementName(sql string) string {
-	digest := sha256.Sum256([]byte(sql))
-	return "stmtcache_" + hex.EncodeToString(digest[0:24])
 }
 
 func (sub *subscriber) Stop(ctx context.Context) error {
@@ -172,9 +165,8 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 	go sub.failureh()
 
 	for {
-		// ctx is used for control flow
 		// cctx will be use for consume logic
-		ctx, cancel := context.WithTimeout(context.Background(), opts.WaitingTime)
+		cctx, cancel := context.WithTimeout(context.Background(), opts.WaitingTime)
 		cctx, span := telemetry.Tracer.Start(ctx, "subscriber.Consume", trace.WithSpanKind(trace.SpanKindConsumer))
 		span.SetAttributes(attribute.String("stream_name", sub.conf.StreamName))
 		span.SetAttributes(attribute.String("topic", sub.conf.Topic))
@@ -185,6 +177,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 		span.SetAttributes(attribute.Int64("waiting_time", opts.WaitingTime.Milliseconds()))
 
 		select {
+		// ctx is used for control flow
 		case <-ctx.Done():
 			close(sub.errorc)
 			close(sub.failurec)
@@ -193,6 +186,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 			span.End()
 			return
 		default:
+			// ctx is used for control flow
 			if ctx.Err() != nil {
 				close(sub.errorc)
 				close(sub.failurec)

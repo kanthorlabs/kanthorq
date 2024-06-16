@@ -47,8 +47,8 @@ func (req *ConsumerJobStateChangeReq) Do(ctx context.Context, tx pgx.Tx) (*Consu
 
 	args := pgx.NamedArgs{
 		"attempt_at":       time.Now().UnixMilli(),
-		"from_state":       req.FromState,
-		"to_state":         req.ToState,
+		"from_state":       int(req.FromState),
+		"to_state":         int(req.ToState),
 		"size":             req.Size,
 		"next_schedule_at": time.Now().Add(req.VisibilityTimeout).UnixMilli(),
 	}

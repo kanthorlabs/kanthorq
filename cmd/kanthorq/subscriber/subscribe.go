@@ -85,11 +85,11 @@ func Subscribe() *cobra.Command {
 			// wait for interrupt signal
 			<-ctx.Done()
 
+			fmt.Println("terminating...")
 			for _, sub := range subscribers {
 				if err := sub.Stop(ctx); err != nil {
 					fmt.Println(err.Error())
 				}
-				fmt.Println("terminating...")
 			}
 
 			fmt.Println("terminated")
