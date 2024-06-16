@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -37,13 +38,14 @@ func (req *ConsumerCursorReadReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerC
 	table := pgx.Identifier{entities.CollectionConsumer}.Sanitize()
 	query := fmt.Sprintf(ConsumerCursorReadSQL, table)
 
-	var cursor string
-	var err = tx.QueryRow(ctx, query, args).Scan(&cursor)
-	if err != nil {
+	res := &ConsumerCursorReadRes{Cursor: ""}
+	var err = tx.QueryRow(ctx, query, args).Scan(&res.Cursor)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		span.RecordError(err)
 		return nil, err
 	}
+	// if error is nil or error is pgx.ErrNoRows, we accept it
 
-	span.SetAttributes(attribute.String("consumer_cursor", cursor))
-	return &ConsumerCursorReadRes{Cursor: cursor}, nil
+	span.SetAttributes(attribute.String("consumer_cursor", res.Cursor))
+	return res, nil
 }

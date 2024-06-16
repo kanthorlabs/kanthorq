@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	_ "embed"
@@ -60,10 +61,11 @@ func (req *ConsumerPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPullRes
 
 	res := &ConsumerPullRes{CurrentCursor: cur.Cursor, NextCursor: ""}
 	err = tx.QueryRow(ctx, query, args).Scan(&res.NextCursor)
-	if err != nil {
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		span.RecordError(err)
 		return nil, err
 	}
+	// if error is nil or error is pgx.ErrNoRows, we accept it
 
 	return res, nil
 }
