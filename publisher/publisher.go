@@ -85,25 +85,25 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 		// TODO: add retry logic
 		tx, err := pub.conn.Begin(ctx)
 		if err != nil {
-			span.SetAttributes(attribute.Bool(".Begin", true))
+			span.SetAttributes(attribute.Bool("ErrTxBegin", true))
 			span.RecordError(err)
 			return err
 		}
 
 		_, err = api.StreamEventPush(pub.stream, events).Do(ctx, tx)
 		if err != nil {
-			span.SetAttributes(attribute.Bool("api.StreamEventPush", true))
+			span.SetAttributes(attribute.Bool("ErrApiStreamEventPush", true))
 			span.RecordError(err)
 
 			if err := tx.Rollback(ctx); err != nil {
-				span.SetAttributes(attribute.Bool(".Rollback", true))
+				span.SetAttributes(attribute.Bool("ErrTxRollback", true))
 				span.RecordError(err)
 			}
 			return err
 		}
 
 		if err := tx.Commit(ctx); err != nil {
-			span.SetAttributes(attribute.Bool(".Commit", true))
+			span.SetAttributes(attribute.Bool("ErrTxCommit", true))
 			span.RecordError(err)
 			return err
 		}
