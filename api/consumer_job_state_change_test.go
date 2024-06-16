@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConsumerJobStateChange(t *testing.T) {
+func TestNewConsumerJobStateChange(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -20,12 +20,12 @@ func TestConsumerJobStateChange(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		s, err := StreamEnsure(testify.StreamName(5)).Do(ctx, tx)
+		s, err := NewStreamEnsure(testify.StreamName(5)).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 		require.NotNil(t, s.Stream)
 
-		c, err := ConsumerEnsure(
+		c, err := NewConsumerEnsure(
 			s.Stream,
 			testify.ConsumerName(5),
 			testify.Topic(5),
@@ -40,7 +40,7 @@ func TestConsumerJobStateChange(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		changes, err := ConsumerJobStateChange(
+		changes, err := NewConsumerJobStateChange(
 			c.Consumer,
 			testify.Fake.IntBetween(10, 100),
 			entities.StateAvailable,

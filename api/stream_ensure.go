@@ -9,7 +9,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func StreamEnsure(name string) *StreamEnsureReq {
+func NewStreamEnsure(name string) *StreamEnsureReq {
 	return &StreamEnsureReq{Name: name}
 }
 
@@ -34,7 +34,7 @@ func (req *StreamEnsureReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEnsureRes
 		return nil, err
 	}
 
-	if err := StreamCreate(stream.Name).Do(ctx, tx); err != nil {
+	if err := NewStreamCreate(stream.Name).Do(ctx, tx); err != nil {
 		return nil, err
 	}
 

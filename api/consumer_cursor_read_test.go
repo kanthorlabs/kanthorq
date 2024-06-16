@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConsumerCursorRead(t *testing.T) {
+func TestNewConsumerCursorRead(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -20,7 +20,7 @@ func TestConsumerCursorRead(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		ensure, err := ConsumerEnsure(
+		ensure, err := NewConsumerEnsure(
 			&entities.Stream{Name: testify.StreamName(5)},
 			testify.ConsumerName(5),
 			testify.Topic(5),
@@ -35,7 +35,7 @@ func TestConsumerCursorRead(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		res, err := ConsumerCursorRead(ensure.Consumer).Do(ctx, tx)
+		res, err := NewConsumerCursorRead(ensure.Consumer).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, res)
 

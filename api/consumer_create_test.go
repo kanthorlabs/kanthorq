@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConsumerCreate(t *testing.T) {
+func TestNewConsumerCreate(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -18,7 +18,7 @@ func TestConsumerCreate(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		err = ConsumerCreate(testify.ConsumerName(5)).Do(ctx, tx)
+		err = NewConsumerCreate(testify.ConsumerName(5)).Do(ctx, tx)
 		require.NoError(t, err)
 
 		require.NoError(t, tx.Commit(ctx))

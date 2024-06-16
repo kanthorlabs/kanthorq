@@ -11,7 +11,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func ConsumerJobPull(consumer *entities.Consumer, size int, vt time.Duration) *ConsumerJobPullReq {
+func NewConsumerJobPull(consumer *entities.Consumer, size int, vt time.Duration) *ConsumerJobPullReq {
 	return &ConsumerJobPullReq{
 		Consumer:          consumer,
 		Size:              size,
@@ -33,7 +33,7 @@ type ConsumerJobPullRes struct {
 }
 
 func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobPullRes, error) {
-	command := ConsumerJobStateChange(
+	command := NewConsumerJobStateChange(
 		req.Consumer,
 		req.Size,
 		entities.StateAvailable,

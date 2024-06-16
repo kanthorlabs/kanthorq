@@ -9,7 +9,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func ConsumerEnsure(stream *entities.Stream, name, topic string) *ConsumerEnsureReq {
+func NewConsumerEnsure(stream *entities.Stream, name, topic string) *ConsumerEnsureReq {
 	return &ConsumerEnsureReq{Stream: stream, Name: name, Topic: topic}
 }
 
@@ -47,7 +47,7 @@ func (req *ConsumerEnsureReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerEnsur
 		return nil, err
 	}
 
-	if err := ConsumerCreate(consumer.Name).Do(ctx, tx); err != nil {
+	if err := NewConsumerCreate(consumer.Name).Do(ctx, tx); err != nil {
 		return nil, err
 	}
 

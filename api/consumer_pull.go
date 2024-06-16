@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func ConsumerPull(consumer *entities.Consumer, size int) *ConsumerPullReq {
+func NewConsumerPull(consumer *entities.Consumer, size int) *ConsumerPullReq {
 	return &ConsumerPullReq{
 		Consumer: consumer,
 		Size:     size,
@@ -37,7 +37,7 @@ func (req *ConsumerPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPullRes
 	ctx, span := telemetry.Tracer.Start(ctx, "api.ConsumerPull", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 
-	cur, err := ConsumerCursorRead(req.Consumer).Do(ctx, tx)
+	cur, err := NewConsumerCursorRead(req.Consumer).Do(ctx, tx)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err

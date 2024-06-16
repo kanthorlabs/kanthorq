@@ -2,6 +2,8 @@ package subscriber
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sync"
@@ -63,18 +65,27 @@ func (sub *subscriber) connect(ctx context.Context) error {
 	sub.mu.Lock()
 	defer sub.mu.Unlock()
 
-	// @TODO: test what will happen if pgbouncer terminate a connection
-	if sub.conn != nil && !sub.conn.IsClosed() {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		if sub.conn != nil && !sub.conn.IsClosed() {
+			return nil
+		}
+
+		conn, err := pgx.Connect(ctx, sub.conf.ConnectionUri)
+		if err != nil {
+			return err
+		}
+		sub.conn = conn
+
 		return nil
 	}
+}
 
-	conn, err := pgx.Connect(ctx, sub.conf.ConnectionUri)
-	if err != nil {
-		return err
-	}
-	sub.conn = conn
-
-	return nil
+func StatementName(sql string) string {
+	digest := sha256.Sum256([]byte(sql))
+	return "stmtcache_" + hex.EncodeToString(digest[0:24])
 }
 
 func (sub *subscriber) Stop(ctx context.Context) error {
@@ -88,82 +99,72 @@ func (sub *subscriber) Stop(ctx context.Context) error {
 }
 
 func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) ([]*entities.StreamEvent, error) {
-	var opts = &SubscribeOptions{
-		Size:              DefaultSize,
-		Timeout:           DefaultTimeout,
-		VisibilityTimeout: DefaultVisibilityTimeout,
-		WaitingTime:       DefaultWaitingTime,
-	}
-	for _, configure := range options {
-		configure(opts)
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
-	defer cancel()
+	opts := NewSubscribeOption(options...)
 
 	ctx, span := telemetry.Tracer.Start(ctx, "subscriber.Pull", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
+	span.SetAttributes(attribute.String("stream_name", sub.conf.StreamName))
+	span.SetAttributes(attribute.String("topic", sub.conf.Topic))
+	span.SetAttributes(attribute.String("consumer_name", sub.conf.ConsumerName))
+	span.SetAttributes(attribute.Int("size", opts.Size))
+	span.SetAttributes(attribute.Int64("timeout", opts.Timeout.Milliseconds()))
+	span.SetAttributes(attribute.Int64("visibility_timeout", opts.VisibilityTimeout.Milliseconds()))
+	span.SetAttributes(attribute.Int64("waiting_time", opts.WaitingTime.Milliseconds()))
+
+	// if the parent context (from .Consume for example) is timeout
+	// then this context will be timeout as well
+	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
+	defer cancel()
 
 	// both .Begin and .Rollback will teriminate the underlying connection
 	// if the underlying connection is closed or context timeout
 	tx, err := sub.conn.Begin(ctx)
 	if err != nil {
-		span.RecordError(err)
-		return nil, err
+		return nil, sub.error(span, err)
 	}
 
-	c, err := api.ConsumerPull(sub.consumer, opts.Size).Do(ctx, tx)
+	c, err := api.NewConsumerPull(sub.consumer, opts.Size).Do(ctx, tx)
 	// no new events to pull
+	// we catch ErrNoRows as success case
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		span.SetAttributes(attribute.Bool("api.ConsumerPull/ErrNoRows", true))
-		return nil, tx.Rollback(ctx)
+		return nil, sub.error(span, tx.Rollback(ctx))
 	}
 	if err != nil {
-		span.RecordError(err)
-		return nil, errors.Join(err, tx.Rollback(ctx))
+		return nil, sub.error(span, err, tx.Rollback(ctx))
 	}
 
 	// no more events to pull
 	if c.NextCursor == "" {
 		span.SetAttributes(attribute.Bool("api.ConsumerPull/ErrNoNextCursor", true))
-		return nil, tx.Rollback(ctx)
+		return nil, sub.error(span, tx.Rollback(ctx))
 	}
 
-	j, err := api.ConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
+	j, err := api.NewConsumerJobPull(sub.consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
 	// no new events to pull
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		span.SetAttributes(attribute.Bool("api.ConsumerJobPull/ErrNoRows", true))
-		return nil, tx.Rollback(ctx)
+		return nil, sub.error(span, tx.Rollback(ctx))
 	}
 	if err != nil {
-		span.RecordError(err)
-		return nil, errors.Join(err, tx.Rollback(ctx))
+		return nil, sub.error(span, err, tx.Rollback(ctx))
 	}
 
 	span.SetAttributes(attribute.Int("api.ConsumerJobPull/Events", len(j.Events)))
 	// no event was found
 	if len(j.Events) == 0 {
-		return nil, tx.Rollback(ctx)
+		return nil, sub.error(span, tx.Rollback(ctx))
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		span.RecordError(err)
-		return nil, err
+		return nil, sub.error(span, err)
 	}
 
 	return j.Events, nil
 }
 
 func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, options ...SubscribeOption) {
-	var opts = &SubscribeOptions{
-		Size:              DefaultSize,
-		Timeout:           DefaultTimeout,
-		VisibilityTimeout: DefaultVisibilityTimeout,
-		WaitingTime:       DefaultWaitingTime,
-	}
-	for _, configure := range options {
-		configure(opts)
-	}
+	opts := NewSubscribeOption(options...)
 
 	// start error handler
 	go sub.errorh()
@@ -171,47 +172,64 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 	go sub.failureh()
 
 	for {
+		// ctx is used for control flow
+		// cctx will be use for consume logic
+		ctx, cancel := context.WithTimeout(context.Background(), opts.WaitingTime)
+		cctx, span := telemetry.Tracer.Start(ctx, "subscriber.Consume", trace.WithSpanKind(trace.SpanKindConsumer))
+		span.SetAttributes(attribute.String("stream_name", sub.conf.StreamName))
+		span.SetAttributes(attribute.String("topic", sub.conf.Topic))
+		span.SetAttributes(attribute.String("consumer_name", sub.conf.ConsumerName))
+		span.SetAttributes(attribute.Int("size", opts.Size))
+		span.SetAttributes(attribute.Int64("timeout", opts.Timeout.Milliseconds()))
+		span.SetAttributes(attribute.Int64("visibility_timeout", opts.VisibilityTimeout.Milliseconds()))
+		span.SetAttributes(attribute.Int64("waiting_time", opts.WaitingTime.Milliseconds()))
+
 		select {
 		case <-ctx.Done():
 			close(sub.errorc)
 			close(sub.failurec)
+			cancel()
+			span.RecordError(ctx.Err())
+			span.End()
 			return
 		default:
 			if ctx.Err() != nil {
 				close(sub.errorc)
 				close(sub.failurec)
+				cancel()
+				span.RecordError(ctx.Err())
+				span.End()
 				return
 			}
 
 			// both .Begin and .Rollback will teriminate the underlying connection
 			// if the underlying connection is closed or context timeout
 			// so we need an helper to check our connection status before start consuming
-			if err := sub.connect(ctx); err != nil {
+			if err := sub.connect(cctx); err != nil {
 				close(sub.errorc)
 				close(sub.failurec)
+				cancel()
+				span.End()
 				// if we still can't connect, throw it
 				panic(err)
 			}
 
-			if err := sub.consume(handler, opts); err != nil {
-				fmt.Printf("waiting for %s before retrying\n", opts.WaitingTime)
-				time.Sleep(opts.WaitingTime)
-			}
+			sub.consume(cctx, handler, options)
+			cancel()
+			span.End()
+			time.Sleep(opts.WaitingTime)
 		}
 	}
 }
 
-func (sub *subscriber) consume(handler SubscriberHandler, opts *SubscribeOptions) error {
-	ctx, cancel := context.WithTimeout(context.Background(), opts.Timeout)
-	defer cancel()
-
-	ctx, span := telemetry.Tracer.Start(ctx, "subscriber.Consume", trace.WithSpanKind(trace.SpanKindConsumer))
+func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, options []SubscribeOption) {
+	ctx, span := telemetry.Tracer.Start(ctx, "subscriber.Consume/consume", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 
-	events, err := sub.Pull(ctx)
+	events, err := sub.Pull(ctx, options...)
 	if err != nil {
-		span.RecordError(err)
-		return sub.error(err)
+		sub.error(span, err)
+		return
 	}
 
 	var failures = make(map[string]error)
@@ -230,39 +248,38 @@ func (sub *subscriber) consume(handler SubscriberHandler, opts *SubscribeOptions
 
 	tx, err := sub.conn.Begin(ctx)
 	if err != nil {
-		span.RecordError(err)
-		return sub.error(err)
+		sub.error(span, err)
+		return
 	}
 
 	// no error reports, mark jobs as completed
 	if len(completed) > 0 {
-		command := api.ConsumerJobMarkComplete(sub.consumer, completed)
+		command := api.NewConsumerJobMarkComplete(sub.consumer, completed)
 		// mark complete may try to update not running job (because their state were updated in other transaction)
 		// so the returning helps use determine what event status is updated successfully
 		// TODO: report what update is successful
 		if _, err := command.Do(ctx, tx); err != nil {
-			span.RecordError(err)
-			return sub.error(err, tx.Rollback(ctx))
+			sub.error(span, err, tx.Rollback(ctx))
+			return
 		}
 	}
 
 	if len(retryable) > 0 {
 		// error reports, mark jobs as retryable
-		command := api.ConsumerJobMarkRetry(sub.consumer, retryable)
+		command := api.NewConsumerJobMarkRetry(sub.consumer, retryable)
 		// same as ConsumerJobMarkRetry, the returning helps use determine what event status is updated successfully
 		// TODO: report what update is successful
 		if _, err := command.Do(ctx, tx); err != nil {
-			span.RecordError(err)
-			return sub.error(err, tx.Rollback(ctx))
+			sub.error(span, err, tx.Rollback(ctx))
+			return
 		}
 	}
 
-	if err := sub.error(tx.Commit(ctx)); err != nil {
-		span.RecordError(err)
-		return err
+	if err := tx.Commit(ctx); err != nil {
+		sub.error(span, err, tx.Rollback(ctx))
+		return
 	}
 	sub.failurec <- failures
-	return nil
 }
 
 func (sub *subscriber) Failurec() <-chan map[string]error {
@@ -273,17 +290,17 @@ func (sub *subscriber) Error() <-chan error {
 	return sub.errorc
 }
 
-func (sub *subscriber) error(errs ...error) error {
+func (sub *subscriber) error(span trace.Span, errs ...error) error {
 	var merged error
-
 	for _, err := range errs {
 		if err == nil {
 			continue
 		}
+
+		span.RecordError(err)
 		merged = errors.Join(merged, err)
 		sub.errorc <- err
 	}
-
 	return merged
 }
 

@@ -11,7 +11,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/utils"
 )
 
-func StreamCreate(name string) *StreamCreateReq {
+func NewStreamCreate(name string) *StreamCreateReq {
 	return &StreamCreateReq{Name: name}
 }
 

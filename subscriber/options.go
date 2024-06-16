@@ -2,6 +2,19 @@ package subscriber
 
 import "time"
 
+func NewSubscribeOption(options ...SubscribeOption) *SubscribeOptions {
+	opts := &SubscribeOptions{
+		Size:              DefaultSize,
+		Timeout:           DefaultTimeout,
+		VisibilityTimeout: DefaultVisibilityTimeout,
+		WaitingTime:       DefaultWaitingTime,
+	}
+	for _, configure := range options {
+		configure(opts)
+	}
+	return opts
+}
+
 type SubscribeOptions struct {
 	// How many events to consume at batch
 	Size int

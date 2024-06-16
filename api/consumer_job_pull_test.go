@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConsumerJobPull(t *testing.T) {
+func TestNewConsumerJobPull(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -19,12 +19,12 @@ func TestConsumerJobPull(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		s, err := StreamEnsure(testify.StreamName(5)).Do(ctx, tx)
+		s, err := NewStreamEnsure(testify.StreamName(5)).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 		require.NotNil(t, s.Stream)
 
-		c, err := ConsumerEnsure(
+		c, err := NewConsumerEnsure(
 			s.Stream,
 			testify.ConsumerName(5),
 			testify.Topic(5),
@@ -39,7 +39,7 @@ func TestConsumerJobPull(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		pull, err := ConsumerJobPull(
+		pull, err := NewConsumerJobPull(
 			c.Consumer,
 			testify.Fake.IntBetween(10, 100),
 			time.Hour,

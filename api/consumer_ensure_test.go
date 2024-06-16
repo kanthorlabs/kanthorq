@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConsumerEnsure(t *testing.T) {
+func TestNewConsumerEnsure(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -19,7 +19,7 @@ func TestConsumerEnsure(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		ensure, err := ConsumerEnsure(
+		ensure, err := NewConsumerEnsure(
 			&entities.Stream{Name: testify.StreamName(5)},
 			testify.ConsumerName(5),
 			testify.Topic(5),

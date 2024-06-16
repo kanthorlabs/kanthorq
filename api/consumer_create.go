@@ -11,7 +11,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/utils"
 )
 
-func ConsumerCreate(name string) *ConsumerCreateReq {
+func NewConsumerCreate(name string) *ConsumerCreateReq {
 	return &ConsumerCreateReq{Name: name}
 }
 

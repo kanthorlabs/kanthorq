@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStreamCreate(t *testing.T) {
+func TestNewStreamCreate(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -18,7 +18,7 @@ func TestStreamCreate(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		err = StreamCreate(testify.StreamName(5)).Do(ctx, tx)
+		err = NewStreamCreate(testify.StreamName(5)).Do(ctx, tx)
 		require.NoError(t, err)
 
 		require.NoError(t, tx.Commit(ctx))

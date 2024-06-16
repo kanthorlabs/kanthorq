@@ -11,7 +11,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func ConsumerJobStateChange(
+func NewConsumerJobStateChange(
 	consumer *entities.Consumer,
 	size int,
 	fromState entities.JobState,

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func ConsumerCursorRead(consumer *entities.Consumer) *ConsumerCursorReadReq {
+func NewConsumerCursorRead(consumer *entities.Consumer) *ConsumerCursorReadReq {
 	return &ConsumerCursorReadReq{Consumer: consumer}
 }
 

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConsumerJobMarkComplete(t *testing.T) {
+func TestNewConsumerJobMarkComplete(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -18,12 +18,12 @@ func TestConsumerJobMarkComplete(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		s, err := StreamEnsure(testify.StreamName(5)).Do(ctx, tx)
+		s, err := NewStreamEnsure(testify.StreamName(5)).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 		require.NotNil(t, s.Stream)
 
-		c, err := ConsumerEnsure(
+		c, err := NewConsumerEnsure(
 			s.Stream,
 			testify.ConsumerName(5),
 			testify.Topic(5),
@@ -44,7 +44,7 @@ func TestConsumerJobMarkComplete(t *testing.T) {
 			ids[i] = event.EventId
 		}
 
-		r, err := ConsumerJobMarkComplete(c.Consumer, ids).Do(ctx, tx)
+		r, err := NewConsumerJobMarkComplete(c.Consumer, ids).Do(ctx, tx)
 		require.NoError(t, err)
 		require.Equal(t, len(events), len(r.Updated))
 

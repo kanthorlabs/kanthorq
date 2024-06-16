@@ -18,7 +18,7 @@ func TestStreamEventPush(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		s, err := StreamEnsure(testify.StreamName(5)).Do(ctx, tx)
+		s, err := NewStreamEnsure(testify.StreamName(5)).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 		require.NotNil(t, s.Stream)

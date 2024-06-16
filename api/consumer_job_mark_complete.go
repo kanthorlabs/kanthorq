@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func ConsumerJobMarkComplete(consumer *entities.Consumer, eventIds []string) *ConsumerJobMarkCompleteReq {
+func NewConsumerJobMarkComplete(consumer *entities.Consumer, eventIds []string) *ConsumerJobMarkCompleteReq {
 	return &ConsumerJobMarkCompleteReq{
 		Consumer: consumer,
 		EventIds: eventIds,

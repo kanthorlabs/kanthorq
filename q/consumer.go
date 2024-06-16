@@ -14,12 +14,12 @@ func Consumer(ctx context.Context, conn *pgx.Conn, consumer *entities.Consumer) 
 		return nil, err
 	}
 
-	s, err := api.StreamEnsure(consumer.StreamName).Do(ctx, tx)
+	s, err := api.NewStreamEnsure(consumer.StreamName).Do(ctx, tx)
 	if err != nil {
 		return nil, err
 	}
 
-	c, err := api.ConsumerEnsure(s.Stream, consumer.Name, consumer.Topic).Do(ctx, tx)
+	c, err := api.NewConsumerEnsure(s.Stream, consumer.Name, consumer.Topic).Do(ctx, tx)
 	if err != nil {
 		return nil, err
 	}
