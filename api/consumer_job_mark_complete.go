@@ -41,8 +41,8 @@ func (req *ConsumerJobMarkCompleteReq) Do(ctx context.Context, tx pgx.Tx) (*Cons
 
 	var names = make([]string, len(req.EventIds))
 	var args = pgx.NamedArgs{
-		"complete_state": entities.StateCompleted,
-		"running_state":  entities.StateRunning,
+		"running_state":  int(entities.StateRunning),
+		"complete_state": int(entities.StateCompleted),
 		"finalized_at":   time.Now().UnixMilli(),
 	}
 	for i, id := range req.EventIds {

@@ -41,8 +41,8 @@ func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*Consume
 
 	var names = make([]string, len(req.EventIds))
 	var args = pgx.NamedArgs{
-		"retry_state":   entities.StateRetryable,
-		"running_state": entities.StateRunning,
+		"retry_state":   int(entities.StateRetryable),
+		"running_state": int(entities.StateRunning),
 		"attempt_at":    time.Now().UnixMilli(),
 	}
 	for i, id := range req.EventIds {

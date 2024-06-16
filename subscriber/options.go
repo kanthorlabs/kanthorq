@@ -8,6 +8,8 @@ func NewSubscribeOption(options ...SubscribeOption) *SubscribeOptions {
 		Timeout:           DefaultTimeout,
 		VisibilityTimeout: DefaultVisibilityTimeout,
 		WaitingTime:       DefaultWaitingTime,
+		OnError:           DefaultOnError,
+		OnFailure:         DefaultOnFailure,
 	}
 	for _, configure := range options {
 		configure(opts)
@@ -26,6 +28,9 @@ type SubscribeOptions struct {
 	// a period of time during which KanthorQ waits for
 	// if there is no message in current batch
 	WaitingTime time.Duration
+
+	OnError   func(err error)
+	OnFailure func(eventId string, err error)
 }
 
 type SubscribeOption func(options *SubscribeOptions)
@@ -59,5 +64,21 @@ var DefaultWaitingTime = time.Second * 5
 func WaitingTime(wt time.Duration) SubscribeOption {
 	return func(options *SubscribeOptions) {
 		options.WaitingTime = wt
+	}
+}
+
+func DefaultOnError(err error) {}
+
+func OnError(fn func(err error)) SubscribeOption {
+	return func(options *SubscribeOptions) {
+		options.OnError = fn
+	}
+}
+
+func DefaultOnFailure(eventId string, err error) {}
+
+func OnFailure(fn func(eventId string, err error)) SubscribeOption {
+	return func(options *SubscribeOptions) {
+		options.OnFailure = fn
 	}
 }

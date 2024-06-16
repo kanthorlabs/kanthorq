@@ -91,8 +91,8 @@ func Subscribe() *cobra.Command {
 					fmt.Println(err.Error())
 				}
 			}
-
 			fmt.Println("terminated")
+
 			return nil
 		},
 	}

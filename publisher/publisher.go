@@ -78,32 +78,33 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 		return ctx.Err()
 	default:
 		if err := pub.connect(ctx); err != nil {
-			span.RecordError(ctx.Err())
-			return err
-		}
-
-		tx, err := pub.conn.Begin(ctx)
-		if err != nil {
-			span.SetAttributes(attribute.Bool("ERROR.BEGIN", true))
 			span.RecordError(err)
 			return err
 		}
-		defer func() {
-			if err := tx.Rollback(ctx); err != nil {
-				span.SetAttributes(attribute.Bool("ERROR.ROLLBACK", true))
-				span.RecordError(err)
-			}
-		}()
+
+		// TODO: add retry logic
+		tx, err := pub.conn.Begin(ctx)
+		if err != nil {
+			span.SetAttributes(attribute.Bool(".Begin", true))
+			span.RecordError(err)
+			return err
+		}
 
 		_, err = api.StreamEventPush(pub.stream, events).Do(ctx, tx)
 		if err != nil {
-			span.RecordError(ctx.Err())
+			span.SetAttributes(attribute.Bool("api.StreamEventPush", true))
+			span.RecordError(err)
+
+			if err := tx.Rollback(ctx); err != nil {
+				span.SetAttributes(attribute.Bool(".Rollback", true))
+				span.RecordError(err)
+			}
 			return err
 		}
 
 		if err := tx.Commit(ctx); err != nil {
-			span.SetAttributes(attribute.Bool("ERROR.COMMIT", true))
-			span.RecordError(ctx.Err())
+			span.SetAttributes(attribute.Bool(".Commit", true))
+			span.RecordError(err)
 			return err
 		}
 

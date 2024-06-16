@@ -3,7 +3,6 @@ package subscriber
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -160,9 +160,9 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 	opts := NewSubscribeOption(options...)
 
 	// start error handler
-	go sub.errorh()
+	go sub.errorh(opts.OnError)
 	// start failure handler
-	go sub.failureh()
+	go sub.failureh(opts.OnFailure)
 
 	for {
 		// cctx will be use for consume logic
@@ -225,20 +225,38 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 		sub.error(span, err)
 		return
 	}
+	if len(events) == 0 {
+		span.SetAttributes(attribute.Bool("subscriber.Consume/consume/NoEvents", true))
+		return
+	}
 
 	var failures = make(map[string]error)
 	var retryable []string
 	var completed []string
+
+	_, handlerSpan := telemetry.Tracer.Start(ctx, "subscriber.Consume/consume/handler")
 	// loop through each event to guarantee the order of events
 	for _, event := range events {
-		if err := handler(ctx, event); err != nil {
+		// continue our tracing for each event
+		continuosCtx := otel.
+			GetTextMapPropagator().
+			Extract(ctx, telemetry.MapCarrier(event.Metadata))
+
+		eventCtx, eventSpan := telemetry.Tracer.Start(continuosCtx, "subscriber.Consume/consume/event", trace.WithSpanKind(trace.SpanKindConsumer))
+		eventSpan.SetAttributes(attribute.String("event_id", event.EventId))
+
+		if err := handler(eventCtx, event); err != nil {
 			failures[event.EventId] = err
 			retryable = append(retryable, event.EventId)
+			eventSpan.RecordError(err)
+			eventSpan.End()
 			continue
 		}
 
 		completed = append(completed, event.EventId)
+		eventSpan.End()
 	}
+	handlerSpan.End()
 
 	tx, err := sub.conn.Begin(ctx)
 	if err != nil {
@@ -249,9 +267,6 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 	// no error reports, mark jobs as completed
 	if len(completed) > 0 {
 		command := api.NewConsumerJobMarkComplete(sub.consumer, completed)
-		// mark complete may try to update not running job (because their state were updated in other transaction)
-		// so the returning helps use determine what event status is updated successfully
-		// TODO: report what update is successful
 		if _, err := command.Do(ctx, tx); err != nil {
 			sub.error(span, err, tx.Rollback(ctx))
 			return
@@ -261,8 +276,6 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 	if len(retryable) > 0 {
 		// error reports, mark jobs as retryable
 		command := api.NewConsumerJobMarkRetry(sub.consumer, retryable)
-		// same as ConsumerJobMarkRetry, the returning helps use determine what event status is updated successfully
-		// TODO: report what update is successful
 		if _, err := command.Do(ctx, tx); err != nil {
 			sub.error(span, err, tx.Rollback(ctx))
 			return
@@ -298,16 +311,16 @@ func (sub *subscriber) error(span trace.Span, errs ...error) error {
 	return merged
 }
 
-func (sub *subscriber) errorh() {
+func (sub *subscriber) errorh(handle func(error)) {
 	for err := range sub.errorc {
-		fmt.Println(err)
+		handle(err)
 	}
 }
 
-func (sub *subscriber) failureh() {
+func (sub *subscriber) failureh(handle func(string, error)) {
 	for failures := range sub.failurec {
 		for eventId, err := range failures {
-			fmt.Printf("%s error:%s\n", eventId, err.Error())
+			handle(eventId, err)
 		}
 	}
 }
