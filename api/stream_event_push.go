@@ -56,7 +56,7 @@ func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventP
 			event.CreatedAt,
 		}
 	}
-	span.SetAttributes(attribute.Int("events", len(entries)))
+	span.SetAttributes(attribute.Int("event_count", len(entries)))
 
 	inserted, err := tx.CopyFrom(
 		ctx,

@@ -235,6 +235,7 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 	var completed []string
 
 	_, handlerSpan := telemetry.Tracer.Start(ctx, "subscriber.Consume/consume/handler")
+	handlerSpan.SetAttributes(attribute.Int("event_count", len(events)))
 	// loop through each event to guarantee the order of events
 	for _, event := range events {
 		// continue our tracing for each event
@@ -256,6 +257,8 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 		completed = append(completed, event.EventId)
 		eventSpan.End()
 	}
+	handlerSpan.SetAttributes(attribute.Int("event_tobe_retry", len(retryable)))
+	handlerSpan.SetAttributes(attribute.Int("event_tobe_complete", len(completed)))
 	handlerSpan.End()
 
 	tx, err := sub.conn.Begin(ctx)
