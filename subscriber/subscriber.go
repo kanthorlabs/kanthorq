@@ -263,8 +263,20 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 	handlerSpan.SetAttributes(attribute.Int("event_tobe_complete", len(completed)))
 	handlerSpan.End()
 
-	telemetry.MeterCounter("kanthorq_subscriber_consume_total")(int64(len(completed)), metric.WithAttributes(attribute.String("consume_result_type", "completed")))
-	telemetry.MeterCounter("kanthorq_subscriber_consume_total")(int64(len(failures)), metric.WithAttributes(attribute.String("consume_result_type", "failures")))
+	telemetry.MeterCounter("kanthorq_subscriber_consume_total")(
+		int64(len(completed)),
+		metric.WithAttributes(
+			attribute.String("consumer_topic", sub.conf.Topic),
+			attribute.String("consume_status", "completed"),
+		),
+	)
+	telemetry.MeterCounter("kanthorq_subscriber_consume_total")(
+		int64(len(retryable)),
+		metric.WithAttributes(
+			attribute.String("consumer_topic", sub.conf.Topic),
+			attribute.String("consume_status", "retryable"),
+		),
+	)
 
 	tx, err := sub.conn.Begin(ctx)
 	if err != nil {
