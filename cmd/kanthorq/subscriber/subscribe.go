@@ -10,6 +10,7 @@ import (
 
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/subscriber"
+	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/spf13/cobra"
 )
 
@@ -66,7 +67,7 @@ func Subscribe() *cobra.Command {
 					go sub.Consume(
 						ctx,
 						func(subctx context.Context, event *entities.StreamEvent) error {
-							time.Sleep(time.Millisecond * time.Duration(wait))
+							time.Sleep(time.Millisecond * time.Duration(testify.Fake.Int64Between(0, wait)))
 							datac <- fmt.Sprintf("[%s] %s", c, event.EventId)
 							return nil
 						},
@@ -97,7 +98,7 @@ func Subscribe() *cobra.Command {
 		},
 	}
 
-	command.Flags().Int64("wait", 100, "handler simulation wait time in milliseconds")
+	command.Flags().Int64("wait", 300, "handler simulation wait time in milliseconds")
 
 	return command
 }

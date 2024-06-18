@@ -13,6 +13,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/telemetry"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -94,7 +95,7 @@ func (sub *subscriber) Stop(ctx context.Context) error {
 func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) ([]*entities.StreamEvent, error) {
 	opts := NewSubscribeOption(options...)
 
-	ctx, span := telemetry.Tracer.Start(ctx, "subscriber.Pull", trace.WithSpanKind(trace.SpanKindConsumer))
+	ctx, span := telemetry.Tracer().Start(ctx, "subscriber_pull", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 	span.SetAttributes(attribute.String("stream_name", sub.conf.StreamName))
 	span.SetAttributes(attribute.String("topic", sub.conf.Topic))
@@ -153,6 +154,7 @@ func (sub *subscriber) Pull(ctx context.Context, options ...SubscribeOption) ([]
 		return nil, sub.error(span, err)
 	}
 
+	telemetry.MeterCounter("kanthorq_subscriber_pull_total")(int64(len(j.Events)))
 	return j.Events, nil
 }
 
@@ -167,7 +169,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 	for {
 		// cctx will be use for consume logic
 		cctx, cancel := context.WithTimeout(context.Background(), opts.WaitingTime)
-		cctx, span := telemetry.Tracer.Start(ctx, "subscriber.Consume", trace.WithSpanKind(trace.SpanKindConsumer))
+		cctx, span := telemetry.Tracer().Start(ctx, "subscriber_consume", trace.WithSpanKind(trace.SpanKindConsumer))
 		span.SetAttributes(attribute.String("stream_name", sub.conf.StreamName))
 		span.SetAttributes(attribute.String("topic", sub.conf.Topic))
 		span.SetAttributes(attribute.String("consumer_name", sub.conf.ConsumerName))
@@ -217,7 +219,7 @@ func (sub *subscriber) Consume(ctx context.Context, handler SubscriberHandler, o
 }
 
 func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, options []SubscribeOption) {
-	ctx, span := telemetry.Tracer.Start(ctx, "subscriber.Consume/consume", trace.WithSpanKind(trace.SpanKindConsumer))
+	ctx, span := telemetry.Tracer().Start(ctx, "subscriber_consume/consume", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 
 	events, err := sub.Pull(ctx, options...)
@@ -226,7 +228,7 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 		return
 	}
 	if len(events) == 0 {
-		span.SetAttributes(attribute.Bool("subscriber.Consume/consume/NoEvents", true))
+		span.SetAttributes(attribute.Bool("subscriber_consume/consume/no_events", true))
 		return
 	}
 
@@ -234,7 +236,7 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 	var retryable []string
 	var completed []string
 
-	_, handlerSpan := telemetry.Tracer.Start(ctx, "subscriber.Consume/consume/handler")
+	_, handlerSpan := telemetry.Tracer().Start(ctx, "subscriber_consume/handler")
 	handlerSpan.SetAttributes(attribute.Int("event_count", len(events)))
 	// loop through each event to guarantee the order of events
 	for _, event := range events {
@@ -243,7 +245,7 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 			GetTextMapPropagator().
 			Extract(ctx, telemetry.MapCarrier(event.Metadata))
 
-		eventCtx, eventSpan := telemetry.Tracer.Start(continuosCtx, "subscriber.Consume/consume/event", trace.WithSpanKind(trace.SpanKindConsumer))
+		eventCtx, eventSpan := telemetry.Tracer().Start(continuosCtx, "subscriber_consume/event", trace.WithSpanKind(trace.SpanKindConsumer))
 		eventSpan.SetAttributes(attribute.String("event_id", event.EventId))
 
 		if err := handler(eventCtx, event); err != nil {
@@ -260,6 +262,9 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 	handlerSpan.SetAttributes(attribute.Int("event_tobe_retry", len(retryable)))
 	handlerSpan.SetAttributes(attribute.Int("event_tobe_complete", len(completed)))
 	handlerSpan.End()
+
+	telemetry.MeterCounter("kanthorq_subscriber_consume_total")(int64(len(completed)), metric.WithAttributes(attribute.String("consume_result_type", "completed")))
+	telemetry.MeterCounter("kanthorq_subscriber_consume_total")(int64(len(failures)), metric.WithAttributes(attribute.String("consume_result_type", "failures")))
 
 	tx, err := sub.conn.Begin(ctx)
 	if err != nil {

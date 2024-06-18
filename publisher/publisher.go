@@ -68,7 +68,7 @@ func (pub *publisher) Stop(ctx context.Context) error {
 }
 
 func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) error {
-	ctx, span := telemetry.Tracer.Start(ctx, "publisher.Send", trace.WithSpanKind(trace.SpanKindProducer))
+	ctx, span := telemetry.Tracer().Start(ctx, "publisher_send", trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
 	// wait for the transaction is done
@@ -108,6 +108,7 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 			return err
 		}
 
+		telemetry.MeterCounter("kanthorq_publisher_send_total")(int64(len(events)))
 		return nil
 	}
 }

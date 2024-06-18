@@ -35,7 +35,7 @@ type ConsumerPullRes struct {
 }
 
 func (req *ConsumerPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPullRes, error) {
-	ctx, span := telemetry.Tracer.Start(ctx, "api.ConsumerPull", trace.WithSpanKind(trace.SpanKindConsumer))
+	ctx, span := telemetry.Tracer().Start(ctx, "api_consumerpull", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 
 	cur, err := NewConsumerCursorRead(req.Consumer).Do(ctx, tx)

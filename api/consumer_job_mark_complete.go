@@ -34,7 +34,7 @@ type ConsumerJobMarkCompleteRes struct {
 }
 
 func (req *ConsumerJobMarkCompleteReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobMarkCompleteRes, error) {
-	ctx, span := telemetry.Tracer.Start(ctx, "api.ConsumerJobMarkComplete", trace.WithSpanKind(trace.SpanKindConsumer))
+	ctx, span := telemetry.Tracer().Start(ctx, "api_consumerjobmarkcomplete", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 
 	res := &ConsumerJobMarkCompleteRes{Updated: make(map[string]bool)}
@@ -88,8 +88,8 @@ func (req *ConsumerJobMarkCompleteReq) Do(ctx context.Context, tx pgx.Tx) (*Cons
 		}
 		excluded = append(excluded, id)
 	}
-	span.SetAttributes(attribute.StringSlice("api.ConsumerJobMarkComplete/updated", updated))
-	span.SetAttributes(attribute.StringSlice("api.ConsumerJobMarkComplete/excluded", excluded))
+	span.SetAttributes(attribute.StringSlice("api_consumerjobmarkcomplete/updated", updated))
+	span.SetAttributes(attribute.StringSlice("api_consumerjobmarkcomplete/excluded", excluded))
 
 	return res, nil
 }

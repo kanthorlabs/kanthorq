@@ -30,7 +30,7 @@ type StreamEventPushRes struct {
 }
 
 func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventPushRes, error) {
-	ctx, span := telemetry.Tracer.Start(ctx, "api.StreamEventPush", trace.WithSpanKind(trace.SpanKindProducer))
+	ctx, span := telemetry.Tracer().Start(ctx, "api_streameventpush", trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 	span.SetAttributes(attribute.String("stream_name", req.Stream.Name))
 

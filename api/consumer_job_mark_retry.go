@@ -34,7 +34,7 @@ type ConsumerJobMarkRetryRes struct {
 }
 
 func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobMarkRetryRes, error) {
-	ctx, span := telemetry.Tracer.Start(ctx, "api.ConsumerJobMarkRetry", trace.WithSpanKind(trace.SpanKindConsumer))
+	ctx, span := telemetry.Tracer().Start(ctx, "api_consumerjobmarkretry", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 
 	res := &ConsumerJobMarkRetryRes{Updated: make(map[string]bool)}

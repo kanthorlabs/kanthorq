@@ -1,19 +1,33 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	_ "embed"
 
 	"github.com/kanthorlabs/kanthorq/cmd/base"
 	"github.com/kanthorlabs/kanthorq/cmd/kanthorq/publisher"
 	"github.com/kanthorlabs/kanthorq/cmd/kanthorq/subscriber"
+	"github.com/kanthorlabs/kanthorq/telemetry"
 )
 
 func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := telemetry.Telemetry.Start(ctx); err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err := telemetry.Telemetry.Stop(ctx); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
 	command := base.New()
 	command.AddCommand(publisher.New())
 	command.AddCommand(subscriber.New())

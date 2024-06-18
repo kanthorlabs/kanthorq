@@ -29,7 +29,7 @@ type ConsumerCursorReadRes struct {
 }
 
 func (req *ConsumerCursorReadReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerCursorReadRes, error) {
-	ctx, span := telemetry.Tracer.Start(ctx, "api.ConsumerCursorRead", trace.WithSpanKind(trace.SpanKindConsumer))
+	ctx, span := telemetry.Tracer().Start(ctx, "api_consumercursorread", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 
 	span.SetAttributes(attribute.String("consumer_name", req.Consumer.Name))
