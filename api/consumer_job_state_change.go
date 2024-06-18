@@ -14,16 +14,16 @@ import (
 func NewConsumerJobStateChange(
 	consumer *entities.Consumer,
 	size int,
+	vt time.Duration,
 	fromState entities.JobState,
 	toState entities.JobState,
-	vt time.Duration,
 ) *ConsumerJobStateChangeReq {
 	return &ConsumerJobStateChangeReq{
 		Consumer:          consumer,
 		Size:              size,
+		VisibilityTimeout: vt,
 		FromState:         fromState,
 		ToState:           toState,
-		VisibilityTimeout: vt,
 	}
 }
 
@@ -33,9 +33,9 @@ var ConsumerJobStateChangeSQL string
 type ConsumerJobStateChangeReq struct {
 	Consumer          *entities.Consumer
 	Size              int
+	VisibilityTimeout time.Duration
 	FromState         entities.JobState
 	ToState           entities.JobState
-	VisibilityTimeout time.Duration
 }
 
 type ConsumerJobStateChangeRes struct {

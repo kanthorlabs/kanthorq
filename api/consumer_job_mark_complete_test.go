@@ -39,12 +39,7 @@ func TestNewConsumerJobMarkComplete(t *testing.T) {
 		require.NoError(t, err)
 
 		events := testify.GenStreamEvents(testify.Topic(5), 10)
-		ids := make([]string, len(events))
-		for i, event := range events {
-			ids[i] = event.EventId
-		}
-
-		r, err := NewConsumerJobMarkComplete(c.Consumer, ids).Do(ctx, tx)
+		r, err := NewConsumerJobMarkComplete(c.Consumer, events).Do(ctx, tx)
 		require.NoError(t, err)
 		require.Equal(t, len(events), len(r.Updated))
 

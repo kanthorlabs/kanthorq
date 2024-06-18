@@ -11,11 +11,26 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
+// NewConsumerJobPull is the main function of this system
+// it will find available jobs, make it become running, and return the events themself
 func NewConsumerJobPull(consumer *entities.Consumer, size int, vt time.Duration) *ConsumerJobPullReq {
 	return &ConsumerJobPullReq{
 		Consumer:          consumer,
 		Size:              size,
 		VisibilityTimeout: vt,
+		FromState:         entities.StateAvailable,
+		ToState:           entities.StateRunning,
+	}
+}
+
+// NewConsumerJobRetry will find retryable jobs, make them become running, and return the events themself
+func NewConsumerJobRetry(consumer *entities.Consumer, size int, vt time.Duration) *ConsumerJobPullReq {
+	return &ConsumerJobPullReq{
+		Consumer:          consumer,
+		Size:              size,
+		VisibilityTimeout: vt,
+		FromState:         entities.StateRetryable,
+		ToState:           entities.StateRunning,
 	}
 }
 
@@ -26,6 +41,8 @@ type ConsumerJobPullReq struct {
 	Consumer          *entities.Consumer
 	Size              int
 	VisibilityTimeout time.Duration
+	FromState         entities.JobState
+	ToState           entities.JobState
 }
 
 type ConsumerJobPullRes struct {
@@ -36,9 +53,9 @@ func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobP
 	command := NewConsumerJobStateChange(
 		req.Consumer,
 		req.Size,
-		entities.StateAvailable,
-		entities.StateRunning,
 		req.VisibilityTimeout,
+		req.FromState,
+		req.ToState,
 	)
 	changes, err := command.Do(ctx, tx)
 	if err != nil {

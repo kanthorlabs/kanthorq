@@ -1,6 +1,9 @@
 -- >>> consumer_job_mark_retry
 UPDATE %s
-SET state = @retry_state
+SET 
+  SET state = CASE WHEN attempt_count > @attempt_max
+              THEN @discarded_state
+              ELSE @retryable_state END;
 WHERE 
   event_id IN (%s)
   -- make sure we only move job that are in running state to retryable state

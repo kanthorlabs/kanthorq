@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
@@ -14,10 +13,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func NewConsumerJobMarkRetry(consumer *entities.Consumer, eventIds []string) *ConsumerJobMarkRetryReq {
+func NewConsumerJobMarkRetry(consumer *entities.Consumer, events []*entities.StreamEvent) *ConsumerJobMarkRetryReq {
 	return &ConsumerJobMarkRetryReq{
-		Consumer: consumer,
-		EventIds: eventIds,
+		Consumer:   consumer,
+		Events:     events,
+		AttemptMax: 3,
 	}
 }
 
@@ -25,8 +25,9 @@ func NewConsumerJobMarkRetry(consumer *entities.Consumer, eventIds []string) *Co
 var ConsumerJobMarkRetrySQL string
 
 type ConsumerJobMarkRetryReq struct {
-	Consumer *entities.Consumer
-	EventIds []string
+	Consumer   *entities.Consumer
+	Events     []*entities.StreamEvent
+	AttemptMax int
 }
 
 type ConsumerJobMarkRetryRes struct {
@@ -39,20 +40,21 @@ func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*Consume
 
 	res := &ConsumerJobMarkRetryRes{Updated: make(map[string]bool)}
 
-	var names = make([]string, len(req.EventIds))
+	var names = make([]string, len(req.Events))
 	var args = pgx.NamedArgs{
-		"retry_state":   int(entities.StateRetryable),
-		"running_state": int(entities.StateRunning),
-		"attempt_at":    time.Now().UnixMilli(),
+		"attempt_max":     req.AttemptMax,
+		"discarded_state": int(entities.StateDiscarded),
+		"retryable_state": int(entities.StateRetryable),
+		"running_state":   int(entities.StateRunning),
 	}
-	for i, id := range req.EventIds {
+	for i, event := range req.Events {
 		// we assume that events are not able to update firstly
 		// later if we can update its state, we can set it back to true
-		res.Updated[id] = false
+		res.Updated[event.EventId] = false
 
-		eventIdBind := fmt.Sprintf("event_id_%d", i)
-		names[i] = fmt.Sprintf("@%s", eventIdBind)
-		args[eventIdBind] = id
+		bind := fmt.Sprintf("event_id_%d", i)
+		names[i] = fmt.Sprintf("@%s", fmt.Sprintf("event_id_%d", i))
+		args[bind] = event.EventId
 	}
 
 	table := pgx.Identifier{entities.CollectionConsumerJob(req.Consumer.Name)}.Sanitize()

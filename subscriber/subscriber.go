@@ -233,8 +233,8 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 	}
 
 	var failures = make(map[string]error)
-	var retryable []string
-	var completed []string
+	var retryable []*entities.StreamEvent
+	var completed []*entities.StreamEvent
 
 	_, handlerSpan := telemetry.Tracer().Start(ctx, "subscriber_consume/handler")
 	handlerSpan.SetAttributes(attribute.Int("event_count", len(events)))
@@ -250,13 +250,13 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 
 		if err := handler(eventCtx, event); err != nil {
 			failures[event.EventId] = err
-			retryable = append(retryable, event.EventId)
+			retryable = append(retryable, event)
 			eventSpan.RecordError(err)
 			eventSpan.End()
 			continue
 		}
 
-		completed = append(completed, event.EventId)
+		completed = append(completed, event)
 		eventSpan.End()
 	}
 	handlerSpan.SetAttributes(attribute.Int("event_tobe_retry", len(retryable)))

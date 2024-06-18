@@ -14,10 +14,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func NewConsumerJobMarkComplete(consumer *entities.Consumer, eventIds []string) *ConsumerJobMarkCompleteReq {
+func NewConsumerJobMarkComplete(consumer *entities.Consumer, events []*entities.StreamEvent) *ConsumerJobMarkCompleteReq {
 	return &ConsumerJobMarkCompleteReq{
 		Consumer: consumer,
-		EventIds: eventIds,
+		Events:   events,
 	}
 }
 
@@ -26,7 +26,7 @@ var ConsumerJobMarkCompleteSQL string
 
 type ConsumerJobMarkCompleteReq struct {
 	Consumer *entities.Consumer
-	EventIds []string
+	Events   []*entities.StreamEvent
 }
 
 type ConsumerJobMarkCompleteRes struct {
@@ -39,20 +39,20 @@ func (req *ConsumerJobMarkCompleteReq) Do(ctx context.Context, tx pgx.Tx) (*Cons
 
 	res := &ConsumerJobMarkCompleteRes{Updated: make(map[string]bool)}
 
-	var names = make([]string, len(req.EventIds))
+	var names = make([]string, len(req.Events))
 	var args = pgx.NamedArgs{
 		"running_state":  int(entities.StateRunning),
 		"complete_state": int(entities.StateCompleted),
 		"finalized_at":   time.Now().UnixMilli(),
 	}
-	for i, id := range req.EventIds {
+	for i, event := range req.Events {
 		// we assume that events are not able to update firstly
 		// later if we can update its state, we can set it back to true
-		res.Updated[id] = false
+		res.Updated[event.EventId] = false
 
-		eventIdBind := fmt.Sprintf("event_id_%d", i)
-		names[i] = fmt.Sprintf("@%s", eventIdBind)
-		args[eventIdBind] = id
+		bind := fmt.Sprintf("event_id_%d", i)
+		names[i] = fmt.Sprintf("@%s", bind)
+		args[bind] = event.EventId
 	}
 
 	table := pgx.Identifier{entities.CollectionConsumerJob(req.Consumer.Name)}.Sanitize()
