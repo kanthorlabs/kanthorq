@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/telemetry"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -43,7 +42,7 @@ func (req *StreamEventPushReq) Do(ctx context.Context, tx pgx.Tx) (*StreamEventP
 	for i, event := range req.Events {
 		// inject traceparent from context into metadata
 		carrier := propagation.MapCarrier{}
-		otel.GetTextMapPropagator().Inject(ctx, carrier)
+		telemetry.Propagator().Inject(ctx, carrier)
 		for k, v := range carrier {
 			event.Metadata[k] = v
 		}

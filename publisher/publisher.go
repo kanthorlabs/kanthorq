@@ -10,6 +10,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -105,10 +106,15 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 		if err := tx.Commit(ctx); err != nil {
 			span.SetAttributes(attribute.Bool("ErrTxCommit", true))
 			span.RecordError(err)
+
 			return err
 		}
 
-		telemetry.MeterCounter("kanthorq_publisher_send_total")(int64(len(events)))
+		for _, event := range events {
+			telemetry.MeterCounter("kanthorq_publisher_send_total")(
+				1,
+				metric.WithAttributes(attribute.String("consumer_topic", event.Topic)))
+		}
 		return nil
 	}
 }

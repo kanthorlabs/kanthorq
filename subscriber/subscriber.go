@@ -11,7 +11,6 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -241,12 +240,15 @@ func (sub *subscriber) consume(ctx context.Context, handler SubscriberHandler, o
 	// loop through each event to guarantee the order of events
 	for _, event := range events {
 		// continue our tracing for each event
-		continuosCtx := otel.
-			GetTextMapPropagator().
-			Extract(ctx, telemetry.MapCarrier(event.Metadata))
+		continuosCtx := telemetry.
+			Propagator().
+			Extract(context.TODO(), telemetry.MapCarrier(event.Metadata))
 
 		eventCtx, eventSpan := telemetry.Tracer().Start(continuosCtx, "subscriber_consume/event", trace.WithSpanKind(trace.SpanKindConsumer))
+		eventSpan.SetAttributes(attribute.String("stream_name", sub.conf.StreamName))
 		eventSpan.SetAttributes(attribute.String("event_id", event.EventId))
+		eventSpan.SetAttributes(attribute.String("topic", sub.conf.Topic))
+		eventSpan.SetAttributes(attribute.String("consumer_name", sub.conf.ConsumerName))
 
 		if err := handler(eventCtx, event); err != nil {
 			failures[event.EventId] = err

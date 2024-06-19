@@ -2,6 +2,7 @@ package subscriber
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -10,7 +11,7 @@ import (
 
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/subscriber"
-	"github.com/kanthorlabs/kanthorq/testify"
+	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -20,11 +21,6 @@ func Subscribe() *cobra.Command {
 		Short: "subscribe messages of a topic from a consumer",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			connection := cmd.Flags().Lookup("connection").Value.String()
-
-			wait, err := cmd.Flags().GetInt64("wait")
-			if err != nil {
-				return err
-			}
 
 			streams, err := cmd.Flags().GetStringSlice("streams")
 			if err != nil {
@@ -67,11 +63,17 @@ func Subscribe() *cobra.Command {
 					go sub.Consume(
 						ctx,
 						func(subctx context.Context, event *entities.StreamEvent) error {
-							time.Sleep(time.Millisecond * time.Duration(testify.Fake.Int64Between(0, wait)))
+							id, err := ulid.Parse(event.EventId)
+							if err != nil {
+								return err
+							}
+							if id.Time()%2 == 0 {
+								time.Sleep(time.Millisecond * 100)
+								return errors.New("the id is odd")
+							}
 							datac <- fmt.Sprintf("[%s] %s", c, event.EventId)
 							return nil
 						},
-						subscriber.Timeout(time.Second*10),
 					)
 				}
 			}
@@ -97,8 +99,6 @@ func Subscribe() *cobra.Command {
 			return nil
 		},
 	}
-
-	command.Flags().Int64("wait", 300, "handler simulation wait time in milliseconds")
 
 	return command
 }
