@@ -11,8 +11,8 @@ import (
 	_ "embed"
 
 	"github.com/kanthorlabs/kanthorq/cmd/base"
-	"github.com/kanthorlabs/kanthorq/cmd/kanthorq/publisher"
-	"github.com/kanthorlabs/kanthorq/cmd/kanthorq/subscriber"
+	"github.com/kanthorlabs/kanthorq/cmd/benchmark/publisher"
+	"github.com/kanthorlabs/kanthorq/cmd/benchmark/subscriber"
 	"github.com/kanthorlabs/kanthorq/telemetry"
 )
 

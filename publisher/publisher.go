@@ -3,6 +3,7 @@ package publisher
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/api"
@@ -72,6 +73,17 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 	ctx, span := telemetry.Tracer().Start(ctx, "publisher_send", trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
+	start := time.Now()
+	defer func() {
+		// elapsed.Seconds may return 0 if the duration is too small
+		// so devide milliseconds by 1000 to get seconds is better
+		duration := float64(time.Since(start).Milliseconds()) / 1000
+		telemetry.MeterHistogram("kanthorq_publisher_send_duration_seconds")(
+			duration,
+			metric.WithAttributes(attribute.String("stream_name", pub.conf.StreamName)),
+		)
+	}()
+
 	// wait for the transaction is done
 	select {
 	case <-ctx.Done():
@@ -113,7 +125,11 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 		for _, event := range events {
 			telemetry.MeterCounter("kanthorq_publisher_send_total")(
 				1,
-				metric.WithAttributes(attribute.String("consumer_topic", event.Topic)))
+				metric.WithAttributes(
+					attribute.String("stream_name", pub.conf.StreamName),
+					attribute.String("consumer_topic", event.Topic),
+				),
+			)
 		}
 		return nil
 	}

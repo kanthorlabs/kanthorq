@@ -11,7 +11,7 @@ import (
 
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/subscriber"
-	"github.com/oklog/ulid/v2"
+	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/spf13/cobra"
 )
 
@@ -63,14 +63,12 @@ func Subscribe() *cobra.Command {
 					go sub.Consume(
 						ctx,
 						func(subctx context.Context, event *entities.StreamEvent) error {
-							id, err := ulid.Parse(event.EventId)
-							if err != nil {
-								return err
+							time.Sleep(time.Millisecond * time.Duration(testify.Fake.IntBetween(100, 1000)))
+
+							if testify.Fake.IntBetween(0, 3) == 1 {
+								return errors.New("aborting")
 							}
-							if id.Time()%2 == 0 {
-								time.Sleep(time.Millisecond * 100)
-								return errors.New("the id is odd")
-							}
+
 							datac <- fmt.Sprintf("[%s] %s", c, event.EventId)
 							return nil
 						},

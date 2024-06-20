@@ -13,10 +13,10 @@ test:
 	./scripts/ci_test.sh
 
 publish:
-	go run cmd/kanthorq/main.go publisher publish
+	go run cmd/benchmark/main.go publisher publish
 
 subscribe:
-	go run cmd/kanthorq/main.go subscriber subscribe
+	go run cmd/benchmark/main.go subscriber subscribe
 
 clean: migrate-up
 	docker compose exec storage psql -d postgres -f /kanthorlabs/kanthorq/data/consumer_clean.sql

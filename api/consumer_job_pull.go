@@ -23,17 +23,6 @@ func NewConsumerJobPull(consumer *entities.Consumer, size int, vt time.Duration)
 	}
 }
 
-// NewConsumerJobRetry will find retryable jobs, make them become running, and return the events themself
-func NewConsumerJobRetry(consumer *entities.Consumer, size int, vt time.Duration) *ConsumerJobPullReq {
-	return &ConsumerJobPullReq{
-		Consumer:          consumer,
-		Size:              size,
-		VisibilityTimeout: vt,
-		FromState:         entities.StateRetryable,
-		ToState:           entities.StateRunning,
-	}
-}
-
 //go:embed consumer_job_pull.sql
 var ConsumerJobPullSQL string
 

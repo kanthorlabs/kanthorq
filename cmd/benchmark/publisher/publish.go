@@ -99,7 +99,7 @@ func Publish() *cobra.Command {
 		},
 	}
 
-	command.Flags().Int64("size", 5, "number of messages to send per batch")
+	command.Flags().Int64("size", 100, "number of messages to send per batch")
 	return command
 }
 
