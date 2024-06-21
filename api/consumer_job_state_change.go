@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -69,5 +70,10 @@ func (req *ConsumerJobStateChangeReq) Do(ctx context.Context, tx pgx.Tx) (*Consu
 		res.EventIds = append(res.EventIds, id)
 	}
 
-	return res, rows.Err()
+	// if error is nil or error is pgx.ErrNoRows, we accept it
+	if err := rows.Err(); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, err
+	}
+
+	return res, nil
 }

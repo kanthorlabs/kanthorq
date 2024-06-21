@@ -61,6 +61,8 @@ func (req *ConsumerPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPullRes
 
 	res := &ConsumerPullRes{CurrentCursor: cur.Cursor, NextCursor: ""}
 	err = tx.QueryRow(ctx, query, args).Scan(&res.NextCursor)
+
+	// if error is nil or error is pgx.ErrNoRows, we accept it
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		span.RecordError(err)
 		return nil, err

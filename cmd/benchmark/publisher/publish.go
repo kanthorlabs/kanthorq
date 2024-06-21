@@ -72,7 +72,7 @@ func Publish() *cobra.Command {
 								return nil
 							}
 
-							events := testify.GenStreamEvents(topic, size)
+							events := testify.GenStreamEvents(topic, testify.Fake.Int64Between(size/2, size))
 							if err := pub.Send(ctx, events); err != nil {
 								fmt.Printf("[%s] send error %s\n", counterKey, err)
 								continue
@@ -99,7 +99,7 @@ func Publish() *cobra.Command {
 		},
 	}
 
-	command.Flags().Int64("size", 100, "number of messages to send per batch")
+	command.Flags().Int64("size", 100, "number of maximum messages to send per batch")
 	return command
 }
 

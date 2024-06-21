@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSubscriber(t *testing.T) {
+func TestSubscriberAvailable(t *testing.T) {
 	ctx := context.Background()
 
 	var streamName = testify.StreamName(5)
@@ -33,7 +33,7 @@ func TestSubscriber(t *testing.T) {
 	require.NoError(t, pub.Send(ctx, events))
 
 	// then subscribe
-	sub := New(&Config{
+	sub := NewAvailable(&Config{
 		ConnectionUri: os.Getenv("KANTHORQ_POSTGRES_URI"),
 		StreamName:    streamName,
 		ConsumerName:  consumerName,

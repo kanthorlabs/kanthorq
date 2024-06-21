@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewConsumerJobPull(t *testing.T) {
+func TestNewConsumerJobPullAvailable(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -39,7 +39,7 @@ func TestNewConsumerJobPull(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		pull, err := NewConsumerJobPull(
+		pull, err := NewConsumerJobPullAvailable(
 			c.Consumer,
 			testify.Fake.IntBetween(10, 100),
 			time.Hour,

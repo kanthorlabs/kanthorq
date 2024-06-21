@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -11,9 +12,9 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-// NewConsumerJobPull is the main function of this system
+// NewConsumerJobPullAvailable is the main function of this system
 // it will find available jobs, make it become running, and return the events themself
-func NewConsumerJobPull(consumer *entities.Consumer, size int, vt time.Duration) *ConsumerJobPullReq {
+func NewConsumerJobPullAvailable(consumer *entities.Consumer, size int, vt time.Duration) *ConsumerJobPullReq {
 	return &ConsumerJobPullReq{
 		Consumer:          consumer,
 		Size:              size,
@@ -89,6 +90,11 @@ func (req *ConsumerJobPullReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobP
 			return nil, err
 		}
 		res.Events = append(res.Events, &event)
+	}
+
+	// if error is nil or error is pgx.ErrNoRows, we accept it
+	if err := rows.Err(); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, err
 	}
 
 	return res, nil

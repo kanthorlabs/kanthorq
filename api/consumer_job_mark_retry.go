@@ -90,8 +90,8 @@ func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*Consume
 		}
 		excluded = append(excluded, id)
 	}
-	span.SetAttributes(attribute.StringSlice("api.ConsumerJobMarkComplete/updated", updated))
-	span.SetAttributes(attribute.StringSlice("api.ConsumerJobMarkComplete/excluded", excluded))
+	span.SetAttributes(attribute.StringSlice("api_consumerjobmarkcomplete_updated", updated))
+	span.SetAttributes(attribute.StringSlice("api_consumerjobmarkcomplete_excluded", excluded))
 
 	return res, nil
 }

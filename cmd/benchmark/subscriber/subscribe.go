@@ -49,7 +49,7 @@ func Subscribe() *cobra.Command {
 						Topic:         topic,
 						ConsumerName:  fmt.Sprintf("%s-%s-worker", stream, topic),
 					}
-					sub := subscriber.New(conf)
+					sub := subscriber.NewAvailable(conf)
 
 					if err := sub.Start(ctx); err != nil {
 						return err
