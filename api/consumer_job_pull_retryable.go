@@ -15,5 +15,6 @@ func NewConsumerJobPullRetryable(consumer *entities.Consumer, size int, vt time.
 		VisibilityTimeout: vt,
 		FromState:         entities.StateRetryable,
 		ToState:           entities.StateRunning,
+		Source:            "ConsumerJobPullRetryable",
 	}
 }

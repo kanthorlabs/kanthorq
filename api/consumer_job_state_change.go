@@ -15,16 +15,16 @@ import (
 func NewConsumerJobStateChange(
 	consumer *entities.Consumer,
 	size int,
-	vt time.Duration,
 	fromState entities.JobState,
 	toState entities.JobState,
+	vt time.Duration,
 ) *ConsumerJobStateChangeReq {
 	return &ConsumerJobStateChangeReq{
 		Consumer:          consumer,
 		Size:              size,
-		VisibilityTimeout: vt,
 		FromState:         fromState,
 		ToState:           toState,
+		VisibilityTimeout: vt,
 	}
 }
 
@@ -34,9 +34,12 @@ var ConsumerJobStateChangeSQL string
 type ConsumerJobStateChangeReq struct {
 	Consumer          *entities.Consumer
 	Size              int
-	VisibilityTimeout time.Duration
 	FromState         entities.JobState
 	ToState           entities.JobState
+	VisibilityTimeout time.Duration
+
+	// Source is used for distinguishing between different consumers
+	Source string
 }
 
 type ConsumerJobStateChangeRes struct {
@@ -47,7 +50,7 @@ func (req *ConsumerJobStateChangeReq) Do(ctx context.Context, tx pgx.Tx) (*Consu
 	res := &ConsumerJobStateChangeRes{}
 
 	args := pgx.NamedArgs{
-		"attempt_at":       time.Now().UnixMilli(),
+		"attempted_at":     time.Now().UnixMilli(),
 		"from_state":       int(req.FromState),
 		"to_state":         int(req.ToState),
 		"size":             req.Size,
@@ -55,7 +58,7 @@ func (req *ConsumerJobStateChangeReq) Do(ctx context.Context, tx pgx.Tx) (*Consu
 	}
 
 	table := pgx.Identifier{entities.CollectionConsumerJob(req.Consumer.Name)}.Sanitize()
-	query := fmt.Sprintf(ConsumerJobStateChangeSQL, table, table)
+	query := fmt.Sprintf(ConsumerJobStateChangeSQL, req.Source, table, table, req.Source)
 	rows, err := tx.Query(ctx, query, args)
 	if err != nil {
 		return nil, err

@@ -43,9 +43,9 @@ func TestNewConsumerJobStateChange(t *testing.T) {
 		changes, err := NewConsumerJobStateChange(
 			c.Consumer,
 			testify.Fake.IntBetween(10, 100),
-			time.Hour,
 			entities.StateAvailable,
 			entities.StateRunning,
+			time.Hour,
 		).Do(ctx, tx)
 		require.NoError(t, err)
 		require.NotNil(t, changes)

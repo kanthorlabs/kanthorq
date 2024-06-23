@@ -15,5 +15,6 @@ func NewConsumerJobPullStuck(consumer *entities.Consumer, size int, vt time.Dura
 		VisibilityTimeout: vt,
 		FromState:         entities.StateRunning,
 		ToState:           entities.StateRunning,
+		Source:            "ConsumerJobPullStuck",
 	}
 }
