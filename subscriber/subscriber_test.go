@@ -2,7 +2,6 @@ package subscriber
 
 import (
 	"context"
-	"errors"
 	"os"
 	"testing"
 
@@ -46,12 +45,12 @@ func TestSubscriberAvailable(t *testing.T) {
 
 	cancelling, cancel := context.WithCancel(context.Background())
 	// receiving events
-	go sub.Consume(cancelling, func(ctx context.Context, events *entities.StreamEvent) error {
+	go sub.Consume(cancelling, func(ctx context.Context, events *entities.StreamEvent) entities.JobState {
 		if hash := utils.AdvisoryLockHash(events.EventId); hash%2 == 0 {
-			return nil
+			return entities.StateCompleted
 		}
 
-		return errors.New(testify.Fake.Emoji().Emoji())
+		return entities.StateCancelled
 	})
 
 	select {

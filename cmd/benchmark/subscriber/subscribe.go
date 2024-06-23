@@ -2,7 +2,6 @@ package subscriber
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -66,15 +65,20 @@ func Subscribe() *cobra.Command {
 
 					go sub.Consume(
 						ctx,
-						func(subctx context.Context, event *entities.StreamEvent) error {
+						func(subctx context.Context, event *entities.StreamEvent) entities.JobState {
 							time.Sleep(time.Millisecond * time.Duration(testify.Fake.IntBetween(100, 1000)))
 
-							if testify.Fake.IntBetween(0, 3) == 1 {
-								return errors.New("aborting")
+							state := testify.Fake.IntBetween(int(entities.StateDiscarded)-1, int(entities.StateRetryable)+1)
+
+							if state == int(entities.StateCancelled) {
+								return entities.StateCancelled
+							}
+							if state == int(entities.StateRetryable) {
+								return entities.StateRetryable
 							}
 
 							datac <- fmt.Sprintf("[%s] %s", c, event.EventId)
-							return nil
+							return entities.StateCompleted
 						},
 					)
 				}

@@ -17,12 +17,9 @@ var _ Subscriber = (*stuck)(nil)
 func NewStuck(conf *Config) Subscriber {
 	return &stuck{
 		subscriber: &subscriber{
-			Conf: conf,
-			// don't use unbuffer channel because it will block .Consume method
-			// because when you send a value on an unbuffered channel,
-			// the sending goroutine is blocked until another goroutine receives the value from the channel
-			failurec: make(chan map[string]error, 1),
-			errorc:   make(chan error, 1),
+			Conf:     conf,
+			failurec: make(chan map[string]error, 100),
+			errorc:   make(chan error, 100),
 			Type:     "subscribe_stuck",
 		},
 	}

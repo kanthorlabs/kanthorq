@@ -13,11 +13,17 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// NewConsumerJobMarkRetry mark events to be retried
+// the reschedule time will be calculated based on the the formula:
+// next_schedule_at = NOW() + ((attempt_count ^ 4) + (attempt_count ^ 4) * (RANDOM() * 0.2 - 0.1)) * 60 * 1000
+// so there is the list of retries:
+// First retry: ~ 1min
+// Second retry: ~ 16mins
+// Third retry: ~ 81mins = 1h21mins
 func NewConsumerJobMarkRetry(consumer *entities.Consumer, events []*entities.StreamEvent) *ConsumerJobMarkRetryReq {
 	return &ConsumerJobMarkRetryReq{
-		Consumer:   consumer,
-		Events:     events,
-		AttemptMax: 3,
+		Consumer: consumer,
+		Events:   events,
 	}
 }
 
@@ -25,9 +31,8 @@ func NewConsumerJobMarkRetry(consumer *entities.Consumer, events []*entities.Str
 var ConsumerJobMarkRetrySQL string
 
 type ConsumerJobMarkRetryReq struct {
-	Consumer   *entities.Consumer
-	Events     []*entities.StreamEvent
-	AttemptMax int
+	Consumer *entities.Consumer
+	Events   []*entities.StreamEvent
 }
 
 type ConsumerJobMarkRetryRes struct {
@@ -42,7 +47,7 @@ func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*Consume
 
 	var names = make([]string, len(req.Events))
 	var args = pgx.NamedArgs{
-		"attempt_max":     req.AttemptMax,
+		"consumer_name":   req.Consumer.Name,
 		"discarded_state": int(entities.StateDiscarded),
 		"retryable_state": int(entities.StateRetryable),
 		"running_state":   int(entities.StateRunning),

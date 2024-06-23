@@ -91,6 +91,7 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 	span.SetAttributes(attribute.Int("event_count", len(events)))
 
 	var failures = make(map[string]error)
+	var cancelled []*entities.StreamEvent
 	var retryable []*entities.StreamEvent
 	var completed []*entities.StreamEvent
 
@@ -107,20 +108,33 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 		eventSpan.SetAttributes(attribute.String("consumer_topic", sub.Conf.Topic))
 		eventSpan.SetAttributes(attribute.String("event_id", event.EventId))
 
-		if err := handler(eventCtx, event); err != nil {
-			failures[event.EventId] = err
+		state := handler(eventCtx, event)
+
+		switch state {
+		case entities.StateCancelled:
+			cancelled = append(cancelled, event)
+		case entities.StateCompleted:
+			completed = append(completed, event)
+		case entities.StateRetryable:
 			retryable = append(retryable, event)
-			eventSpan.RecordError(err)
-			eventSpan.End()
-			continue
 		}
 
-		completed = append(completed, event)
 		eventSpan.End()
 	}
-	span.SetAttributes(attribute.Int("event_tobe_retry", len(retryable)))
+	span.SetAttributes(attribute.Int("event_tobe_cancel", len(cancelled)))
 	span.SetAttributes(attribute.Int("event_tobe_complete", len(completed)))
+	span.SetAttributes(attribute.Int("event_tobe_retry", len(retryable)))
 
+	telemetry.MeterCounter("kanthorq_subscriber_consume_total")(
+		int64(len(cancelled)),
+		metric.WithAttributes(
+			attribute.String("subscriber_type", sub.Type),
+			attribute.String("stream_name", sub.Conf.StreamName),
+			attribute.String("consumer_name", sub.Conf.ConsumerName),
+			attribute.String("consumer_topic", sub.Conf.Topic),
+			attribute.String("subscriber_status", entities.StateCancelled.String()),
+		),
+	)
 	telemetry.MeterCounter("kanthorq_subscriber_consume_total")(
 		int64(len(completed)),
 		metric.WithAttributes(
