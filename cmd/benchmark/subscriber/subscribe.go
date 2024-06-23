@@ -30,6 +30,10 @@ func Subscribe() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			mode, err := cmd.Flags().GetString("mode")
+			if err != nil {
+				return err
+			}
 
 			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
@@ -49,7 +53,7 @@ func Subscribe() *cobra.Command {
 						Topic:         topic,
 						ConsumerName:  fmt.Sprintf("%s-%s-worker", stream, topic),
 					}
-					sub := subscriber.NewAvailable(conf)
+					sub := instance(mode, conf)
 
 					if err := sub.Start(ctx); err != nil {
 						return err
@@ -57,7 +61,7 @@ func Subscribe() *cobra.Command {
 
 					subscribers = append(subscribers, sub)
 
-					c := fmt.Sprintf("%s -> %s -> %s", conf.StreamName, conf.Topic, conf.ConsumerName)
+					c := fmt.Sprintf("%s | %s -> %s -> %s", mode, conf.StreamName, conf.Topic, conf.ConsumerName)
 					fmt.Printf("[%s] subscribing...\n", c)
 
 					go sub.Consume(
@@ -97,6 +101,17 @@ func Subscribe() *cobra.Command {
 			return nil
 		},
 	}
+	command.Flags().String("mode", "available", "name subscriber mode/type you want to use")
 
 	return command
+}
+
+func instance(mode string, conf *subscriber.Config) subscriber.Subscriber {
+	if mode == "retryable" {
+		return subscriber.NewRetryable(conf)
+	}
+	if mode == "stuck" {
+		return subscriber.NewStuck(conf)
+	}
+	return subscriber.NewAvailable(conf)
 }

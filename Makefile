@@ -5,6 +5,8 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
+BENCHMARK_SUBSCRIBER_MODE ?= available
+
 default: 
 	$(warning oops, select specific command pls)
 
@@ -16,7 +18,7 @@ publish:
 	go run cmd/benchmark/main.go publisher publish
 
 subscribe:
-	go run cmd/benchmark/main.go subscriber subscribe
+	go run cmd/benchmark/main.go subscriber subscribe --mode $$BENCHMARK_SUBSCRIBER_MODE
 
 clean: migrate-up
 	docker compose exec storage psql -d postgres -f /kanthorlabs/kanthorq/data/consumer_clean.sql

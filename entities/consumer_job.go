@@ -56,17 +56,17 @@ const (
 func (state JobState) String() string {
 	switch state {
 	case StateDiscarded:
-		return "Discarded"
+		return "discarded"
 	case StateCancelled:
-		return "Cancelled"
+		return "cancelled"
 	case StateAvailable:
-		return "Available"
+		return "available"
 	case StateRunning:
-		return "Running"
+		return "running"
 	case StateCompleted:
-		return "Completed"
+		return "completed"
 	case StateRetryable:
-		return "Retryable"
+		return "retryable"
 	default:
 		return fmt.Sprintf("Unknown JobState (%d)", state)
 	}
