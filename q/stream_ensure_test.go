@@ -47,15 +47,8 @@ func TestNewStreamEnsure(t *testing.T) {
 		lock := utils.AdvisoryLockHash(name)
 
 		// simulate deadlock so we cannot create a stream on time
-		lconn, err := testify.SetupPostgres(ctx)
-		require.NoError(t, err)
-		defer lconn.Close(ctx)
-
-		ltx, err := lconn.Begin(ctx)
-		require.NoError(t, err)
-		_, err = ltx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", lock)
-		require.NoError(t, err)
-		defer ltx.Commit(ctx)
+		commit := testify.SetupPostgresAdvisoryXactLock(ctx, lock)
+		defer commit()
 
 		timeoutctx, cancel := context.WithTimeout(ctx, time.Second*3)
 		defer cancel()

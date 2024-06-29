@@ -32,14 +32,7 @@ func TestNewConsumerJobCreate(t *testing.T) {
 		name := testify.ConsumerName(5)
 		lock := utils.AdvisoryLockHash(name)
 
-		lconn, err := testify.SetupPostgres(ctx)
-		require.NoError(t, err)
-		defer lconn.Close(ctx)
-
-		ltx, err := lconn.Begin(ctx)
-		require.NoError(t, err)
-		_, err = ltx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", lock)
-		require.NoError(t, err)
+		commit := testify.SetupPostgresAdvisoryXactLock(ctx, lock)
 
 		go func() {
 			conn, err := testify.SetupPostgres(ctx)
@@ -53,8 +46,7 @@ func TestNewConsumerJobCreate(t *testing.T) {
 		}()
 
 		// wait a bit to ensure the go routine has started
-		time.Sleep(time.Second)
-
-		require.NoError(t, ltx.Commit(ctx))
+		time.Sleep(time.Second * 2)
+		require.NoError(t, commit())
 	})
 }
