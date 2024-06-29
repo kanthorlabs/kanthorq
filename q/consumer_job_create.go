@@ -23,9 +23,8 @@ type ConsumerJobCreateReq struct {
 }
 
 func (req *ConsumerJobCreateReq) Do(ctx context.Context, tx pgx.Tx) error {
-	name := entities.CollectionConsumerJob(req.Name)
-	table := pgx.Identifier{name}.Sanitize()
 	lock := utils.AdvisoryLockHash(req.Name)
+	table := pgx.Identifier{entities.CollectionConsumerJob(req.Name)}.Sanitize()
 	query := fmt.Sprintf(ConsumerJobCreateSQL, lock, table, table)
 
 	_, err := tx.Exec(ctx, query)

@@ -8,11 +8,11 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 )
 
-func SetupPostgres(ctx context.Context) (*pgxpool.Pool, error) {
-	conn, err := pgxpool.New(ctx, os.Getenv("KANTHORQ_POSTGRES_URI"))
+func SetupPostgres(ctx context.Context) (*pgx.Conn, error) {
+	conn, err := pgx.Connect(ctx, os.Getenv("KANTHORQ_POSTGRES_URI"))
 	if err != nil {
 		return nil, err
 	}

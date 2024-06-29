@@ -27,7 +27,7 @@ func TestNewConsumerJobCreate(t *testing.T) {
 		require.NoError(t, tx.Commit(ctx))
 	})
 
-	t.Run("should able to handle concurrency creation", func(t *testing.T) {
+	t.Run("should able to handle concurrency consumer creation", func(t *testing.T) {
 		ctx := context.Background()
 		name := testify.ConsumerName(5)
 		lock := utils.AdvisoryLockHash(name)
@@ -53,7 +53,7 @@ func TestNewConsumerJobCreate(t *testing.T) {
 		}()
 
 		// wait a bit to ensure the go routine has started
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second)
 
 		require.NoError(t, ltx.Commit(ctx))
 	})

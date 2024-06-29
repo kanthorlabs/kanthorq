@@ -23,9 +23,9 @@ type StreamCreateReq struct {
 }
 
 func (req *StreamCreateReq) Do(ctx context.Context, tx pgx.Tx) error {
-	name := entities.CollectionStreamEvent(req.Name)
-	table := pgx.Identifier{name}.Sanitize()
-	query := fmt.Sprintf(StreamCreateSQL, utils.AdvisoryLockHash(name), table, table)
+	lock := utils.AdvisoryLockHash(req.Name)
+	table := pgx.Identifier{entities.CollectionStreamEvent(req.Name)}.Sanitize()
+	query := fmt.Sprintf(StreamCreateSQL, lock, table, table)
 
 	_, err := tx.Exec(ctx, query)
 	return err

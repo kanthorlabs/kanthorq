@@ -1,6 +1,6 @@
 -- >>> stream_create
 
-select pg_advisory_xact_lock(%d);
+SELECT pg_advisory_xact_lock(%d);
 
 CREATE TABLE IF NOT EXISTS %s (
 	event_id VARCHAR(64) NOT NULL,
