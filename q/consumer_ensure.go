@@ -47,7 +47,7 @@ func (req *ConsumerEnsureReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerEnsur
 		return nil, err
 	}
 
-	if err := NewConsumerCreate(consumer.Name).Do(ctx, tx); err != nil {
+	if err := NewConsumerJobCreate(consumer.Name).Do(ctx, tx); err != nil {
 		return nil, err
 	}
 
