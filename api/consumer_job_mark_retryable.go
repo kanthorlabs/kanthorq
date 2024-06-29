@@ -13,41 +13,41 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// NewConsumerJobMarkRetry mark events to be retried
+// NewConsumerJobMarkRetryable mark events to be retried
 // the reschedule time will be calculated based on the the formula:
 // next_schedule_at = NOW() + ((attempt_count ^ 4) + (attempt_count ^ 4) * (RANDOM() * 0.2 - 0.1)) * 60 * 1000
 // so there is the list of retries:
 // First retry: ~ 1min
 // Second retry: ~ 16mins
 // Third retry: ~ 81mins = 1h21mins
-func NewConsumerJobMarkRetry(consumer *entities.Consumer, events []*entities.StreamEvent) *ConsumerJobMarkRetryReq {
-	return &ConsumerJobMarkRetryReq{
+func NewConsumerJobMarkRetryable(consumer *entities.Consumer, events []*entities.StreamEvent) *ConsumerJobMarkRetryableReq {
+	return &ConsumerJobMarkRetryableReq{
 		Consumer: consumer,
 		Events:   events,
 	}
 }
 
-//go:embed consumer_job_mark_retry.sql
-var ConsumerJobMarkRetrySQL string
+//go:embed consumer_job_mark_retryable.sql
+var ConsumerJobMarkRetryableSQL string
 
-type ConsumerJobMarkRetryReq struct {
+type ConsumerJobMarkRetryableReq struct {
 	Consumer *entities.Consumer
 	Events   []*entities.StreamEvent
 }
 
-type ConsumerJobMarkRetryRes struct {
+type ConsumerJobMarkRetryableRes struct {
 	Updated map[string]bool
 }
 
-func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobMarkRetryRes, error) {
-	ctx, span := telemetry.Tracer().Start(ctx, "api_consumerjobmarkretry", trace.WithSpanKind(trace.SpanKindConsumer))
+func (req *ConsumerJobMarkRetryableReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobMarkRetryableRes, error) {
+	ctx, span := telemetry.Tracer().Start(ctx, "api_ConsumerJobMarkRetryable", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 
-	res := &ConsumerJobMarkRetryRes{Updated: make(map[string]bool)}
+	res := &ConsumerJobMarkRetryableRes{Updated: make(map[string]bool)}
 
 	var names = make([]string, len(req.Events))
 	var args = pgx.NamedArgs{
-		"consumer_name":   req.Consumer.Name,
+		"attempt_max":     req.Consumer.Name,
 		"discarded_state": int(entities.StateDiscarded),
 		"retryable_state": int(entities.StateRetryable),
 		"running_state":   int(entities.StateRunning),
@@ -63,7 +63,7 @@ func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*Consume
 	}
 
 	table := pgx.Identifier{entities.CollectionConsumerJob(req.Consumer.Name)}.Sanitize()
-	query := fmt.Sprintf(ConsumerJobMarkRetrySQL, table, strings.Join(names, ","))
+	query := fmt.Sprintf(ConsumerJobMarkRetryableSQL, table, strings.Join(names, ","))
 
 	rows, err := tx.Query(ctx, query, args)
 	if err != nil {
@@ -95,8 +95,8 @@ func (req *ConsumerJobMarkRetryReq) Do(ctx context.Context, tx pgx.Tx) (*Consume
 		}
 		excluded = append(excluded, id)
 	}
-	span.SetAttributes(attribute.StringSlice("api_consumerjobmarkcomplete_updated", updated))
-	span.SetAttributes(attribute.StringSlice("api_consumerjobmarkcomplete_excluded", excluded))
+	span.SetAttributes(attribute.StringSlice("api_ConsumerJobMarkCompleted_updated", updated))
+	span.SetAttributes(attribute.StringSlice("api_ConsumerJobMarkCompleted_excluded", excluded))
 
 	return res, nil
 }

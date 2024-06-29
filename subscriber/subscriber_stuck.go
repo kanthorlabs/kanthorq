@@ -17,10 +17,9 @@ var _ Subscriber = (*stuck)(nil)
 func NewStuck(conf *Config) Subscriber {
 	return &stuck{
 		subscriber: &subscriber{
-			Conf:     conf,
-			failurec: make(chan map[string]error, 100),
-			errorc:   make(chan error, 100),
-			Type:     "subscribe_stuck",
+			Conf:   conf,
+			errorc: make(chan error, 100),
+			Type:   "subscribe_stuck",
 		},
 	}
 }
@@ -88,8 +87,6 @@ func (sub *stuck) Consume(ctx context.Context, handler SubscriberHandler, option
 
 	// start error handler
 	go sub.ErrorHandle(opts.OnError)
-	// start failure handler
-	go sub.FailureHandle(opts.OnFailure)
 
 	for {
 		// cctx will be use for consume logic
@@ -108,7 +105,6 @@ func (sub *stuck) Consume(ctx context.Context, handler SubscriberHandler, option
 		// ctx is used for control flow
 		case <-ctx.Done():
 			close(sub.errorc)
-			close(sub.failurec)
 			cancel()
 			span.RecordError(ctx.Err())
 			span.End()
@@ -117,7 +113,6 @@ func (sub *stuck) Consume(ctx context.Context, handler SubscriberHandler, option
 			// ctx is used for control flow
 			if ctx.Err() != nil {
 				close(sub.errorc)
-				close(sub.failurec)
 				cancel()
 				span.RecordError(ctx.Err())
 				span.End()
@@ -129,7 +124,6 @@ func (sub *stuck) Consume(ctx context.Context, handler SubscriberHandler, option
 			// so we need an helper to check our connection status before start consuming
 			if err := sub.Connect(cctx); err != nil {
 				close(sub.errorc)
-				close(sub.failurec)
 				cancel()
 				span.End()
 				// if we still can't connect, throw it

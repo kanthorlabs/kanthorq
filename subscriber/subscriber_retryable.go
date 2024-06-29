@@ -18,10 +18,9 @@ var _ Subscriber = (*retryable)(nil)
 func NewRetryable(conf *Config) Subscriber {
 	return &retryable{
 		subscriber: &subscriber{
-			Conf:     conf,
-			failurec: make(chan map[string]error, 100),
-			errorc:   make(chan error, 100),
-			Type:     fmt.Sprintf("subscribe_%s", entities.StateRetryable.String()),
+			Conf:   conf,
+			errorc: make(chan error, 100),
+			Type:   fmt.Sprintf("subscribe_%s", entities.StateRetryable.String()),
 		},
 	}
 }
@@ -89,8 +88,6 @@ func (sub *retryable) Consume(ctx context.Context, handler SubscriberHandler, op
 
 	// start error handler
 	go sub.ErrorHandle(opts.OnError)
-	// start failure handler
-	go sub.FailureHandle(opts.OnFailure)
 
 	for {
 		// cctx will be use for consume logic
@@ -109,7 +106,6 @@ func (sub *retryable) Consume(ctx context.Context, handler SubscriberHandler, op
 		// ctx is used for control flow
 		case <-ctx.Done():
 			close(sub.errorc)
-			close(sub.failurec)
 			cancel()
 			span.RecordError(ctx.Err())
 			span.End()
@@ -118,7 +114,6 @@ func (sub *retryable) Consume(ctx context.Context, handler SubscriberHandler, op
 			// ctx is used for control flow
 			if ctx.Err() != nil {
 				close(sub.errorc)
-				close(sub.failurec)
 				cancel()
 				span.RecordError(ctx.Err())
 				span.End()
@@ -130,7 +125,6 @@ func (sub *retryable) Consume(ctx context.Context, handler SubscriberHandler, op
 			// so we need an helper to check our connection status before start consuming
 			if err := sub.Connect(cctx); err != nil {
 				close(sub.errorc)
-				close(sub.failurec)
 				cancel()
 				span.End()
 				// if we still can't connect, throw it

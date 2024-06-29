@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewConsumerJobMarkComplete(t *testing.T) {
+func TestNewConsumerJobMarkCompleted(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -39,7 +39,7 @@ func TestNewConsumerJobMarkComplete(t *testing.T) {
 		require.NoError(t, err)
 
 		events := testify.GenStreamEvents(testify.Topic(5), 10)
-		r, err := NewConsumerJobMarkComplete(c.Consumer, events).Do(ctx, tx)
+		r, err := NewConsumerJobMarkCompleted(c.Consumer, events).Do(ctx, tx)
 		require.NoError(t, err)
 		require.Equal(t, len(events), len(r.Updated))
 

@@ -13,7 +13,6 @@ type Subscriber interface {
 	Pull(ctx context.Context, options ...SubscribeOption) ([]*entities.StreamEvent, error)
 
 	Consume(ctx context.Context, handler SubscriberHandler, options ...SubscribeOption)
-	Failurec() <-chan map[string]error
 	Error() <-chan error
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/publisher"
@@ -43,9 +44,10 @@ func TestSubscriberAvailable(t *testing.T) {
 		require.NoError(t, sub.Stop(ctx))
 	}()
 
-	cancelling, cancel := context.WithCancel(context.Background())
+	subctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
 	// receiving events
-	go sub.Consume(cancelling, func(ctx context.Context, events *entities.StreamEvent) entities.JobState {
+	go sub.Consume(subctx, func(ctx context.Context, events *entities.StreamEvent) entities.JobState {
 		if hash := utils.AdvisoryLockHash(events.EventId); hash%2 == 0 {
 			return entities.StateCompleted
 		}
@@ -54,12 +56,10 @@ func TestSubscriberAvailable(t *testing.T) {
 	})
 
 	select {
+	case <-subctx.Done():
+		require.ErrorIs(t, subctx.Err(), context.DeadlineExceeded)
 	case err := <-sub.Error():
 		cancel()
-		require.NoError(t, err)
-	case failures := <-sub.Failurec():
-		cancel()
-		require.Greater(t, len(failures), 0)
-		require.Less(t, len(failures), DefaultSize)
+		require.ErrorIs(t, err, context.DeadlineExceeded)
 	}
 }

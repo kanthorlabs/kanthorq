@@ -9,7 +9,6 @@ func NewSubscribeOption(options ...SubscribeOption) *SubscribeOptions {
 		VisibilityTimeout: DefaultVisibilityTimeout,
 		WaitingTime:       DefaultWaitingTime,
 		OnError:           DefaultOnError,
-		OnFailure:         DefaultOnFailure,
 	}
 	for _, configure := range options {
 		configure(opts)
@@ -72,13 +71,5 @@ func DefaultOnError(err error) {}
 func OnError(fn func(err error)) SubscribeOption {
 	return func(options *SubscribeOptions) {
 		options.OnError = fn
-	}
-}
-
-func DefaultOnFailure(eventId string, err error) {}
-
-func OnFailure(fn func(eventId string, err error)) SubscribeOption {
-	return func(options *SubscribeOptions) {
-		options.OnFailure = fn
 	}
 }

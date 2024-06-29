@@ -14,36 +14,38 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func NewConsumerJobMarkComplete(consumer *entities.Consumer, events []*entities.StreamEvent) *ConsumerJobMarkCompleteReq {
-	return &ConsumerJobMarkCompleteReq{
+func NewConsumerJobMarkCancelled(consumer *entities.Consumer, events []*entities.StreamEvent) *ConsumerJobMarkCancelledReq {
+	return &ConsumerJobMarkCancelledReq{
 		Consumer: consumer,
 		Events:   events,
 	}
 }
 
-//go:embed consumer_job_mark_complete.sql
-var ConsumerJobMarkCompleteSQL string
+//go:embed consumer_job_mark_cancelled.sql
+var ConsumerJobMarkCancelledSQL string
 
-type ConsumerJobMarkCompleteReq struct {
+type ConsumerJobMarkCancelledReq struct {
 	Consumer *entities.Consumer
 	Events   []*entities.StreamEvent
 }
 
-type ConsumerJobMarkCompleteRes struct {
+type ConsumerJobMarkCancelledRes struct {
 	Updated map[string]bool
 }
 
-func (req *ConsumerJobMarkCompleteReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobMarkCompleteRes, error) {
-	ctx, span := telemetry.Tracer().Start(ctx, "api_consumerjobmarkcomplete", trace.WithSpanKind(trace.SpanKindConsumer))
+func (req *ConsumerJobMarkCancelledReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerJobMarkCancelledRes, error) {
+	ctx, span := telemetry.Tracer().Start(ctx, "api_ConsumerJobMarkCancelled", trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 
-	res := &ConsumerJobMarkCompleteRes{Updated: make(map[string]bool)}
+	res := &ConsumerJobMarkCancelledRes{Updated: make(map[string]bool)}
 
 	var names = make([]string, len(req.Events))
 	var args = pgx.NamedArgs{
-		"running_state":  int(entities.StateRunning),
-		"complete_state": int(entities.StateCompleted),
-		"finalized_at":   time.Now().UnixMilli(),
+		"cancelled_state": int(entities.StateCancelled),
+		"avaiable_state":  int(entities.StateAvailable),
+		"running_state":   int(entities.StateRunning),
+		"retryable_state": int(entities.StateRetryable),
+		"finalized_at":    time.Now().UnixMilli(),
 	}
 	for i, event := range req.Events {
 		// we assume that events are not able to update firstly
@@ -56,7 +58,7 @@ func (req *ConsumerJobMarkCompleteReq) Do(ctx context.Context, tx pgx.Tx) (*Cons
 	}
 
 	table := pgx.Identifier{entities.CollectionConsumerJob(req.Consumer.Name)}.Sanitize()
-	query := fmt.Sprintf(ConsumerJobMarkCompleteSQL, table, strings.Join(names, ","))
+	query := fmt.Sprintf(ConsumerJobMarkCancelledSQL, table, strings.Join(names, ","))
 
 	rows, err := tx.Query(ctx, query, args)
 	if err != nil {
@@ -88,8 +90,8 @@ func (req *ConsumerJobMarkCompleteReq) Do(ctx context.Context, tx pgx.Tx) (*Cons
 		}
 		excluded = append(excluded, id)
 	}
-	span.SetAttributes(attribute.StringSlice("api_consumerjobmarkcomplete/updated", updated))
-	span.SetAttributes(attribute.StringSlice("api_consumerjobmarkcomplete/excluded", excluded))
+	span.SetAttributes(attribute.StringSlice("api_ConsumerJobMarkCancelled/updated", updated))
+	span.SetAttributes(attribute.StringSlice("api_ConsumerJobMarkCancelled/excluded", excluded))
 
 	return res, nil
 }

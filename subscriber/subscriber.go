@@ -21,9 +21,8 @@ type subscriber struct {
 	Consumer *entities.Consumer
 	Type     string
 
-	failurec chan map[string]error
-	errorc   chan error
-	mu       sync.Mutex
+	errorc chan error
+	mu     sync.Mutex
 }
 
 func (sub *subscriber) Start(ctx context.Context) error {
@@ -72,14 +71,9 @@ func (sub *subscriber) Stop(ctx context.Context) error {
 	sub.mu.Lock()
 	defer sub.mu.Unlock()
 
-	// wait for failurec and errorc to be closed
+	// wait for errorc channel to be closed
 	<-sub.Error()
-	<-sub.Failurec()
 	return sub.Conn.Close(ctx)
-}
-
-func (sub *subscriber) Failurec() <-chan map[string]error {
-	return sub.failurec
 }
 
 func (sub *subscriber) Error() <-chan error {
@@ -90,7 +84,6 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 	ctx, span := telemetry.Tracer().Start(ctx, "subscriber_consume_handle")
 	span.SetAttributes(attribute.Int("event_count", len(events)))
 
-	var failures = make(map[string]error)
 	var cancelled []*entities.StreamEvent
 	var retryable []*entities.StreamEvent
 	var completed []*entities.StreamEvent
@@ -162,9 +155,16 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 		return
 	}
 
-	// no error reports, mark jobs as completed
+	if len(cancelled) > 0 {
+		command := api.NewConsumerJobMarkCancelled(sub.Consumer, completed)
+		if _, err := command.Do(ctx, tx); err != nil {
+			sub.RecordError(span, err, tx.Rollback(ctx))
+			return
+		}
+	}
+
 	if len(completed) > 0 {
-		command := api.NewConsumerJobMarkComplete(sub.Consumer, completed)
+		command := api.NewConsumerJobMarkCompleted(sub.Consumer, completed)
 		if _, err := command.Do(ctx, tx); err != nil {
 			sub.RecordError(span, err, tx.Rollback(ctx))
 			return
@@ -172,8 +172,7 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 	}
 
 	if len(retryable) > 0 {
-		// error reports, mark jobs as retryable
-		command := api.NewConsumerJobMarkRetry(sub.Consumer, retryable)
+		command := api.NewConsumerJobMarkRetryable(sub.Consumer, retryable)
 		if _, err := command.Do(ctx, tx); err != nil {
 			sub.RecordError(span, err, tx.Rollback(ctx))
 			return
@@ -184,7 +183,6 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 		sub.RecordError(span, err, tx.Rollback(ctx))
 		return
 	}
-	sub.failurec <- failures
 }
 
 func (sub *subscriber) RecordError(span trace.Span, errs ...error) error {
@@ -204,13 +202,5 @@ func (sub *subscriber) RecordError(span trace.Span, errs ...error) error {
 func (sub *subscriber) ErrorHandle(handle func(error)) {
 	for err := range sub.errorc {
 		handle(err)
-	}
-}
-
-func (sub *subscriber) FailureHandle(handle func(string, error)) {
-	for failures := range sub.failurec {
-		for eventId, err := range failures {
-			handle(eventId, err)
-		}
 	}
 }
