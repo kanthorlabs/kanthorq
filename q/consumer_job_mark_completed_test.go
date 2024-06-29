@@ -1,4 +1,4 @@
-package api
+package q
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewConsumerPull(t *testing.T) {
+func TestNewConsumerJobMarkCompleted(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -38,11 +38,11 @@ func TestNewConsumerPull(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		changes, err := NewConsumerPull(c.Consumer, testify.Fake.IntBetween(10, 100)).Do(ctx, tx)
+		events := testify.GenStreamEvents(testify.Topic(5), 10)
+		r, err := NewConsumerJobMarkCompleted(c.Consumer, events).Do(ctx, tx)
 		require.NoError(t, err)
-		require.NotNil(t, changes)
+		require.Equal(t, len(events), len(r.Updated))
 
 		require.NoError(t, tx.Commit(ctx))
-
 	})
 }

@@ -1,4 +1,4 @@
-package api
+package q
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewStreamEnsure(t *testing.T) {
+func TestNewConsumerCreate(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -18,10 +18,8 @@ func TestNewStreamEnsure(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		s, err := NewStreamEnsure(testify.StreamName(5)).Do(ctx, tx)
+		err = NewConsumerCreate(testify.ConsumerName(5)).Do(ctx, tx)
 		require.NoError(t, err)
-		require.NotNil(t, s)
-		require.NotNil(t, s.Stream)
 
 		require.NoError(t, tx.Commit(ctx))
 	})

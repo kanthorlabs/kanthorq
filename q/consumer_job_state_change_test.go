@@ -1,14 +1,16 @@
-package api
+package q
 
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewConsumerJobMarkRetryable(t *testing.T) {
+func TestNewConsumerJobStateChange(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -38,10 +40,15 @@ func TestNewConsumerJobMarkRetryable(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		events := testify.GenStreamEvents(testify.Topic(5), 10)
-		r, err := NewConsumerJobMarkRetryable(c.Consumer, events).Do(ctx, tx)
+		changes, err := NewConsumerJobStateChange(
+			c.Consumer,
+			testify.Fake.IntBetween(10, 100),
+			entities.StateAvailable,
+			entities.StateRunning,
+			time.Hour,
+		).Do(ctx, tx)
 		require.NoError(t, err)
-		require.Equal(t, len(events), len(r.Updated))
+		require.NotNil(t, changes)
 
 		require.NoError(t, tx.Commit(ctx))
 	})

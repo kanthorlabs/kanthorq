@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
@@ -156,7 +155,7 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 	}
 
 	if len(cancelled) > 0 {
-		command := api.NewConsumerJobMarkCancelled(sub.Consumer, completed)
+		command := q.NewConsumerJobMarkCancelled(sub.Consumer, completed)
 		if _, err := command.Do(ctx, tx); err != nil {
 			sub.RecordError(span, err, tx.Rollback(ctx))
 			return
@@ -164,7 +163,7 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 	}
 
 	if len(completed) > 0 {
-		command := api.NewConsumerJobMarkCompleted(sub.Consumer, completed)
+		command := q.NewConsumerJobMarkCompleted(sub.Consumer, completed)
 		if _, err := command.Do(ctx, tx); err != nil {
 			sub.RecordError(span, err, tx.Rollback(ctx))
 			return
@@ -172,7 +171,7 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 	}
 
 	if len(retryable) > 0 {
-		command := api.NewConsumerJobMarkRetryable(sub.Consumer, retryable)
+		command := q.NewConsumerJobMarkRetryable(sub.Consumer, retryable)
 		if _, err := command.Do(ctx, tx); err != nil {
 			sub.RecordError(span, err, tx.Rollback(ctx))
 			return

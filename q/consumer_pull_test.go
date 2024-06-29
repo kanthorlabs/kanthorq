@@ -1,15 +1,14 @@
-package api
+package q
 
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewConsumerJobPullAvailable(t *testing.T) {
+func TestNewConsumerPull(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -39,14 +38,11 @@ func TestNewConsumerJobPullAvailable(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		pull, err := NewConsumerJobPullAvailable(
-			c.Consumer,
-			testify.Fake.IntBetween(10, 100),
-			time.Hour,
-		).Do(ctx, tx)
+		changes, err := NewConsumerPull(c.Consumer, testify.Fake.IntBetween(10, 100)).Do(ctx, tx)
 		require.NoError(t, err)
-		require.NotNil(t, pull)
+		require.NotNil(t, changes)
 
 		require.NoError(t, tx.Commit(ctx))
+
 	})
 }

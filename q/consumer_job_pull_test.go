@@ -1,16 +1,15 @@
-package api
+package q
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewConsumerJobStateChange(t *testing.T) {
+func TestNewConsumerJobPullAvailable(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -40,15 +39,13 @@ func TestNewConsumerJobStateChange(t *testing.T) {
 		tx, err = pool.Begin(ctx)
 		require.NoError(t, err)
 
-		changes, err := NewConsumerJobStateChange(
+		pull, err := NewConsumerJobPullAvailable(
 			c.Consumer,
 			testify.Fake.IntBetween(10, 100),
-			entities.StateAvailable,
-			entities.StateRunning,
 			time.Hour,
 		).Do(ctx, tx)
 		require.NoError(t, err)
-		require.NotNil(t, changes)
+		require.NotNil(t, pull)
 
 		require.NoError(t, tx.Commit(ctx))
 	})

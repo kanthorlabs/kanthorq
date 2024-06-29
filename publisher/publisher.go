@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
@@ -103,7 +102,7 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 			return err
 		}
 
-		_, err = api.StreamEventPush(pub.stream, events).Do(ctx, tx)
+		_, err = q.StreamEventPush(pub.stream, events).Do(ctx, tx)
 		if err != nil {
 			span.SetAttributes(attribute.Bool("ErrApiStreamEventPush", true))
 			span.RecordError(err)

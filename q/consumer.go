@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
@@ -14,12 +13,12 @@ func Consumer(ctx context.Context, conn *pgx.Conn, consumer *entities.Consumer) 
 		return nil, err
 	}
 
-	s, err := api.NewStreamEnsure(consumer.StreamName).Do(ctx, tx)
+	s, err := NewStreamEnsure(consumer.StreamName).Do(ctx, tx)
 	if err != nil {
 		return nil, err
 	}
 
-	c, err := api.NewConsumerEnsure(s.Stream, consumer.Name, consumer.Topic).Do(ctx, tx)
+	c, err := NewConsumerEnsure(s.Stream, consumer.Name, consumer.Topic).Do(ctx, tx)
 	if err != nil {
 		return nil, err
 	}

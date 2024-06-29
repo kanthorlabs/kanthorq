@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -55,7 +55,7 @@ func (sub *available) Pull(ctx context.Context, options ...SubscribeOption) ([]*
 		return nil, sub.RecordError(span, err)
 	}
 
-	c, err := api.NewConsumerPull(sub.Consumer, opts.Size).Do(ctx, tx)
+	c, err := q.NewConsumerPull(sub.Consumer, opts.Size).Do(ctx, tx)
 	if err != nil {
 		return nil, sub.RecordError(span, err, tx.Rollback(ctx))
 	}
@@ -67,7 +67,7 @@ func (sub *available) Pull(ctx context.Context, options ...SubscribeOption) ([]*
 		return nil, sub.RecordError(span, tx.Rollback(ctx))
 	}
 
-	j, err := api.NewConsumerJobPullAvailable(sub.Consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
+	j, err := q.NewConsumerJobPullAvailable(sub.Consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
 	if err != nil {
 		return nil, sub.RecordError(span, err, tx.Rollback(ctx))
 	}

@@ -1,14 +1,15 @@
-package api
+package q
 
 import (
 	"context"
 	"testing"
 
+	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/testify"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewStreamCreate(t *testing.T) {
+func TestNewConsumerEnsure(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
 		ctx := context.Background()
 
@@ -18,8 +19,14 @@ func TestNewStreamCreate(t *testing.T) {
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 
-		err = NewStreamCreate(testify.StreamName(5)).Do(ctx, tx)
+		ensure, err := NewConsumerEnsure(
+			&entities.Stream{Name: testify.StreamName(5)},
+			testify.ConsumerName(5),
+			testify.Topic(5),
+		).Do(ctx, tx)
 		require.NoError(t, err)
+		require.NotNil(t, ensure)
+		require.NotNil(t, ensure.Consumer)
 
 		require.NoError(t, tx.Commit(ctx))
 	})

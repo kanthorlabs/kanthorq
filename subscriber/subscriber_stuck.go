@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/kanthorlabs/kanthorq/api"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/q"
 	"github.com/kanthorlabs/kanthorq/telemetry"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -54,7 +54,7 @@ func (sub *stuck) Pull(ctx context.Context, options ...SubscribeOption) ([]*enti
 		return nil, sub.RecordError(span, err)
 	}
 
-	j, err := api.NewConsumerJobPullStuck(sub.Consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
+	j, err := q.NewConsumerJobPullStuck(sub.Consumer, opts.Size, opts.VisibilityTimeout).Do(ctx, tx)
 	if err != nil {
 		return nil, sub.RecordError(span, err, tx.Rollback(ctx))
 	}

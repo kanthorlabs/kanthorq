@@ -1,4 +1,4 @@
-package api
+package q
 
 import (
 	_ "embed"
