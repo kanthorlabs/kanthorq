@@ -10,7 +10,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment: docs
-    if: ${{ startsWith(github.event.head_commit.message, 'docs') }}
+    if: ${{ startsWith(github.event.head_commit.message, 'docs') || startsWith(github.event.head_commit.message, 'ci')  }}
     steps:
     - name: Checkout KanthorQ
       uses: actions/checkout@v4
@@ -44,6 +44,7 @@ jobs:
       working-directory: docs
     - name: Copy KanthorQ website to docs.kanthorlabs.com
       run: |
+        ls -la ..
         rm -rf ./kanthorq
         cp -r ../kanthorq/website/build ./kanthorq
       working-directory: docs
