@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     environment: docs
     if: ${{ startsWith(github.event.head_commit.message, 'docs') }}
@@ -36,7 +36,7 @@ jobs:
         repository: kanthorlabs/docs
         ref: main
         token:  ${{ secrets.DOCS_GITHUB_TOKEN }}
-        path: /docs
+        path: docs
     - name: setup git config
       run: |
         git config user.name "kanthorq"
