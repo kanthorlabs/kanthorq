@@ -37,7 +37,7 @@ jobs:
         ref: main
         token:  ${{ secrets.DOCS_GITHUB_TOKEN }}
         path: docs
-    - name: setup git config
+    - name: Setup Git for docs.kanthorlabs.com
       run: |
         git config user.name "kanthorq"
         git config user.email "<>"
@@ -45,7 +45,7 @@ jobs:
     - name: Copy KanthorQ website to docs.kanthorlabs.com
       run: |
         rm -rf ./kanthorq
-        cp -r ./website/build ./kanthorq
+        cp -r ../kanthorq/website/build ./kanthorq
       working-directory: docs
     - name: Push change to docs.kanthorlabs.com
       run: |
