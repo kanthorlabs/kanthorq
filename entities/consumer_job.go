@@ -33,24 +33,24 @@ type ConsumerJob struct {
 type JobState int
 
 const (
-	// JobStateDiscarded is the state for jobs that have errored enough times
+	// StateDiscarded is the state for jobs that have errored enough times
 	// that they're no longer eligible to be retried. Manual user invention
 	// is required for them to be tried again.
-	StateDiscarded JobState = -101
-	// JobStateCancelled is the state for jobs that have been manually cancelled
+	StateDiscarded JobState = -102
+	// StateCancelled is the state for jobs that have been manually cancelled
 	// by user request.
-	StateCancelled JobState = -100
-	// JobStateAvailable is the state for jobs that are immediately eligible to
+	StateCancelled JobState = -101
+	// StateAvailable is the state for jobs that are immediately eligible to
 	// be worked.
-	StateAvailable JobState = 0
-	// JobStateRunning are jobs which are actively running.
-	StateRunning JobState = 1
-	// JobStateScheduled is the state for jobs that are scheduled for the
-	// future.
-	StateCompleted JobState = 100
-	// JobStateRetryable is the state for jobs that have errored, but will be
+	StateAvailable JobState = 1
+	// StateRunning is the state for jobs jobs which are actively running.
+	StateRunning JobState = 2
+	// JobStateCompleted is the state for jobs that have successfully run to
+	// completion.
+	StateCompleted JobState = 101
+	// StateRetryable is the state for jobs that have errored, but will be
 	// retried.
-	StateRetryable JobState = 101
+	StateRetryable JobState = 102
 )
 
 func (state JobState) String() string {
