@@ -35,7 +35,7 @@ func (pub *publisher) Start(ctx context.Context) error {
 
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
-	stream, err := q.Stream(ctx, pub.conn, &entities.Stream{Name: pub.conf.StreamName})
+	stream, err := q.NewStream(ctx, pub.conn, &entities.Stream{Name: pub.conf.StreamName})
 	if err != nil {
 		return err
 	}
@@ -72,6 +72,10 @@ func (pub *publisher) Send(ctx context.Context, events []*entities.StreamEvent) 
 	ctx, span := telemetry.Tracer().Start(ctx, "publisher_send", trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
+	// @TODO: good time to introduce chain of responsibility pattern -> middleware
+	// - add circuit breaker
+	// - add retry logic
+	// - add throttle logic
 	start := time.Now()
 	defer func() {
 		// elapsed.Seconds may return 0 if the duration is too small

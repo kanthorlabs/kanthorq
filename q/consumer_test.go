@@ -20,7 +20,7 @@ func TestConsumer(t *testing.T) {
 		Name:       testify.ConsumerName(5),
 		Topic:      testify.Topic(5),
 	}
-	consumer, err := Consumer(ctx, conn, c)
+	consumer, err := NewConsumer(ctx, conn, c)
 	require.NoError(t, err)
 	require.NotNil(t, consumer)
 }

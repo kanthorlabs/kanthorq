@@ -15,7 +15,7 @@ func TestStream(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close(ctx)
 
-	stream, err := Stream(context.Background(), conn, &entities.Stream{
+	stream, err := NewStream(context.Background(), conn, &entities.Stream{
 		Name: testify.StreamName(5),
 	})
 	require.NoError(t, err)

@@ -31,7 +31,7 @@ func (sub *subscriber) Start(ctx context.Context) error {
 
 	sub.mu.Lock()
 	defer sub.mu.Unlock()
-	consumer, err := q.Consumer(ctx, sub.Conn, &entities.Consumer{
+	consumer, err := q.NewConsumer(ctx, sub.Conn, &entities.Consumer{
 		StreamName: sub.Conf.StreamName,
 		Topic:      sub.Conf.Topic,
 		Name:       sub.Conf.ConsumerName,

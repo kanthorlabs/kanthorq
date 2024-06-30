@@ -7,7 +7,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func Consumer(ctx context.Context, conn *pgx.Conn, consumer *entities.Consumer) (*entities.Consumer, error) {
+func NewConsumer(ctx context.Context, conn *pgx.Conn, consumer *entities.Consumer) (*entities.Consumer, error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return nil, err

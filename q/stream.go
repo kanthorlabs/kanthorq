@@ -7,7 +7,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 )
 
-func Stream(ctx context.Context, conn *pgx.Conn, stream *entities.Stream) (*entities.Stream, error) {
+func NewStream(ctx context.Context, conn *pgx.Conn, stream *entities.Stream) (*entities.Stream, error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return nil, err
