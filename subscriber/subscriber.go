@@ -83,7 +83,6 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 	ctx, span := telemetry.Tracer().Start(ctx, "subscriber_consume_handle")
 	span.SetAttributes(attribute.Int("event_count", len(events)))
 
-	var cancelled []*entities.StreamEvent
 	var retryable []*entities.StreamEvent
 	var completed []*entities.StreamEvent
 
@@ -100,33 +99,17 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 		eventSpan.SetAttributes(attribute.String("consumer_topic", sub.Conf.Topic))
 		eventSpan.SetAttributes(attribute.String("event_id", event.EventId))
 
-		state := handler(eventCtx, event)
-
-		switch state {
-		case entities.StateCancelled:
-			cancelled = append(cancelled, event)
-		case entities.StateCompleted:
-			completed = append(completed, event)
-		case entities.StateRetryable:
+		if err := handler(eventCtx, event); err != nil {
 			retryable = append(retryable, event)
+		} else {
+			completed = append(completed, event)
 		}
 
 		eventSpan.End()
 	}
-	span.SetAttributes(attribute.Int("event_tobe_cancel", len(cancelled)))
 	span.SetAttributes(attribute.Int("event_tobe_complete", len(completed)))
 	span.SetAttributes(attribute.Int("event_tobe_retry", len(retryable)))
 
-	telemetry.MeterCounter("kanthorq_subscriber_consume_total")(
-		int64(len(cancelled)),
-		metric.WithAttributes(
-			attribute.String("subscriber_type", sub.Type),
-			attribute.String("stream_name", sub.Conf.StreamName),
-			attribute.String("consumer_name", sub.Conf.ConsumerName),
-			attribute.String("consumer_topic", sub.Conf.Topic),
-			attribute.String("subscriber_status", entities.StateCancelled.String()),
-		),
-	)
 	telemetry.MeterCounter("kanthorq_subscriber_consume_total")(
 		int64(len(completed)),
 		metric.WithAttributes(
@@ -152,14 +135,6 @@ func (sub *subscriber) Handle(ctx context.Context, handler SubscriberHandler, ev
 	if err != nil {
 		sub.RecordError(span, err)
 		return
-	}
-
-	if len(cancelled) > 0 {
-		command := q.NewConsumerJobMarkCancelled(sub.Consumer, completed)
-		if _, err := command.Do(ctx, tx); err != nil {
-			sub.RecordError(span, err, tx.Rollback(ctx))
-			return
-		}
 	}
 
 	if len(completed) > 0 {

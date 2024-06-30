@@ -17,34 +17,134 @@ There are 6 states a job can have:
 - `Running`: is the state for jobs that are actively running.
 - `Retryable` is the state for jobs that have errored, but will be retried.
 
-We can categorize them into 2 groups
+We can categorize them into three groups
 
-- **Initial State**: The beginning state of a job before picking up to process. Currently we only have one state for this group: `Available`
+- **Initial States**: The beginning state of a job before picking up to process. Currently we only have one state for this group: `Available`
 
-- **Transitional State**: Jobs will stay at this state for awhile before to be transformed to another state (which maybe as same as the current state based on the business logic). We have `Running` and `Retryable` now.
+- **Transitional States**: Jobs will stay at this state for awhile before to be transformed to another state (which maybe as same as the current state based on the business logic). We have `Running` and `Retryable` now.
 
-- **Final State**: Once the job is moved into this state, it will stay at that state forever and should not be changed anymore. We have totally three state: `Discarded`, `Cancelled` and `Completed`
+- **Final States**: Once the job is moved into this state, it will stay at that state until user manually handle it. We have totally three state: `Discarded`, `Cancelled` and `Completed`
 
 ```mermaid
 ---
-title: State Transformation Flow
+title: State Transition Flow
 ---
 stateDiagram-v2
     [*] --> Available
 
     Available --> Running
+    Running --> Completed
+
     Running --> Running
 
     Running --> Retryable
+    Retryable --> Running
+    Retryable --> Discarded
 
     Available --> Cancelled
-    Running --> Discarded
-    Running --> Cancelled
-    Running --> Completed
-
-    Retryable --> Running
 
     Discarded --> [*]
     Cancelled --> [*]
     Completed --> [*]
 ```
+
+### Completed Flow
+
+This is the most expected flow we want to see in the system. Nothing to say about it, lets check the diagram to see the flow
+
+```mermaid
+---
+title: Completed Flow
+---
+stateDiagram-v2
+    direction LR
+    [*] --> Available
+    Available --> Running
+    Running --> Completed
+    Completed --> [*]
+```
+
+### Cancelled Flow
+
+There are two direction to drive an event to `Cancelled` state.
+
+- Event is cancelled by user directly using system API after the job is initialized.
+
+  ```mermaid
+  ---
+  title: Cancelled by user
+  ---
+  stateDiagram-v2
+      direction LR
+      [*] --> Available
+      Available --> Cancelled
+      Cancelled --> [*]
+  ```
+
+- Event is cancelled after running by a program/worker/handler and the program/worker/handler decides to tell KanthorQ system should cancel that job.
+
+  ```mermaid
+  ---
+  title: Cancelled by user
+  ---
+  stateDiagram-v2
+      direction LR
+      [*] --> Available
+      Available --> Running
+      Running --> Cancelled
+      Cancelled --> [*]
+  ```
+
+### Retryable & Discarded Flow
+
+Once the program/worker/handler return an error after processing the event, we will put the state into a state name `Retryable`. Another process need setting up to pick up those events to move them back to `Running` state before processing it again
+
+```mermaid
+---
+title: Retryable Flow
+---
+stateDiagram-v2
+    direction LR
+    [*] --> Available
+    Available --> Running
+    Running --> Retryable
+    Retryable --> Running
+```
+
+But if the event countinuely return an error after configurable times, we should put that event to the `Discarded` state. Once event is in `Discarded` state, user need to investigate on those events by themself to figure out what wrong was happen. They they can move it back to `Available` so they can be processed again
+
+```mermaid
+---
+title: Retryable Flow
+---
+stateDiagram-v2
+    direction LR
+    [*] --> Available
+    Available --> Running
+
+    Running --> Retryable: if attempt_count <= X
+    Running --> Discarded: if attempt_count > X
+
+    Discarded--> [*]
+```
+
+### Stuck Flow
+
+Stuck Flow is designed to handle unexpected behavious when a program/worker/handler picks a job then does not report whether the event is processed successfully or not. It happens when the program/worker/handler is crashed because of various issues around the system.
+
+```mermaid
+---
+title: Stuck Flow
+---
+stateDiagram-v2
+    direction LR
+    [*] --> Available
+    Available --> Running
+    Running --> Running
+```
+
+:::danger
+
+Currently a stuck job will be process forever until it is moved to `Retryable` or `Discarded`. That decision was made because we belived the crashed issue should not be happened persistently. After a fix, all stuck events should be processed normally and no action need taking.
+
+:::

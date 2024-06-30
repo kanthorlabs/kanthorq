@@ -16,4 +16,4 @@ type Subscriber interface {
 	Error() <-chan error
 }
 
-type SubscriberHandler func(ctx context.Context, event *entities.StreamEvent) entities.JobState
+type SubscriberHandler func(ctx context.Context, event *entities.StreamEvent) error
