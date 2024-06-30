@@ -23,7 +23,7 @@ jobs:
         cache-dependency-path: website/package-lock.json
 
     - name: Install dependencies
-      run: npm install
+      run: npm ci
       working-directory: website
 
     - name: Build project
@@ -33,7 +33,7 @@ jobs:
     - name: Checkout docs.kanthorlabs.com
       uses: actions/checkout@v4
       with:
-        repository: <repo name>
+        repository: kanthorlabs/docs
         ref: main
         token:  ${{ secrets.DOCS_GITHUB_TOKEN }}
         path: /docs
