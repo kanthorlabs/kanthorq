@@ -44,9 +44,8 @@ jobs:
       working-directory: docs
     - name: Copy KanthorQ website to docs.kanthorlabs.com
       run: |
-        ls -la ..
         rm -rf ./kanthorq
-        cp -r ../kanthorq/website/build ./kanthorq
+        cp -r ../website/build ./kanthorq
       working-directory: docs
     - name: Push change to docs.kanthorlabs.com
       run: |
