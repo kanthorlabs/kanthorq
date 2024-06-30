@@ -1,0 +1,55 @@
+name: docs.kanthorlabs.com
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: docs
+    if: ${{ startsWith(github.event.head_commit.message, 'docs') }}
+    steps:
+    - name: Checkout KanthorQ
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: npm
+        cache-dependency-path: website/package-lock.json
+
+    - name: Install dependencies
+      run: npm install
+      working-directory: website
+
+    - name: Build project
+      run: npm run build
+      working-directory: website
+      
+    - name: Checkout docs.kanthorlabs.com
+      uses: actions/checkout@v4
+      with:
+        repository: <repo name>
+        ref: main
+        token:  ${{ secrets.DOCS_GITHUB_TOKEN }}
+        path: /docs
+    - name: setup git config
+      run: |
+        git config user.name "kanthorq"
+        git config user.email "<>"
+      working-directory: docs
+    - name: Copy KanthorQ website to docs.kanthorlabs.com
+      run: |
+        rm -rf ./kanthorq
+        cp -r ./website/build ./kanthorq
+      working-directory: docs
+    - name: Push change to docs.kanthorlabs.com
+      run: |
+        git add ./kanthorq
+        git commit -m "docs: update documentation for KanthorQ"
+        git push origin main
+      working-directory: docs
