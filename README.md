@@ -2,6 +2,10 @@
 
 > Message Queuing Using Native PostgreSQL
 
+## TODO:
+
+- Job History
+
 ## Integration
 
 ### PGBouncer
