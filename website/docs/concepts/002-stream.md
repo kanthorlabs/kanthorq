@@ -7,16 +7,16 @@ sidebar_position: 2
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-Stream is a persistent, append-only event group that serves specific purposes. For example, you can create a stream with name `order_notification` to put all events that are relates to your order into that stream.
+Stream is a persistent, append-only event group that serves specific purposes. For example, you can create a stream with name `order_update` to put all events that are relates to your order into that stream.
 
 ```mermaid
 ---
-title: order_notification
+title: publisher
 ---
 flowchart TB
-  Order[Order Service] -- order.created ---> order_notification[(kanthor_stream_order_notification)]
-  Order[Order Service] -- order.refund ---> order_notification[(kanthor_stream_order_notification)]
-  Payment[Payment Service] -- order.confirmed ---> order_notification[(kanthor_stream_order_notification)]
+  Order[Order Service] -- order.created ---> order_update[(kanthor_stream_order_update)]
+  Order[Order Service] -- order.refund ---> order_update[(kanthor_stream_order_update)]
+  Payment[Payment Service] -- order.confirmed --> order_update[(kanthor_stream_order_update)]
 ```
 
 There are some characteristics of a stream you should know
@@ -27,17 +27,17 @@ There are some characteristics of a stream you should know
 
 ## Manage streams
 
-When you create or register a stream for you usage, its information will be store a registry then KanthorQ creates an acutal stream to store your events.
+When you create or register a stream for you usage, its information will be store in a registry then KanthorQ creates an acutal stream from the for you to store events from the returning registry inforamtion.
 
 ```mermaid
 ---
 title: Stream Register Flow
 ---
 sequenceDiagram
-  Client ->> +Stream Registry: name: order_notification
-  Stream Registry ->> -Client: Stream(name: order_notification)
+  Client ->> +Stream Registry: name: order_update
+  Stream Registry -->> -Client: Stream(name: order_update)
 
-  Client -->> +PostgreSQL: kanthorq_stream_order_notification
+  Client ->> +PostgreSQL: kanthorq_stream_order_update
   PostgreSQL -->> -Client: OK
 ```
 
@@ -72,7 +72,7 @@ There is the definition of the `Stream Registry` in different places in KanthorQ
 As the definition said about the `Stream`, it's just a **append-only event group** so its definition is just the definition of the `Event`.
 
 ```sql
-TABLE kanthorq_stream_order_notification (
+TABLE kanthorq_stream_order_update (
   id VARCHAR(64) NOT NULL,
   topic VARCHAR(128) NOT NULL,
   body BYTEA NOT NULL,
