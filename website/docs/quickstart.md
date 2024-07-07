@@ -46,7 +46,10 @@ KanthorQ system is replied on PosgreSQL database, and needs a small sets of tabl
 ## Register producer
 
 ```go
-publisher := kanthorq.NewPublisher()
+publisher, err := kanthorq.NewPublisher()
+if err != nil {
+  log.Panicf("could not create new publisher because of %v", err)
+}
 
 ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 defer cancel()
@@ -60,7 +63,7 @@ defer func () {
   }
 }()
 
-if err:= publisher.Pub(ctx, &kanthorq.NewEvent()); err != nil {
+if err:= publisher.Send(ctx, &kanthorq.NewEvent()); err != nil {
   // handle error
 }
 ```
@@ -68,7 +71,10 @@ if err:= publisher.Pub(ctx, &kanthorq.NewEvent()); err != nil {
 ## Register subscriber
 
 ```go
-subscriber := kanthorq.NewSubscriber()
+subscriber, err := kanthorq.NewSubscriber()
+if err != nil {
+  log.Panicf("could not create new subscriber because of %v", err)
+}
 
 ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 defer cancel()
@@ -82,7 +88,7 @@ defer func () {
   }
 }()
 
-go subscriber.Sub(ctx, func(ctx context.Context, event *kanthorq.Event) error {
+go subscriber.Receive(ctx, func(ctx context.Context, event *kanthorq.Event) error {
   // handle event logic
 })
 
