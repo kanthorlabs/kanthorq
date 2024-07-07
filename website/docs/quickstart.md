@@ -46,7 +46,9 @@ KanthorQ system is replied on PosgreSQL database, and needs a small sets of tabl
 ## Register producer
 
 ```go
-publisher, err := kanthorq.NewPublisher()
+var DATABASE_URI := "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
+
+publisher, err := kanthorq.NewPublisher(DATABASE_URI)
 if err != nil {
   log.Panicf("could not create new publisher because of %v", err)
 }
@@ -63,7 +65,9 @@ defer func () {
   }
 }()
 
-if err:= publisher.Send(ctx, &kanthorq.NewEvent()); err != nil {
+topic := "testing.demo"
+body := []byte("{\"ping\": true}")
+if err:= publisher.Send(ctx, kanthorq.NewEvent(topic, body)); err != nil {
   // handle error
 }
 ```
@@ -71,7 +75,9 @@ if err:= publisher.Send(ctx, &kanthorq.NewEvent()); err != nil {
 ## Register subscriber
 
 ```go
-subscriber, err := kanthorq.NewSubscriber()
+var DATABASE_URI := "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
+
+subscriber, err := kanthorq.NewSubscriber(DATABASE_URI)
 if err != nil {
   log.Panicf("could not create new subscriber because of %v", err)
 }
