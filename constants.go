@@ -1,5 +1,6 @@
 package kanthorq
 
 var (
-	DefaultStreamName = "default"
+	DefaultStreamName         string = "default"
+	DefaultConsumerAttemptMax int16  = 3
 )

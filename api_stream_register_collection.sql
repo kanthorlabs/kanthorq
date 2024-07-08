@@ -1,4 +1,4 @@
--- >>> api_stream_register_x
+-- >>> api_stream_register_collection
 
 CREATE TABLE IF NOT EXISTS %s (
 	id VARCHAR(64) NOT NULL,
@@ -9,6 +9,6 @@ CREATE TABLE IF NOT EXISTS %s (
 	PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_id ON %s USING btree("topic", "id");
+CREATE UNIQUE INDEX IF NOT EXISTS idx_topic_sharding ON %s USING btree("topic", "id");
 
--- <<< api_stream_register_x
+-- <<< api_stream_register_collection

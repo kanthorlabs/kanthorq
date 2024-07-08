@@ -14,18 +14,23 @@ func TestPublisher_Connection(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close(context.Background())
 
-	instance, err := NewPublisher(os.Getenv("KANTHORQ_POSTGRES_URI"))
+	instance, err := NewPublisher(
+		os.Getenv("KANTHORQ_POSTGRES_URI"),
+		&PublisherOptions{
+			StreamName: DefaultStreamName,
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, instance)
 
 	require.NoError(t, instance.Start(context.Background()))
-	require.NotNil(t, instance.(*publisher).conn)
-	require.NotNil(t, instance.(*publisher).stream)
-	require.Equal(t, instance.(*publisher).stream.Name, DefaultStreamName)
+	require.NotNil(t, instance.(*publisher).conn, "connection should not be nil")
+	require.NotNil(t, instance.(*publisher).stream, "stream should not be nil")
+	require.Equal(t, instance.(*publisher).stream.Name, DefaultStreamName, "should use default stream name")
 
 	require.NoError(t, instance.Stop(context.Background()))
-	require.Nil(t, instance.(*publisher).conn)
-	require.Nil(t, instance.(*publisher).stream)
+	require.Nil(t, instance.(*publisher).conn, "connection must be deleted after stop")
+	require.Nil(t, instance.(*publisher).stream, "stream must be deleted after stop")
 }
 
 func TestPublisher_Send(t *testing.T) {
@@ -33,7 +38,12 @@ func TestPublisher_Send(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close(context.Background())
 
-	instance, err := NewPublisher(os.Getenv("KANTHORQ_POSTGRES_URI"))
+	instance, err := NewPublisher(
+		os.Getenv("KANTHORQ_POSTGRES_URI"),
+		&PublisherOptions{
+			StreamName: DefaultStreamName,
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, instance)
 	require.NoError(t, instance.Start(context.Background()))

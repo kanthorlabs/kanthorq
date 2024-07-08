@@ -9,10 +9,6 @@ import (
 	"github.com/kanthorlabs/kanthorq/utils"
 )
 
-func StreamRegister(name string) *StreamRegisterReq {
-	return &StreamRegisterReq{Name: name}
-}
-
 //go:embed api_stream_register_registry.sql
 var StreamRegisterRegistrySql string
 
@@ -20,7 +16,7 @@ var StreamRegisterRegistrySql string
 var StreamRegisterCollectionSql string
 
 type StreamRegisterReq struct {
-	Name string
+	StreamName string
 }
 
 type StreamRegisgerRes struct {
@@ -28,7 +24,9 @@ type StreamRegisgerRes struct {
 }
 
 func (req *StreamRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*StreamRegisgerRes, error) {
-	lock := utils.AdvisoryLockHash(req.Name)
+	// we are not sure we have the stream yet, so we cannot use row lock
+	// must use advisory lock instead
+	lock := utils.AdvisoryLockHash(req.StreamName)
 	_, err := tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_xact_lock(%d);", lock))
 	if err != nil {
 		return nil, err
@@ -36,7 +34,7 @@ func (req *StreamRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*StreamRegisge
 
 	// register stream in registry
 	var stream StreamRegistry
-	var args = pgx.NamedArgs{"stream_name": req.Name}
+	var args = pgx.NamedArgs{"stream_name": req.StreamName}
 	err = tx.
 		QueryRow(ctx, StreamRegisterRegistrySql, args).
 		Scan(&stream.Name, &stream.CreatedAt, &stream.UpdatedAt)
@@ -45,7 +43,7 @@ func (req *StreamRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*StreamRegisge
 	}
 
 	// register stream collection
-	table := pgx.Identifier{StreamCollection(req.Name)}.Sanitize()
+	table := pgx.Identifier{StreamCollection(req.StreamName)}.Sanitize()
 	query := fmt.Sprintf(StreamRegisterCollectionSql, table, table)
 	_, err = tx.Exec(ctx, query)
 

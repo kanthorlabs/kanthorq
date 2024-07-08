@@ -46,9 +46,12 @@ KanthorQ system is replied on PosgreSQL database, and needs a small sets of tabl
 ## Register producer
 
 ```go
-var DATABASE_URI := "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
+var DATABASE_URI = "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
+var options = &kanthorq.PublisherOptions{
+  StreamName: kanthorq.DefaultStreamName
+}
 
-publisher, err := kanthorq.NewPublisher(DATABASE_URI)
+publisher, err := kanthorq.NewPublisher(DATABASE_URI, options)
 if err != nil {
   log.Panicf("could not create new publisher because of %v", err)
 }
@@ -65,8 +68,8 @@ defer func () {
   }
 }()
 
-topic := "testing.demo"
-body := []byte("{\"ping\": true}")
+topic := "system.ping"
+body := []byte("{\"count\": 0}")
 if err:= publisher.Send(ctx, kanthorq.NewEvent(topic, body)); err != nil {
   // handle error
 }
@@ -76,8 +79,14 @@ if err:= publisher.Send(ctx, kanthorq.NewEvent(topic, body)); err != nil {
 
 ```go
 var DATABASE_URI := "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
+var options = &kanthorq.SubscriberOptions{
+  StreamName: kanthorq.DefaultStreamName,
+  ConsumerName: "internal",
+  ConsumerTopic: "system.ping",
+  ConsumerAttemptMax: kanthorq.DefaultConsumerAttemptMax
+}
 
-subscriber, err := kanthorq.NewSubscriber(DATABASE_URI)
+subscriber, err := kanthorq.NewSubscriber(DATABASE_URI, options)
 if err != nil {
   log.Panicf("could not create new subscriber because of %v", err)
 }

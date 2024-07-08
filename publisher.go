@@ -2,6 +2,7 @@ package kanthorq
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -16,13 +17,17 @@ type Publisher interface {
 }
 
 // NewPublisher creates a new publisher that uses the default stream
-func NewPublisher(uri string) (Publisher, error) {
-	return &publisher{uri: uri, stream: &StreamRegistry{Name: DefaultStreamName}}, nil
+func NewPublisher(uri string, options *PublisherOptions) (Publisher, error) {
+	if err := options.Validate(); err != nil {
+		return nil, err
+	}
+	return &publisher{uri: uri, options: options}, nil
 }
 
 type publisher struct {
-	uri string
-	mu  sync.Mutex
+	uri     string
+	options *PublisherOptions
+	mu      sync.Mutex
 
 	conn   *pgx.Conn
 	stream *StreamRegistry
@@ -40,30 +45,30 @@ func (pub *publisher) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := StreamRegister(pub.stream.Name).Do(ctx, tx)
+	req := &StreamRegisterReq{StreamName: pub.options.StreamName}
+	res, err := req.Do(ctx, tx)
+	if err != nil {
+		return err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return err
 	}
-	pub.stream = resp.StreamRegistry
+	pub.stream = res.StreamRegistry
 
 	return nil
 }
 
-func (pub *publisher) Stop(ctx context.Context) error {
+func (pub *publisher) Stop(ctx context.Context) (err error) {
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
 
-	pub.stream = nil
-
-	if pub.conn == nil {
-		return nil
-	}
-	if err := pub.conn.Close(ctx); err != nil {
-		return err
+	if pub.conn != nil {
+		err = errors.Join(err, pub.conn.Close(ctx))
 	}
 
 	pub.conn = nil
-	return nil
+	pub.stream = nil
+	return
 }
 
 func (pub *publisher) connect(ctx context.Context) error {
