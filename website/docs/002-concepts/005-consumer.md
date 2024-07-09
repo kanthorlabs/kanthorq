@@ -1,7 +1,7 @@
 ---
 title: "Consumer"
 sidebar_label: "Consumer"
-sidebar_position: 4
+sidebar_position: 5
 ---
 
 import Tabs from '@theme/Tabs';
@@ -9,16 +9,16 @@ import TabItem from '@theme/TabItem';
 
 Consumer is a topic specific filter of events from a stream what stores metadata about how we want to process those events. One consumer can only subscribe to one topic but we can have more than one consumer for only one topic.
 
-For example, with the topic `order.confirmed` we may want to spin up two consumer: one for sending notification via email to user to nofiy user that their order is confirmed and another consumer to handle logic of showing that order in a CRM so seller can prepare to ship that order
+For example, with the topic `order.cancelled` we may want to spin up two consumer: one for sending notification via email to user to nofiy user that their order is confirmed and another consumer to handle logic of showing that order in a CRM so seller can prepare to ship that order
 
 ```mermaid
 ---
 title: subscriber
 ---
 flowchart TB
-  order_update[(kanthor_stream_order_update)] -- order.confirmed  --> Consumer_1[Send Confirm Email]
-  order_update[(kanthor_stream_order_update)] -- order.confirmed  --> Consumer_2[Sync CRM Order]
-  order_update[(kanthor_stream_order_update)] -- order.refund  ---> Consumer_3[Send Refund Email]
+  order_update[(kanthorq_stream_order_update)] -- order.cancelled  --> Consumer_1[Send Cancellation Email]
+  order_update[(kanthorq_stream_order_update)] -- order.cancelled  --> Consumer_2[Refund Order]
+  order_update[(kanthorq_stream_order_update)] -- order.created  ---> Consumer_3[Send Notification]
 ```
 
 ## Manage consumers
@@ -30,10 +30,10 @@ Like stream, when you create or register a consumer, its information will be sto
 title: Consumer Register Flow
 ---
 sequenceDiagram
-  Client ->> +Consumer Registry: name: send_confirmed_email, topic: order.confirmed
-  Consumer Registry -->> -Client: Consumer(name: send_confirmed_email, topic: order.confirmed)
+  Client ->> +Consumer Registry: name: send_cancellation_email, topic: order.cancelled
+  Consumer Registry -->> -Client: Consumer(name: send_cancellation_email, topic: order.cancelled)
 
-  Client ->> +PostgreSQL: kanthorq_consumer_send_confirmed_email
+  Client ->> +PostgreSQL: kanthorq_consumer_send_cancellation_email
   PostgreSQL -->> -Client: OK
 ```
 
@@ -79,7 +79,7 @@ Not like stream, consumer registry contains some runtime configuration that cont
 
 ### Consumer
 
-A consumer itself store a group of tasks that are generated from events in a stream. If your stream `kanthorq_stream_order_update` has 999 events of topic `order.confirmed` and you have a consumer `kanthorq_consumer_registry` that subscribed to the event, you will have 999 tasks inside the consumer names `kanthorq_consumer_send_confirmed_email`
+A consumer itself store a group of tasks that are generated from events in a stream. If your stream `kanthorq_stream_order_update` has 999 events of topic `order.cancelled` and you have a consumer `kanthorq_consumer_registry` that subscribed to the event, you will have 999 tasks inside the consumer names `kanthorq_consumer_send_cancellation_email`
 
 So when you want to get a list of tasks for your subscriber, you need to perform two action
 
@@ -93,19 +93,19 @@ title: Consumer Pull Flow
 sequenceDiagram
 autonumber
   loop Pulling
-    Client ->> +Consumer Registry: name: send_confirmed_email
-    Consumer Registry -->> -Client: topic: order.confirmed, cursor: ""
-    Client ->> +kanthorq_stream_order_update: topic: order.confirmed, cursor: ""
-    kanthorq_stream_order_update ->> kanthorq_consumer_send_confirmed_email: 100 events
-    kanthorq_consumer_send_confirmed_email ->> kanthorq_consumer_send_confirmed_email: 100 tasks
-    kanthorq_consumer_send_confirmed_email -->> Client: 100 tasks
+    Client ->> +Consumer Registry: name: send_cancellation_email
+    Consumer Registry -->> -Client: topic: order.cancelled, cursor: ""
+    Client ->> +kanthorq_stream_order_update: topic: order.cancelled, cursor: ""
+    kanthorq_stream_order_update ->> kanthorq_consumer_send_cancellation_email: 100 events
+    kanthorq_consumer_send_cancellation_email ->> kanthorq_consumer_send_cancellation_email: 100 tasks
+    kanthorq_consumer_send_cancellation_email -->> Client: 100 tasks
   end
 ```
 
 If definition of `Stream` is as same as `Event`, definition of `Consumer` is as same as `Task` because `Consumer` is where we store metadata of how we will execute an event, aka a task
 
 ```sql
-TABLE kanthorq_consumer_send_confirmed_email (
+TABLE kanthorq_consumer_send_cancellation_email (
 	event_id VARCHAR(64) NOT NULL,
 	topic VARCHAR(128) NOT NULL,
 	state SMALLINT NOT NULL DEFAULT 1,

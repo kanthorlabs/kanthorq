@@ -1,7 +1,7 @@
 ---
 title: "Stream"
 sidebar_label: "Stream"
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 import Tabs from '@theme/Tabs';
@@ -14,9 +14,9 @@ Stream is a persistent, append-only event group that serves specific purposes. F
 title: publisher
 ---
 flowchart TB
-  Order[Order Service] -- order.created ---> order_update[(kanthor_stream_order_update)]
-  Order[Order Service] -- order.refund ---> order_update[(kanthor_stream_order_update)]
-  Payment[Payment Service] -- order.confirmed --> order_update[(kanthor_stream_order_update)]
+  Order[Order Service] -- order.created ---> order_update[(kanthorq_stream_order_update)]
+  Order[Order Service] -- order.cancelled ---> order_update[(kanthorq_stream_order_update)]
+  3PL[3PL Service] -- parcel.lost --> order_update[(kanthorq_stream_order_update)]
 ```
 
 There are some characteristics of a stream you should know

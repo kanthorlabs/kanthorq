@@ -1,7 +1,7 @@
 ---
 title: "Event"
 sidebar_label: "Event"
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 import Tabs from '@theme/Tabs';
