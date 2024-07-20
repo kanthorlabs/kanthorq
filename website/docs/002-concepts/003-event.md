@@ -1,13 +1,13 @@
 ---
 title: "Event"
 sidebar_label: "Event"
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-`Event` is an entity that represents a data transfer object (DTO) between client and publisher in KanthorQ. It is similar with HTTP request in client-server commication over HTTP or proto definition in gRPC.
+`Event` is an entity that represents a data transfer object (DTO) between publishers and streams in KanthorQ. It is similar with HTTP request in client-server commication over HTTP or proto definition in gRPC.
 
 There is the definition of the `Event` in different places in KanthorQ
 
@@ -38,7 +38,7 @@ There is the definition of the `Event` in different places in KanthorQ
 
 :::info
 
-You can be confused why we use the name `kanthorq_stream_order_update` to represent the `Event` struct. Check [Stream Concept](/docs/concepts/stream#stream) for more information.
+You can be confused why we use the name `kanthorq_stream_order_update` to represent the `Event` struct in PostgreSQL. Check [Stream Concept](/docs/concepts/stream#stream) for more information.
 
 :::
 

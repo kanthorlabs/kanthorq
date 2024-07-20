@@ -1,7 +1,7 @@
 ---
 title: "Consumer"
 sidebar_label: "Consumer"
-sidebar_position: 5
+sidebar_position: 6
 ---
 
 import Tabs from '@theme/Tabs';

@@ -1,7 +1,7 @@
 ---
 title: "Stream"
 sidebar_label: "Stream"
-sidebar_position: 3
+sidebar_position: 4
 ---
 
 import Tabs from '@theme/Tabs';
@@ -11,7 +11,7 @@ Stream is a persistent, append-only event group that serves specific purposes. F
 
 ```mermaid
 ---
-title: publisher
+title: Stream
 ---
 flowchart TB
   Order[Order Service] -- order.created ---> order_update[(kanthorq_stream_order_update)]
