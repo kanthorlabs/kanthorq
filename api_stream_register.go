@@ -19,11 +19,11 @@ type StreamRegisterReq struct {
 	StreamName string
 }
 
-type StreamRegisgerRes struct {
+type StreamRegisterRes struct {
 	*StreamRegistry
 }
 
-func (req *StreamRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*StreamRegisgerRes, error) {
+func (req *StreamRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*StreamRegisterRes, error) {
 	// we are not sure we have the stream yet, so we cannot use row lock
 	// must use advisory lock instead
 	lock := utils.AdvisoryLockHash(req.StreamName)
@@ -47,5 +47,5 @@ func (req *StreamRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*StreamRegisge
 	query := fmt.Sprintf(StreamRegisterCollectionSql, table, table)
 	_, err = tx.Exec(ctx, query)
 
-	return &StreamRegisgerRes{&stream}, err
+	return &StreamRegisterRes{&stream}, err
 }

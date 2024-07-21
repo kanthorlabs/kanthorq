@@ -47,7 +47,7 @@ func (req *ConsumerJobMarkRetryableReq) Do(ctx context.Context, tx pgx.Tx) (*Con
 
 	var names = make([]string, len(req.Events))
 	var args = pgx.NamedArgs{
-		"attempt_max":     req.Consumer.Name,
+		"attempt_max":     req.Consumer.AttemptMax,
 		"discarded_state": int(entities.StateDiscarded),
 		"retryable_state": int(entities.StateRetryable),
 		"running_state":   int(entities.StateRunning),

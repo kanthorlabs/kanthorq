@@ -1,4 +1,4 @@
--- >>> consumer_create
+-- >>> api_consumer_register_collection
 CREATE TABLE IF NOT EXISTS %s (
 	event_id VARCHAR(64) NOT NULL,
 	topic VARCHAR(128) NOT NULL,
@@ -12,4 +12,4 @@ CREATE TABLE IF NOT EXISTS %s (
 	PRIMARY KEY (event_id)
 );
 CREATE INDEX IF NOT EXISTS idx_state_scheduling ON %s USING btree("state", "schedule_at");
--- <<< consumer_create
+-- <<< api_consumer_register_collection
