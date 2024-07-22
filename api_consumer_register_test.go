@@ -17,7 +17,10 @@ func TestConsumerRegister(t *testing.T) {
 	require.NoError(t, err)
 
 	req := &ConsumerRegisterReq{
-		ConsumerName: faker.ConsumerName(),
+		StreamName:         faker.StreamName(),
+		ConsumerName:       faker.ConsumerName(),
+		ConsumerTopic:      faker.Topic(),
+		ConsumerAttemptMax: faker.F.Int16Between(1, 10),
 	}
 	res, err := ConsumerRegister(ctx, req, conn)
 	require.NoError(t, err)
@@ -40,7 +43,10 @@ func TestConsumerRegister_Parallel(t *testing.T) {
 
 	// will try to register same Consumer
 	req := &ConsumerRegisterReq{
-		ConsumerName: faker.ConsumerName(),
+		StreamName:         faker.StreamName(),
+		ConsumerName:       faker.ConsumerName(),
+		ConsumerTopic:      faker.Topic(),
+		ConsumerAttemptMax: faker.F.Int16Between(1, 10),
 	}
 
 	for i := 0; i < count; i++ {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
 func StreamRegister(ctx context.Context, req *StreamRegisterReq, conn *pgx.Conn) (*StreamRegisterRes, error) {
@@ -30,7 +31,7 @@ var StreamRegisterRegistrySql string
 var StreamRegisterCollectionSql string
 
 type StreamRegisterReq struct {
-	StreamName string
+	StreamName string `validate:"required,is_collection_name"`
 }
 
 type StreamRegisterRes struct {
@@ -38,7 +39,10 @@ type StreamRegisterRes struct {
 }
 
 func (req *StreamRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*StreamRegisterRes, error) {
-	var err error
+	err := validator.Validate.Struct(req)
+	if err != nil {
+		return nil, err
+	}
 
 	// register stream in registry
 	var stream StreamRegistry

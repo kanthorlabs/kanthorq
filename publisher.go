@@ -96,19 +96,13 @@ func (pub *publisher) Send(ctx context.Context, events ...*Event) error {
 	// @TODO: circuit breaker
 	// @TODO: retry logic
 
-	tx, err := pub.conn.Begin(ctx)
+	req := &StreamPutEventsReq{Stream: pub.stream, Events: events}
+	res, err := StreamPutEvents(ctx, req, pub.conn)
 	if err != nil {
-		return err
-	}
-	resp, err := StreamPut(pub.stream, events).Do(ctx, tx)
-	if err != nil {
-		return err
-	}
-	if err := tx.Commit(ctx); err != nil {
 		return err
 	}
 
-	if resp.InsertCount != int64(len(events)) {
+	if res.InsertCount != int64(len(events)) {
 		// TODO: log error about inserted count and expected count does not match
 	}
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
 func ConsumerRegister(ctx context.Context, req *ConsumerRegisterReq, conn *pgx.Conn) (*ConsumerRegisterRes, error) {
@@ -30,10 +31,10 @@ var ConsumerRegisterRegistrySql string
 var ConsumerRegisterCollectionSql string
 
 type ConsumerRegisterReq struct {
-	StreamName         string
-	ConsumerName       string
-	ConsumerTopic      string
-	ConsumerAttemptMax int16
+	StreamName         string `validate:"required,is_collection_name"`
+	ConsumerName       string `validate:"required,is_collection_name"`
+	ConsumerTopic      string `validate:"required,is_topic"`
+	ConsumerAttemptMax int16  `validate:"required,gt=0"`
 }
 
 type ConsumerRegisterRes struct {
@@ -42,6 +43,11 @@ type ConsumerRegisterRes struct {
 }
 
 func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerRegisterRes, error) {
+	err := validator.Validate.Struct(req)
+	if err != nil {
+		return nil, err
+	}
+
 	stream, err := (&StreamRegisterReq{StreamName: req.StreamName}).Do(ctx, tx)
 	if err != nil {
 		return nil, err
