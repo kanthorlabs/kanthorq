@@ -1,4 +1,4 @@
-package testify
+package tester
 
 import (
 	"context"
@@ -27,33 +27,4 @@ func SetupPostgres(ctx context.Context) (*pgx.Conn, error) {
 	defer m.Close()
 
 	return conn, nil
-}
-
-func SetupPostgresAdvisoryXactLock(ctx context.Context, lock uint32) func() error {
-	lconn, err := SetupPostgres(ctx)
-	if err != nil {
-		return func() error {
-			return err
-		}
-	}
-
-	ltx, err := lconn.Begin(ctx)
-	if err != nil {
-		return func() error {
-			return err
-		}
-	}
-	_, err = ltx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", lock)
-	if err != nil {
-		return func() error {
-			return err
-		}
-	}
-
-	return func() error {
-		if err := ltx.Commit(ctx); err != nil {
-			return err
-		}
-		return lconn.Close(ctx)
-	}
 }

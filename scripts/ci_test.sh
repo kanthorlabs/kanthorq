@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-export $(cat .env | xargs)
+export $(grep -v '^#' .env | xargs)
 
 CI=${CI:-""}
 CHECKSUM_FILE=./checksum

@@ -6,8 +6,22 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/kanthorq/utils"
 )
+
+func ConsumerRegister(ctx context.Context, req *ConsumerRegisterReq, conn *pgx.Conn) (*ConsumerRegisterRes, error) {
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, err
+	}
+	res, err := req.Do(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
 
 //go:embed api_consumer_register_registry.sql
 var ConsumerRegisterRegistrySql string
@@ -22,21 +36,13 @@ type ConsumerRegisterReq struct {
 	ConsumerAttemptMax int16
 }
 
-type ConsumerRegisgerRes struct {
+type ConsumerRegisterRes struct {
 	*StreamRegistry
 	*ConsumerRegistry
 }
 
-func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerRegisgerRes, error) {
+func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerRegisterRes, error) {
 	stream, err := (&StreamRegisterReq{StreamName: req.StreamName}).Do(ctx, tx)
-	if err != nil {
-		return nil, err
-	}
-
-	// we are not sure we have the consumer yet, so we cannot use row lock
-	// must use advisory lock instead
-	lock := utils.AdvisoryLockHash(req.ConsumerName)
-	_, err = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_xact_lock(%d);", lock))
 	if err != nil {
 		return nil, err
 	}
@@ -68,5 +74,5 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 	query := fmt.Sprintf(ConsumerRegisterCollectionSql, table, table)
 	_, err = tx.Exec(ctx, query)
 
-	return &ConsumerRegisgerRes{stream.StreamRegistry, &consumer}, err
+	return &ConsumerRegisterRes{stream.StreamRegistry, &consumer}, err
 }
