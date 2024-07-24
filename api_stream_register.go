@@ -56,7 +56,7 @@ func (req *StreamRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*StreamRegiste
 
 	// register stream collection
 	table := pgx.Identifier{StreamCollection(req.StreamName)}.Sanitize()
-	query := fmt.Sprintf(StreamRegisterCollectionSql, table)
+	query := fmt.Sprintf(StreamRegisterCollectionSql, table, table)
 	_, err = tx.Exec(ctx, query)
 
 	return &StreamRegisterRes{&stream}, err

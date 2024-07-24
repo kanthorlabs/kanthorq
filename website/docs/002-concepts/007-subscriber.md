@@ -8,7 +8,7 @@ The Subscriber is the most complicated component in KanthorQ system, but that co
 
 ## Workflows
 
-The Subscriber workflows will contains two parts: the pulling workflow that help you get tasks for your works and the updating workflow that help you update your task state after you have done with it
+The Subscriber workflows will contains two parts: the pulling workflow that help you get tasks for your works and the updating workflow that help you update your tasks state after you have done with them
 
 ### The Pulling Workflow
 
@@ -29,12 +29,9 @@ sequenceDiagram
   kanthorq_stream_order_update -->> -kanthorq_stream_order_update: scanning
   kanthorq_stream_order_update ->> +send_cancellation_email: found and convert 85 events to tasks
 
-  par [Update next cursor]
-    send_cancellation_email -->> Consumer Registry: cursor: evt_01J3702FVA6EJ7QB7CNRMCP93B
-    Consumer Registry -->> Consumer Registry: release send_cancellation_email
-  and [Return tasks]
-    send_cancellation_email -->> +Subscriber: 85 tasks
-  end
+  send_cancellation_email -->> +Subscriber: 85 tasks
+  Subscriber -->> Consumer Registry: update cursor
+  Consumer Registry -->> Consumer Registry: release send_cancellation_email
 
   Subscriber -->> -Subscriber: refresh local cursor
 
@@ -59,9 +56,10 @@ The Pulling flow contains two child workflow: the Converting flow that help you 
 3. Then use properties of the consumer: a stream name, a topic and a cursor of previous scanning in the stream to make a request to the stream.
 4. Perform the scaning process on the given stream based on the given topic and cursor to obtain enough events
 5. Convert founding events to tasks
-6. Return back the latest cursor based on tasks we converted before
-7. We release the lock of the consumer
-8. Return converted tasks to the Subscriber
+6. Return tasks to the Subscriber
+7. Update the Consumer Registry with latest cursor (the latest `event_id` of tasks)
+8. Release the lock of the Consumer
+9. Refresh the local cursor
 
 :::info
 

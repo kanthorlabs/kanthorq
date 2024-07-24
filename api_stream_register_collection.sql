@@ -7,4 +7,6 @@ CREATE TABLE IF NOT EXISTS %s (
 	created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
 	PRIMARY KEY (id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_topic_partition ON %s (topic, id);
 ---<<< api_stream_register_collection
