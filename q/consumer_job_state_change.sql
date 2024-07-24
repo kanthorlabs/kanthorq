@@ -1,4 +1,4 @@
--- >>> consumer_job_state_change/%s
+--->>> consumer_job_state_change/%s
 WITH locked_jobs AS (
   SELECT
     event_id
@@ -21,4 +21,4 @@ SET
 FROM locked_jobs
 WHERE u_jobs.event_id = locked_jobs.event_id 
 RETURNING u_jobs.event_id
--- <<< consumer_job_state_change/%s
+---<<< consumer_job_state_change/%s

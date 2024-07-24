@@ -1,4 +1,4 @@
--- >>> api_task_mark_running_as_retryable_or_discarded
+--->>> api_task_mark_running_as_retryable_or_discarded
 UPDATE %s
 SET 
   state = CASE 
@@ -11,4 +11,4 @@ WHERE
   -- make sure we only move tasks that are in running state to retryable/discarded state
   AND state = @running_state::SMALLINT
 RETURNING event_id
--- <<< api_task_mark_running_as_retryable_or_discarded
+---<<< api_task_mark_running_as_retryable_or_discarded

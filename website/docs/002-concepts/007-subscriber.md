@@ -17,43 +17,66 @@ The Subscriber workflows will contains two parts: the pulling workflow that help
 title: The Pulling Workflow
 ---
 sequenceDiagram
-  Subscriber ->> +Consumer Registry: name: send_cancellation_email
+  autonumber
 
   rect rgb(191, 223, 255)
-  note right of Subscriber: Transaction Box
+  note right of Subscriber: Converting Flow
 
-  Consumer Registry ->> -kanthorq_stream_order_update: topic: order.cancelled, cursor: evt_01J36ZJACKR5FXDWVKASC4BNCN, limit: 100
+  Subscriber ->> +Consumer Registry: name: send_cancellation_email
+  Consumer Registry -->> Consumer Registry: lock send_cancellation_email
 
-  loop 100 events or timeout
-    kanthorq_stream_order_update -->> kanthorq_stream_order_update: scanning
-    kanthorq_stream_order_update ->> +send_cancellation_email: events
-    send_cancellation_email -->> -send_cancellation_email: convert events to tasks
+  Consumer Registry ->> +kanthorq_stream_order_update: topic: order.cancelled, cursor: evt_01J36ZJACKR5FXDWVKASC4BNCN, limit: 100
+  kanthorq_stream_order_update -->> -kanthorq_stream_order_update: scanning
+  kanthorq_stream_order_update ->> +send_cancellation_email: found and convert 85 events to tasks
+
+  par [Update next cursor]
+    send_cancellation_email -->> Consumer Registry: cursor: evt_01J3702FVA6EJ7QB7CNRMCP93B
+    Consumer Registry -->> Consumer Registry: release send_cancellation_email
+  and [Return tasks]
+    send_cancellation_email -->> +Subscriber: 85 tasks
   end
 
-  send_cancellation_email -->> +Subscriber: 100 tasks
-  Subscriber ->> -Consumer Registry: next_cursor: evt_01J3702FVA6EJ7QB7CNRMCP93B
+  Subscriber -->> -Subscriber: refresh local cursor
 
   end
+
+  rect rgb(200, 150, 255)
+  note right of Subscriber: Fulfilling Flow
+
+  Subscriber ->> +kanthorq_stream_order_update: 85 event ids
+  kanthorq_stream_order_update ->> -Subscriber: 85 event records
+  end
+
+
 ```
 
-Not like Publish only works with one component - the Stream, the Subscriber needs to interact with two components: the Stream and the Consumer. It will work with the Stream to help convert events from a stream to a task in a consumer, then it pulls those tasks for you. The _Transaction Box_ indicates that all actions will be run in a transcation, so that we can guarantee pulling a task exactly once.
+The Pulling flow contains two child workflow: the Converting flow that help you scans events from a stream with given topic then convert to tasks on a stream and the Fulfilling flow that get event records based on the list of converted tasks of the Converting flow.
 
-1. We will start with a request to ask for 100 tasks.
-2. We need to work with the Consumer Registry to get a stream name, a topic and a cursor of previous scanning in the Stream. If the scan does not receive enough events, we need to perform it again until we reach maximum waiting time of the scan.
-3. Put all parameters together we will scan the Stream to look for matching events with given topic.
-4. After events are found, we start converting those events to tasks by inserting them into our Consumer then return those tasks back to our Subscriber.
-5. Because a task is belong to only one event, so we also know what is the next cursor is (the latest task contains the latest matching event), so we need to update that cursor back to our Consumer Registry
-6. Countinue the loop until we get termination sinal
+#### The Converting Flow
+
+1. We connect to the Consumer Registry to start our flow.
+2. We ask Consumer Registry to lock the record of requesting consumer
+3. Then use properties of the consumer: a stream name, a topic and a cursor of previous scanning in the stream to make a request to the stream.
+4. Perform the scaning process on the given stream based on the given topic and cursor to obtain enough events
+5. Convert founding events to tasks
+6. Return back the latest cursor based on tasks we converted before
+7. We release the lock of the consumer
+8. Return converted tasks to the Subscriber
 
 :::info
 
 By saying **scanning**, we mean we will query events from a stream from the lower bound that is specify by the **cursor** until we get enough rows (100 events). The simplify query will look like
 
 ```sql
-SELECT * FROM kanthorq_stream_order_update WHERE id > 'evt_01J36ZJACKR5FXDWVKASC4BNCN' LIMIT 100
+SELECT * FROM kanthorq_stream_order_update WHERE topic = 'order.cancelled' AND id > 'evt_01J36ZJACKR5FXDWVKASC4BNCN' LIMIT 100
 ```
 
 :::
+
+#### The Fulfilling Flow
+
+10. We get event records based on the list of tasks we have received (task contains `event_id`)
+11. We receive event records then perform our handler execution logic.
 
 ### The Updating Workflow
 
@@ -70,12 +93,17 @@ Checkout our definition about [Task State](./005-task.md#task-state) to see how 
 title: The Updating Workflow
 ---
 sequenceDiagram
-  Subscriber ->> +Handler: 100 events
-  Handler -->> -Handler: execute 100 events
-  Handler -->> +Subscriber: 83 succeed tasks
-  Subscriber ->> Consumer: mark as completed 83 tasks
-  Handler -->> Subscriber: 17 error tasks
-  Subscriber ->> Consumer: mark as retryable 17 tasks
+  Subscriber ->> +Handler: 85 events
+  Handler -->> -Handler: execute 85 events
+
+
+  par [Succeed]
+    Handler -->> +Subscriber: 83 succeed tasks
+    Subscriber ->> Consumer: mark as completed 83 tasks
+  and [Error]
+    Handler -->> Subscriber: 2 error tasks
+    Subscriber ->> Consumer: mark as retryable 2 tasks
+  end
 ```
 
 :::danger

@@ -1,4 +1,4 @@
--- >>> consumer_job_mark_retryable
+--->>> consumer_job_mark_retryable
 UPDATE %s
 SET 
   state = CASE 
@@ -11,4 +11,4 @@ WHERE
   -- make sure we only move jobs that are in running state to retryable state
   AND state = @running_state::SMALLINT
 RETURNING event_id
--- <<< consumer_job_mark_retryable
+---<<< consumer_job_mark_retryable

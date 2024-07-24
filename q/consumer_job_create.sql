@@ -1,4 +1,4 @@
--- >>> consumer_create
+--->>> consumer_create
 
 SELECT pg_advisory_xact_lock(%d);
 
@@ -17,4 +17,4 @@ CREATE TABLE IF NOT EXISTS %s (
 
 CREATE INDEX IF NOT EXISTS idx_state_scheduler ON %s USING btree("state", "schedule_at");
 
--- <<< consumer_create
+---<<< consumer_create

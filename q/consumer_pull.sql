@@ -1,4 +1,4 @@
--- >>> consumer_pull
+--->>> consumer_pull
 WITH jobs AS (
   INSERT INTO %s (event_id, topic)
   SELECT event_id, topic
@@ -18,4 +18,4 @@ SET cursor = next_event
 FROM next_cursor
 WHERE name = @consumer_name AND next_event IS NOT NULL
 RETURNING cursor;	
--- <<< consumer_pull
+---<<< consumer_pull

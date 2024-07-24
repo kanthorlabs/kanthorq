@@ -1,4 +1,4 @@
--- >>> stream_create
+--->>> stream_create
 
 SELECT pg_advisory_xact_lock(%d);
 
@@ -13,4 +13,4 @@ CREATE TABLE IF NOT EXISTS %s (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_id ON %s USING btree("topic", "id");
 
--- <<< stream_create
+---<<< stream_create
