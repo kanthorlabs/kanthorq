@@ -14,5 +14,6 @@ func init() {
 		Validate = validator.New()
 		Validate.RegisterValidation("is_topic", topic)
 		Validate.RegisterValidation("is_collection_name", collection)
+		Validate.RegisterValidation("is_enum", enum)
 	})
 }

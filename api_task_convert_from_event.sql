@@ -1,11 +1,10 @@
 --->>> api_task_convert_from_event
 INSERT INTO %s (event_id, topic, state)
-SELECT event_id, topic, @intial_state
+SELECT id, topic, @intial_state::SMALLINT as state
 FROM %s
-WHERE topic = @consumer_topic AND event_id > @consumer_cursor
-ORDER BY topic, event_id
+WHERE topic = @consumer_topic AND id > @consumer_cursor
+ORDER BY topic, id
 LIMIT @size
-ON CONFLICT(event_id) DO UPDATE
-SET updated_at = EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000
-RETURNING event_id
+ON CONFLICT(event_id) DO NOTHING
+RETURNING event_id, topic, state, schedule_at, attempt_count, attempted_at, finalized_at, created_at, updated_at;
 ---<<< api_task_convert_from_event

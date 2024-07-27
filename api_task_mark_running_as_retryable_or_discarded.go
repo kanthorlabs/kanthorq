@@ -42,7 +42,7 @@ func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx 
 		args[bind] = task.EventId
 	}
 
-	table := pgx.Identifier{ConsumerCollection(req.Consumer.Name)}.Sanitize()
+	table := pgx.Identifier{Collection(req.Consumer.Name)}.Sanitize()
 	query := fmt.Sprintf(TaskMarkRunningAsRetryableOrDiscardedSql, table, strings.Join(names, ","))
 
 	rows, err := tx.Query(ctx, query, args)

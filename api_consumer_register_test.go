@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/pkg/faker"
 	"github.com/kanthorlabs/kanthorq/tester"
@@ -61,4 +62,14 @@ func TestConsumerRegister_Parallel(t *testing.T) {
 			require.Equal(subt, req.ConsumerName, res.ConsumerRegistry.Name)
 		})
 	}
+}
+
+func TestConsumerRegister_Req(t *testing.T) {
+	_, err := (&ConsumerRegisterReq{}).Do(context.Background(), nil)
+	require.Error(t, err)
+
+	validationErrors, ok := err.(validator.ValidationErrors)
+	require.True(t, ok)
+
+	require.GreaterOrEqual(t, len(validationErrors), 1)
 }

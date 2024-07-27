@@ -17,15 +17,11 @@ func TestStreamPut(t *testing.T) {
 	stream, err := StreamRegister(ctx, &StreamRegisterReq{StreamName: faker.StreamName()}, conn)
 	require.NoError(t, err)
 
-	count := faker.F.Int64Between(100, 500)
-	events := make([]*Event, count)
-	for i := 0; i < int(count); i++ {
-		events[i] = NewEvent(faker.Topic(), faker.DataOf16Kb())
-	}
+	events := FakeEvents(faker.Topic(), 100, 500)
 
 	req := &StreamPutEventsReq{Stream: stream.StreamRegistry, Events: events}
 	res, err := StreamPutEvents(ctx, req, conn)
 	require.NoError(t, err)
 
-	require.Equal(t, count, res.InsertCount)
+	require.Equal(t, int64(len(events)), res.InsertCount)
 }

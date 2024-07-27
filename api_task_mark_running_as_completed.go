@@ -8,14 +8,15 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
 //go:embed api_task_mark_running_as_completed.sql
 var TaskMarkRunningAsCompletedSql string
 
 type TaskMarkRunningAsCompletedReq struct {
-	Consumer *ConsumerRegistry
-	Tasks    []*Task
+	Consumer *ConsumerRegistry `validate:"required"`
+	Tasks    []*Task           `validate:"required,dive,required"`
 }
 
 type TaskMarkRunningAsCompletedRes struct {
@@ -24,6 +25,11 @@ type TaskMarkRunningAsCompletedRes struct {
 }
 
 func (req *TaskMarkRunningAsCompletedReq) Do(ctx context.Context, tx pgx.Tx) (*TaskMarkRunningAsCompletedRes, error) {
+	err := validator.Validate.Struct(req)
+	if err != nil {
+		return nil, err
+	}
+
 	modified := make(map[string]bool)
 
 	var names = make([]string, len(req.Tasks))
@@ -41,7 +47,7 @@ func (req *TaskMarkRunningAsCompletedReq) Do(ctx context.Context, tx pgx.Tx) (*T
 		args[bind] = task.EventId
 	}
 
-	table := pgx.Identifier{ConsumerCollection(req.Consumer.Name)}.Sanitize()
+	table := pgx.Identifier{Collection(req.Consumer.Name)}.Sanitize()
 	query := fmt.Sprintf(TaskMarkRunningAsCompletedSql, table, strings.Join(names, ","))
 
 	rows, err := tx.Query(ctx, query, args)

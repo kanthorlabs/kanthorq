@@ -11,5 +11,6 @@ CREATE TABLE IF NOT EXISTS %s (
 	updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
 	PRIMARY KEY (event_id)
 );
+
 CREATE INDEX IF NOT EXISTS idx_state_scheduling ON %s USING btree("state", "schedule_at");
 ---<<< api_consumer_register_collection

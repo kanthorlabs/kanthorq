@@ -18,10 +18,10 @@ func NewEvent(topic string, body []byte) *Event {
 }
 
 type Event struct {
-	Id        string                 `json:"id"`
-	Topic     string                 `json:"topic"`
-	Body      []byte                 `json:"body"`
-	Metadata  map[string]interface{} `json:"metadata"`
+	Id        string                 `json:"id" validate:"required"`
+	Topic     string                 `json:"topic" validate:"required,is_topic"`
+	Body      []byte                 `json:"body" validate:"required"`
+	Metadata  map[string]interface{} `json:"metadata" validate:"required"`
 	CreatedAt int64                  `json:"created_at"`
 }
 

@@ -55,7 +55,7 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 
 	var consumer ConsumerRegistry
 	var args = pgx.NamedArgs{
-		"stream_name":          req.StreamName,
+		"stream_name":          stream.Name,
 		"consumer_name":        req.ConsumerName,
 		"consumer_topic":       req.ConsumerTopic,
 		"consumer_attempt_max": req.ConsumerAttemptMax,
@@ -76,7 +76,7 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 	}
 
 	// register stream collection
-	table := pgx.Identifier{ConsumerCollection(req.StreamName)}.Sanitize()
+	table := pgx.Identifier{Collection(consumer.Name)}.Sanitize()
 	query := fmt.Sprintf(ConsumerRegisterCollectionSql, table, table)
 	_, err = tx.Exec(ctx, query)
 
