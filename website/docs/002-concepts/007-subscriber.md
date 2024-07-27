@@ -70,8 +70,8 @@ SELECT * FROM kanthorq_stream_order_update WHERE topic = 'order.cancelled' AND i
 
 #### The Fulfilling Flow
 
-10. We get event records based on the list of tasks we have received (task contains `event_id`)
-11. We receive event records then perform our handler execution logic.
+9. We get event records based on the list of tasks we have received (task contains `event_id`)
+10. We receive event records then perform our handler execution logic.
 
 ### The Updating Workflow
 

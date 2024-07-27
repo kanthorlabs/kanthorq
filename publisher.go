@@ -3,9 +3,12 @@ package kanthorq
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
 var _ Publisher = (*publisher)(nil)
@@ -18,7 +21,7 @@ type Publisher interface {
 
 // NewPublisher creates a new publisher that uses the default stream
 func NewPublisher(uri string, options *PublisherOptions) (Publisher, error) {
-	if err := options.Validate(); err != nil {
+	if err := validator.Validate.Struct(options); err != nil {
 		return nil, err
 	}
 	return &publisher{uri: uri, options: options}, nil
@@ -90,11 +93,15 @@ func (pub *publisher) connect(ctx context.Context) error {
 }
 
 func (pub *publisher) Send(ctx context.Context, events ...*Event) error {
-	// @TODO: validate events
+	if len(events) == 0 {
+		return errors.New("no events provided")
+	}
 
-	// @TODO: throttle sending events
-	// @TODO: circuit breaker
-	// @TODO: retry logic
+	for i, e := range events {
+		if err := validator.Validate.Struct(e); err != nil {
+			return fmt.Errorf("event %d: %w", i, err)
+		}
+	}
 
 	req := &StreamPutEventsReq{Stream: pub.stream, Events: events}
 	res, err := StreamPutEvents(ctx, req, pub.conn)
@@ -103,7 +110,7 @@ func (pub *publisher) Send(ctx context.Context, events ...*Event) error {
 	}
 
 	if res.InsertCount != int64(len(events)) {
-		// TODO: log error about inserted count and expected count does not match
+		log.Println("inserted ", res.InsertCount, " events, expected ", len(events))
 	}
 
 	return nil

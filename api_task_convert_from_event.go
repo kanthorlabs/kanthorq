@@ -19,9 +19,9 @@ type TaskConvertFromEventReq struct {
 }
 
 type TaskConvertFromEventRes struct {
-	EventIds   []string
 	NextCursor string
 	Tasks      map[string]*Task
+	EventIds   []string
 }
 
 func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskConvertFromEventRes, error) {

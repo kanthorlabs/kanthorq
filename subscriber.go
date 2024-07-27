@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
 type Subscriber interface {
@@ -17,7 +18,7 @@ type Subscriber interface {
 type SubscriberHandler func(ctx context.Context, event *Event) error
 
 func NewSubscriber(uri string, options *SubscriberOptions) (Subscriber, error) {
-	if err := options.Validate(); err != nil {
+	if err := validator.Validate.Struct(options); err != nil {
 		return nil, err
 	}
 	return &subscriber{uri: uri, options: options}, nil
