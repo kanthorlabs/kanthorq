@@ -9,21 +9,6 @@ import (
 	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
-func StreamRegister(ctx context.Context, req *StreamRegisterReq, conn *pgx.Conn) (*StreamRegisterRes, error) {
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return nil, err
-	}
-	res, err := req.Do(ctx, tx)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
 //go:embed api_stream_register_registry.sql
 var StreamRegisterRegistrySql string
 

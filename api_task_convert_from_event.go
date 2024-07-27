@@ -9,21 +9,6 @@ import (
 	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
-func TaskConvertFromEvent(ctx context.Context, req *TaskConvertFromEventReq, conn *pgx.Conn) (*TaskConvertFromEventRes, error) {
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return nil, err
-	}
-	res, err := req.Do(ctx, tx)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
 //go:embed api_task_convert_from_event.sql
 var TaskConvertFromEventSql string
 

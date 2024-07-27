@@ -14,7 +14,7 @@ func TestStreamPut(t *testing.T) {
 	conn, err := tester.SetupPostgres(ctx)
 	require.NoError(t, err)
 
-	stream, err := StreamRegister(ctx, &StreamRegisterReq{StreamName: faker.StreamName()}, conn)
+	stream, err := Do(ctx, &StreamRegisterReq{StreamName: faker.StreamName()}, conn)
 	require.NoError(t, err)
 
 	events := FakeEvents(faker.Topic(), 100, 500)

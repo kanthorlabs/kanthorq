@@ -17,7 +17,7 @@ func TestTaskConvertFromEvent(t *testing.T) {
 	topic := faker.Topic()
 
 	// ConsumerRegister also register stream
-	registry, err := ConsumerRegister(ctx, &ConsumerRegisterReq{
+	registry, err := Do(ctx, &ConsumerRegisterReq{
 		StreamName:         faker.StreamName(),
 		ConsumerName:       faker.ConsumerName(),
 		ConsumerTopic:      topic,
@@ -40,7 +40,7 @@ func TestTaskConvertFromEvent(t *testing.T) {
 		Size:             size,
 		InitialTaskState: StateRunning,
 	}
-	res, err := TaskConvertFromEvent(ctx, req, conn)
+	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)
 
 	require.Equal(t, size, len(res.Tasks))

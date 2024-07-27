@@ -20,7 +20,7 @@ func TestStreamRegister(t *testing.T) {
 	req := &StreamRegisterReq{
 		StreamName: faker.StreamName(),
 	}
-	res, err := StreamRegister(ctx, req, conn)
+	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)
 
 	require.NotNil(t, res)
@@ -49,7 +49,7 @@ func TestStreamRegister_Parallel(t *testing.T) {
 
 		t.Run(fmt.Sprintf("parallel #%d", i), func(subt *testing.T) {
 			subt.Parallel()
-			res, err := StreamRegister(ctx, req, conn)
+			res, err := Do(ctx, req, conn)
 			require.NoError(subt, err)
 
 			require.NotNil(subt, res)

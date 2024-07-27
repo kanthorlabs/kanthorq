@@ -23,7 +23,7 @@ func TestConsumerRegister(t *testing.T) {
 		ConsumerTopic:      faker.Topic(),
 		ConsumerAttemptMax: faker.F.Int16Between(1, 10),
 	}
-	res, err := ConsumerRegister(ctx, req, conn)
+	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)
 
 	require.NotNil(t, res)
@@ -55,7 +55,7 @@ func TestConsumerRegister_Parallel(t *testing.T) {
 
 		t.Run(fmt.Sprintf("parallel #%d", i), func(subt *testing.T) {
 			subt.Parallel()
-			res, err := ConsumerRegister(ctx, req, conn)
+			res, err := Do(ctx, req, conn)
 			require.NoError(subt, err)
 
 			require.NotNil(subt, res)
