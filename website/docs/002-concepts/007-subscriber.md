@@ -33,8 +33,6 @@ sequenceDiagram
   Subscriber -->> Consumer Registry: update cursor
   Consumer Registry -->> Consumer Registry: release send_cancellation_email
 
-  Subscriber -->> -Subscriber: refresh local cursor
-
   end
 
   rect rgb(200, 150, 255)
@@ -59,7 +57,6 @@ The Pulling flow contains two child workflow: the Converting flow that help you 
 6. Return tasks to the Subscriber
 7. Update the Consumer Registry with latest cursor (the latest `event_id` of tasks)
 8. Release the lock of the Consumer
-9. Refresh the local cursor
 
 :::info
 

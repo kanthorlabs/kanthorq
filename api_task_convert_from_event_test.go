@@ -14,29 +14,11 @@ func TestTaskConvertFromEvent(t *testing.T) {
 	conn, err := tester.SetupPostgres(ctx)
 	require.NoError(t, err)
 
-	topic := faker.Topic()
-
-	// ConsumerRegister also register stream
-	registry, err := Do(ctx, &ConsumerRegisterReq{
-		StreamName:         faker.StreamName(),
-		ConsumerName:       faker.ConsumerName(),
-		ConsumerTopic:      topic,
-		ConsumerAttemptMax: faker.F.Int16Between(1, 10),
-	}, conn)
-	require.NoError(t, err)
-
-	// insert events
-	events := FakeEvents(topic, 100, 500)
-	size := len(events) - 1
-
-	_, err = StreamPutEvents(ctx, &StreamPutEventsReq{
-		Stream: registry.StreamRegistry,
-		Events: events,
-	}, conn)
-	require.NoError(t, err)
+	_, c, events := FakeEntities(t, ctx, conn, faker.F.IntBetween(100, 500))
+	size := len(events) - 9
 
 	req := &TaskConvertFromEventReq{
-		ConsumerName:     registry.ConsumerRegistry.Name,
+		Consumer:         c,
 		Size:             size,
 		InitialTaskState: StateAvailable,
 	}
@@ -44,4 +26,5 @@ func TestTaskConvertFromEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, size, len(res.Tasks))
+	require.Equal(t, size, len(res.EventIds))
 }

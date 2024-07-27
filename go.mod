@@ -10,6 +10,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/jaswdr/faker/v2 v2.3.0
 	github.com/oklog/ulid/v2 v2.1.0
+	github.com/samber/lo v1.46.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.27.0
@@ -51,7 +52,7 @@ require (
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240521202816-d264139d666e // indirect
 	google.golang.org/grpc v1.64.0 // indirect

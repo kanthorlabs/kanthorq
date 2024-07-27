@@ -60,8 +60,11 @@ func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx 
 		// report that we was able to update the task
 		modified[eventId] = true
 	}
-	if rows.Err() != nil {
-		return nil, rows.Err()
+
+	// rows.Err returns any error that occurred while reading
+	// always check it before finishing the read
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	res := &TaskMarkRunningAsRetryableOrDiscardedRes{Updated: make([]string, 0), Noop: make([]string, 0)}

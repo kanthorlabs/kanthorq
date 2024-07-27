@@ -13,13 +13,15 @@ import (
 var TaskConvertFromEventSql string
 
 type TaskConvertFromEventReq struct {
-	ConsumerName     string    `validate:"required,is_collection_name"`
-	Size             int       `validate:"required,gt=0"`
-	InitialTaskState TaskState `validate:"required,is_enum"`
+	Consumer         *ConsumerRegistry `validate:"required"`
+	Size             int               `validate:"required,gt=0"`
+	InitialTaskState TaskState         `validate:"required,is_enum"`
 }
 
 type TaskConvertFromEventRes struct {
-	Tasks []*Task
+	EventIds   []string
+	NextCursor string
+	Tasks      map[string]*Task
 }
 
 func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskConvertFromEventRes, error) {
@@ -51,7 +53,7 @@ func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskCon
 	}
 	defer rows.Close()
 
-	res := &TaskConvertFromEventRes{Tasks: make([]*Task, 0, req.Size)}
+	res := &TaskConvertFromEventRes{Tasks: make(map[string]*Task)}
 	for rows.Next() {
 		var task Task
 		err = rows.Scan(
@@ -68,7 +70,22 @@ func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskCon
 		if err != nil {
 			return nil, err
 		}
-		res.Tasks = append(res.Tasks, &task)
+
+		res.EventIds = append(res.EventIds, task.EventId)
+		// always overwrite latst event id as cursor
+		res.NextCursor = task.EventId
+		res.Tasks[task.EventId] = &task
+	}
+
+	// rows.Err returns any error that occurred while reading
+	// always check it before finishing the read
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// update cursor
+	if err := req.update(ctx, tx, res.NextCursor); err != nil {
+		return nil, err
 	}
 
 	return res, nil
@@ -76,7 +93,7 @@ func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskCon
 
 func (req *TaskConvertFromEventReq) lock(ctx context.Context, tx pgx.Tx) (*ConsumerRegistry, error) {
 	var args = pgx.NamedArgs{
-		"consumer_name": req.ConsumerName,
+		"consumer_name": req.Consumer.Name,
 	}
 	var consumer ConsumerRegistry
 	var err = tx.QueryRow(ctx, ConsumerLockSql, args).Scan(
@@ -92,4 +109,14 @@ func (req *TaskConvertFromEventReq) lock(ctx context.Context, tx pgx.Tx) (*Consu
 	)
 
 	return &consumer, err
+}
+
+func (req *TaskConvertFromEventReq) update(ctx context.Context, tx pgx.Tx, cursor string) error {
+	var args = pgx.NamedArgs{
+		"consumer_name":   req.Consumer.Name,
+		"consumer_cursor": cursor,
+	}
+
+	_, err := tx.Exec(ctx, ConsumerUpdateCursorSql, args)
+	return err
 }
