@@ -38,7 +38,7 @@ func TestTaskConvertFromEvent(t *testing.T) {
 	req := &TaskConvertFromEventReq{
 		ConsumerName:     registry.ConsumerRegistry.Name,
 		Size:             size,
-		InitialTaskState: StateRunning,
+		InitialTaskState: StateAvailable,
 	}
 	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)

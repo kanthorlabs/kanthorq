@@ -9,7 +9,7 @@ import (
 
 func NewEvent(topic string, body []byte) *Event {
 	return &Event{
-		Id:        idx.New("evt"),
+		Id:        idx.New("event"),
 		Topic:     topic,
 		Body:      body,
 		Metadata:  make(map[string]interface{}),

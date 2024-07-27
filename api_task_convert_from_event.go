@@ -41,8 +41,8 @@ func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskCon
 		"size":            req.Size,
 		"intial_state":    int(req.InitialTaskState),
 	}
-	ctable := pgx.Identifier{Collection(consumer.Name)}.Sanitize()
-	stable := pgx.Identifier{Collection(consumer.StreamName)}.Sanitize()
+	ctable := pgx.Identifier{Collection(consumer.Id)}.Sanitize()
+	stable := pgx.Identifier{Collection(consumer.StreamId)}.Sanitize()
 	query := fmt.Sprintf(TaskConvertFromEventSql, ctable, stable)
 
 	rows, err := tx.Query(ctx, query, args)
@@ -80,8 +80,10 @@ func (req *TaskConvertFromEventReq) lock(ctx context.Context, tx pgx.Tx) (*Consu
 	}
 	var consumer ConsumerRegistry
 	var err = tx.QueryRow(ctx, ConsumerLockSql, args).Scan(
-		&consumer.Name,
+		&consumer.StreamId,
 		&consumer.StreamName,
+		&consumer.Id,
+		&consumer.Name,
 		&consumer.Topic,
 		&consumer.Cursor,
 		&consumer.AttemptMax,

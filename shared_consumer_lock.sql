@@ -1,6 +1,8 @@
 SELECT 
-  name, 
+  stream_id, 
   stream_name, 
+  id, 
+  name, 
   topic, 
   cursor, 
   attempt_max, 

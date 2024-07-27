@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/kanthorlabs/kanthorq/pkg/idx"
 	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
@@ -30,19 +31,22 @@ func (req *StreamRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*StreamRegiste
 	}
 
 	// register stream in registry
-	var stream StreamRegistry
-	var args = pgx.NamedArgs{"stream_name": req.StreamName}
+	var registry StreamRegistry
+	var args = pgx.NamedArgs{
+		"stream_id":   idx.New("stream"),
+		"stream_name": req.StreamName,
+	}
 	err = tx.
 		QueryRow(ctx, StreamRegisterRegistrySql, args).
-		Scan(&stream.Name, &stream.CreatedAt, &stream.UpdatedAt)
+		Scan(&registry.Id, &registry.Name, &registry.CreatedAt, &registry.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 
 	// register stream collection
-	table := pgx.Identifier{Collection(req.StreamName)}.Sanitize()
+	table := pgx.Identifier{Collection(registry.Id)}.Sanitize()
 	query := fmt.Sprintf(StreamRegisterCollectionSql, table, table)
 	_, err = tx.Exec(ctx, query)
 
-	return &StreamRegisterRes{&stream}, err
+	return &StreamRegisterRes{&registry}, err
 }

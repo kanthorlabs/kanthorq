@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/kanthorlabs/kanthorq/pkg/idx"
 	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
@@ -38,9 +39,11 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 		return nil, err
 	}
 
-	var consumer ConsumerRegistry
+	var registry ConsumerRegistry
 	var args = pgx.NamedArgs{
-		"stream_name":          stream.Name,
+		"stream_id":            stream.StreamRegistry.Id,
+		"stream_name":          stream.StreamRegistry.Name,
+		"consumer_id":          idx.New("consumer"),
 		"consumer_name":        req.ConsumerName,
 		"consumer_topic":       req.ConsumerTopic,
 		"consumer_attempt_max": req.ConsumerAttemptMax,
@@ -48,22 +51,24 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 	err = tx.
 		QueryRow(ctx, ConsumerRegisterRegistrySql, args).
 		Scan(
-			&consumer.Name,
-			&consumer.StreamName,
-			&consumer.Topic,
-			&consumer.Cursor,
-			&consumer.AttemptMax,
-			&consumer.CreatedAt,
-			&consumer.UpdatedAt,
+			&registry.StreamId,
+			&registry.StreamName,
+			&registry.Id,
+			&registry.Name,
+			&registry.Topic,
+			&registry.Cursor,
+			&registry.AttemptMax,
+			&registry.CreatedAt,
+			&registry.UpdatedAt,
 		)
 	if err != nil {
 		return nil, err
 	}
 
 	// register stream collection
-	table := pgx.Identifier{Collection(consumer.Name)}.Sanitize()
+	table := pgx.Identifier{Collection(registry.Id)}.Sanitize()
 	query := fmt.Sprintf(ConsumerRegisterCollectionSql, table, table)
 	_, err = tx.Exec(ctx, query)
 
-	return &ConsumerRegisterRes{stream.StreamRegistry, &consumer}, err
+	return &ConsumerRegisterRes{stream.StreamRegistry, &registry}, err
 }

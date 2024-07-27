@@ -1,15 +1,20 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS kanthorq_stream_registry (
+  id VARCHAR(64) NOT NULL,
   name VARCHAR(256) NOT NULL,
   created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
   updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
-  PRIMARY KEY (name)
+  PRIMARY KEY (id)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_stream_name ON kanthorq_stream_registry USING btree("name");
+
 CREATE TABLE IF NOT EXISTS kanthorq_consumer_registry (
-  name VARCHAR(256) NOT NULL,
+  stream_id VARCHAR(64) NOT NULL,
   stream_name VARCHAR(256) NOT NULL,
+  id VARCHAR(64) NOT NULL,
+  name VARCHAR(256) NOT NULL,
   topic VARCHAR(256) NOT NULL,
   cursor VARCHAR(64) NOT NULL DEFAULT '',
   attempt_max SMALLINT NOT NULL DEFAULT 3,
@@ -17,5 +22,7 @@ CREATE TABLE IF NOT EXISTS kanthorq_consumer_registry (
   updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
   PRIMARY KEY (name)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_consumer_name ON kanthorq_consumer_registry USING btree("name");
 
 COMMIT;
