@@ -8,14 +8,15 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
 //go:embed api_task_mark_running_as_retryable_or_discarded.sql
 var TaskMarkRunningAsRetryableOrDiscardedSql string
 
 type TaskMarkRunningAsRetryableOrDiscardedReq struct {
-	Consumer *ConsumerRegistry
-	Tasks    []*Task
+	Consumer *ConsumerRegistry `validate:"required"`
+	Tasks    []*Task           `validate:"required,gt=0,dive,required"`
 }
 
 type TaskMarkRunningAsRetryableOrDiscardedRes struct {
@@ -24,6 +25,11 @@ type TaskMarkRunningAsRetryableOrDiscardedRes struct {
 }
 
 func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx pgx.Tx) (*TaskMarkRunningAsRetryableOrDiscardedRes, error) {
+	err := validator.Validate.Struct(req)
+	if err != nil {
+		return nil, err
+	}
+
 	modified := make(map[string]bool)
 
 	var names = make([]string, len(req.Tasks))

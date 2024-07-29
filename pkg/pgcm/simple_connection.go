@@ -18,6 +18,5 @@ func (c *simplec) Raw() *pgx.Conn {
 	return c.conn
 }
 
-func (c *simplec) Close(ctx context.Context) error {
-	return nil
+func (c *simplec) Close(ctx context.Context) {
 }

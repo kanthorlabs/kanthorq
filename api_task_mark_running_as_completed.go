@@ -16,7 +16,7 @@ var TaskMarkRunningAsCompletedSql string
 
 type TaskMarkRunningAsCompletedReq struct {
 	Consumer *ConsumerRegistry `validate:"required"`
-	Tasks    []*Task           `validate:"required,dive,required"`
+	Tasks    []*Task           `validate:"required,gt=0,dive,required"`
 }
 
 type TaskMarkRunningAsCompletedRes struct {

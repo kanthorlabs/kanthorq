@@ -18,6 +18,11 @@ func (c *poolerc) Raw() *pgx.Conn {
 	return c.conn
 }
 
-func (c *poolerc) Close(ctx context.Context) error {
-	return c.conn.Close(ctx)
+func (c *poolerc) Close(ctx context.Context) {
+	// our main logic was executed successfully
+	// so closing error should not cause of revert or rollback
+	// log it here is enough
+	if err := c.conn.Close(ctx); err != nil {
+		// @TODO: log the error here
+	}
 }

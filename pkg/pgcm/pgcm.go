@@ -16,7 +16,9 @@ func New(uri string) (ConnectionManager, error) {
 		return nil, err
 	}
 
-	isPooler := u.Query().Has("pooling")
+	// check if the connection string is pointing to a pooler
+	isPGBouncer := u.Port() == "6432" && u.Query().Has("default_query_exec_mode")
+	isPooler := isPGBouncer || u.Query().Has("pooling")
 
 	// must remove our custom parameter, otherwise it will be rejected
 	query := u.Query()
@@ -38,5 +40,5 @@ type ConnectionManager interface {
 
 type Connection interface {
 	Raw() *pgx.Conn
-	Close(ctx context.Context) error
+	Close(ctx context.Context)
 }

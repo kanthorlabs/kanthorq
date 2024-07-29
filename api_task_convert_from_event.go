@@ -19,9 +19,8 @@ type TaskConvertFromEventReq struct {
 }
 
 type TaskConvertFromEventRes struct {
-	NextCursor string
-	Tasks      map[string]*Task
-	EventIds   []string
+	EventIds []string
+	Tasks    map[string]*Task
 }
 
 func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskConvertFromEventRes, error) {
@@ -54,6 +53,7 @@ func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskCon
 	defer rows.Close()
 
 	res := &TaskConvertFromEventRes{Tasks: make(map[string]*Task)}
+	nextCursor := ""
 	for rows.Next() {
 		var task Task
 		err = rows.Scan(
@@ -72,9 +72,10 @@ func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskCon
 		}
 
 		res.EventIds = append(res.EventIds, task.EventId)
-		// always overwrite latst event id as cursor
-		res.NextCursor = task.EventId
 		res.Tasks[task.EventId] = &task
+
+		// update cursor by the last event id
+		nextCursor = task.EventId
 	}
 
 	// rows.Err returns any error that occurred while reading
@@ -84,7 +85,7 @@ func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskCon
 	}
 
 	// update cursor
-	if err := req.update(ctx, tx, res.NextCursor); err != nil {
+	if err := req.update(ctx, tx, nextCursor); err != nil {
 		return nil, err
 	}
 
