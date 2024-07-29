@@ -27,7 +27,7 @@ func FakeEntities(t *testing.T, ctx context.Context, conn *pgx.Conn, count int) 
 		Stream: cres.StreamRegistry,
 		Events: events,
 	}
-	sres, err := StreamPutEvents(ctx, sreq, conn)
+	sres, err := Do(ctx, sreq, conn)
 	require.NoError(t, err)
 	require.Equal(t, int64(count), sres.InsertCount)
 

@@ -24,12 +24,10 @@ func TestPublisher_Connection(t *testing.T) {
 	require.NotNil(t, instance)
 
 	require.NoError(t, instance.Start(context.Background()))
-	require.NotNil(t, instance.(*publisher).conn, "connection should not be nil")
 	require.NotNil(t, instance.(*publisher).stream, "stream should not be nil")
 	require.Equal(t, instance.(*publisher).stream.Name, DefaultStreamName, "should use default stream name")
 
 	require.NoError(t, instance.Stop(context.Background()))
-	require.Nil(t, instance.(*publisher).conn, "connection must be deleted after stop")
 	require.Nil(t, instance.(*publisher).stream, "stream must be deleted after stop")
 }
 

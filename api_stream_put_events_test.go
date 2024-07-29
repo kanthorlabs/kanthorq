@@ -20,7 +20,7 @@ func TestStreamPut(t *testing.T) {
 	events := FakeEvents(faker.Topic(), faker.F.IntBetween(100, 500))
 
 	req := &StreamPutEventsReq{Stream: stream.StreamRegistry, Events: events}
-	res, err := StreamPutEvents(ctx, req, conn)
+	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)
 
 	require.Equal(t, int64(len(events)), res.InsertCount)

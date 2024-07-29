@@ -7,16 +7,16 @@ import (
 	"log"
 	"sync"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
 	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
 var _ Publisher = (*publisher)(nil)
 
 type Publisher interface {
-	Start(ctx context.Context) error
-	Stop(ctx context.Context) error
-	Send(ctx context.Context, events ...*Event) error
+	Start(ctx context.Context) (err error)
+	Stop(ctx context.Context) (err error)
+	Send(ctx context.Context, events ...*Event) (err error)
 }
 
 // NewPublisher creates a new publisher that uses the default stream
@@ -24,40 +24,42 @@ func NewPublisher(uri string, options *PublisherOptions) (Publisher, error) {
 	if err := validator.Validate.Struct(options); err != nil {
 		return nil, err
 	}
-	return &publisher{uri: uri, options: options}, nil
+	cm, err := pgcm.New(uri)
+	if err != nil {
+		return nil, err
+	}
+	return &publisher{cm: cm, options: options}, nil
 }
 
 type publisher struct {
-	uri     string
+	cm      pgcm.ConnectionManager
 	options *PublisherOptions
 	mu      sync.Mutex
 
-	conn   *pgx.Conn
 	stream *StreamRegistry
 }
 
-func (pub *publisher) Start(ctx context.Context) error {
-	if err := pub.connect(ctx); err != nil {
-		return err
-	}
-
+func (pub *publisher) Start(ctx context.Context) (err error) {
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
 
-	tx, err := pub.conn.Begin(ctx)
-	if err != nil {
-		return err
+	if err = pub.cm.Start(ctx); err != nil {
+		return
 	}
-	req := &StreamRegisterReq{StreamName: pub.options.StreamName}
-	res, err := req.Do(ctx, tx)
-	if err != nil {
-		return err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return err
-	}
-	pub.stream = res.StreamRegistry
 
+	conn, err := pub.cm.Connection(ctx)
+	if err != nil {
+		return
+	}
+	defer func() { err = conn.Close(ctx) }()
+
+	req := &StreamRegisterReq{StreamName: pub.options.StreamName}
+	res, err := Do(ctx, req, conn.Raw())
+	if err != nil {
+		return
+	}
+
+	pub.stream = res.StreamRegistry
 	return nil
 }
 
@@ -65,48 +67,37 @@ func (pub *publisher) Stop(ctx context.Context) (err error) {
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
 
-	if pub.conn != nil {
-		err = errors.Join(err, pub.conn.Close(ctx))
+	if cmerr := pub.cm.Start(ctx); cmerr != nil {
+		err = errors.Join(err, cmerr)
 	}
 
-	pub.conn = nil
 	pub.stream = nil
 	return
 }
 
-func (pub *publisher) connect(ctx context.Context) error {
-	pub.mu.Lock()
-	defer pub.mu.Unlock()
-
-	// connection is already ready, don't need to re-connect
-	if pub.conn != nil && !pub.conn.IsClosed() {
-		return nil
-	}
-
-	conn, err := pgx.Connect(ctx, pub.uri)
-	if err != nil {
-		return err
-	}
-	pub.conn = conn
-
-	return nil
-}
-
-func (pub *publisher) Send(ctx context.Context, events ...*Event) error {
+func (pub *publisher) Send(ctx context.Context, events ...*Event) (err error) {
 	if len(events) == 0 {
-		return errors.New("no events provided")
+		err = errors.New("no events provided")
+		return
 	}
 
 	for i, e := range events {
-		if err := validator.Validate.Struct(e); err != nil {
-			return fmt.Errorf("event %d: %w", i, err)
+		if err = validator.Validate.Struct(e); err != nil {
+			err = fmt.Errorf("event %d: %w", i, err)
+			return
 		}
 	}
 
-	req := &StreamPutEventsReq{Stream: pub.stream, Events: events}
-	res, err := StreamPutEvents(ctx, req, pub.conn)
+	conn, err := pub.cm.Connection(ctx)
 	if err != nil {
-		return err
+		return
+	}
+	defer func() { err = conn.Close(ctx) }()
+
+	req := &StreamPutEventsReq{Stream: pub.stream, Events: events}
+	res, err := Do(ctx, req, conn.Raw())
+	if err != nil {
+		return
 	}
 
 	if res.InsertCount != int64(len(events)) {

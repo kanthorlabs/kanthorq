@@ -6,21 +6,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func StreamPutEvents(ctx context.Context, req *StreamPutEventsReq, conn *pgx.Conn) (*StreamPutEventsRes, error) {
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return nil, err
-	}
-	res, err := req.Do(ctx, tx)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
 type StreamPutEventsReq struct {
 	Stream *StreamRegistry
 	Events []*Event

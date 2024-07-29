@@ -27,14 +27,12 @@ func TestSubscriber_Connection(t *testing.T) {
 	require.NotNil(t, instance)
 
 	require.NoError(t, instance.Start(context.Background()))
-	require.NotNil(t, instance.(*subscriber).conn, "connection should not be nil")
 	require.NotNil(t, instance.(*subscriber).stream, "stream should not be nil")
 	require.NotNil(t, instance.(*subscriber).consumer, "consumer should not be nil")
 	require.Equal(t, instance.(*subscriber).stream.Name, DefaultStreamName, "should use default stream name")
 	require.Equal(t, instance.(*subscriber).consumer.AttemptMax, DefaultConsumerAttemptMax, "should use default consumer attempt max")
 
 	require.NoError(t, instance.Stop(context.Background()))
-	require.Nil(t, instance.(*subscriber).conn, "connection must be deleted after stop")
 	require.Nil(t, instance.(*subscriber).stream, "stream must be deleted after stop")
 	require.Nil(t, instance.(*subscriber).consumer, "consumer must be deleted after stop")
 }
