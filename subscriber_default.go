@@ -3,6 +3,7 @@ package kanthorq
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -18,7 +19,7 @@ type subscriber struct {
 	cm       pgcm.ConnectionManager
 	stream   *StreamRegistry
 	consumer *ConsumerRegistry
-	puller   SubscriberPuller
+	receiver Receiver
 }
 
 func (sub *subscriber) Start(ctx context.Context) (err error) {
@@ -48,7 +49,7 @@ func (sub *subscriber) Start(ctx context.Context) (err error) {
 
 	sub.stream = res.StreamRegistry
 	sub.consumer = res.ConsumerRegistry
-	sub.puller = &DefaultSubscriberPuller{cm: sub.cm, stream: sub.stream, consumer: sub.consumer}
+	sub.receiver = &ReceiverDefault{cm: sub.cm, stream: sub.stream, consumer: sub.consumer}
 	return nil
 }
 
@@ -81,25 +82,20 @@ func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler) (
 			if err != nil {
 				// @TODO: log the error here
 			}
-
-			// no task was found, should wait for a while before next round
-			if found > 0 {
-				select {
-				case <-time.After(time.Millisecond * time.Duration(sub.options.HandleInterval)):
-					// do nothing, just wait for next round
-					// @TODO: log message about no task found here
-				case <-hctx.Done():
-					// if context got canceled, should stop both the loop and the delay
-					return errors.Join(err, hctx.Err())
-				}
-			}
+			fmt.Printf("handled %d events\n", found)
 		}
 	}
 }
 
 func (sub *subscriber) handle(ctx context.Context, handler SubscriberHandler) (count int, err error) {
 	// The Pulling Workflow
-	out, err := sub.puller.Pull(ctx)
+	// @TODO: remove hardcode
+	out, err := sub.receiver.Pull(ctx, &ReceiverPullReq{
+		MinSize:        100,
+		ScanWindow:     60000,
+		ScanRoundMax:   3,
+		ScanRoundDelay: 1000,
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -120,11 +116,11 @@ func (sub *subscriber) handle(ctx context.Context, handler SubscriberHandler) (c
 	}
 
 	// we should run both complete and fail actions before report the error
+	if ferr := sub.fail(ctx, failure); ferr != nil {
+		err = errors.Join(err, ferr)
+	}
 	if cerr := sub.complete(ctx, succeed); cerr != nil {
 		err = errors.Join(err, cerr)
-	}
-	if ferr := sub.fail(ctx, succeed); ferr != nil {
-		err = errors.Join(err, ferr)
 	}
 
 	return len(out.Events), err

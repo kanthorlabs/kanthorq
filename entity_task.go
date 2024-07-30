@@ -1,5 +1,19 @@
 package kanthorq
 
+import (
+	"strings"
+
+	"github.com/kanthorlabs/kanthorq/pkg/idx"
+)
+
+func TaskId() string {
+	return idx.New("task")
+}
+
+func TopicFilter(topic string) string {
+	return strings.Replace(topic, "*", "%", -1)
+}
+
 type Task struct {
 	EventId      string `json:"event_id" validate:"required"`
 	Topic        string `json:"topic" validate:"required,is_topic"`

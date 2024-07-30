@@ -9,12 +9,16 @@ import (
 
 func NewEvent(topic string, body []byte) *Event {
 	return &Event{
-		Id:        idx.New("event"),
+		Id:        EventId(),
 		Topic:     topic,
 		Body:      body,
 		Metadata:  make(map[string]interface{}),
 		CreatedAt: time.Now().UnixMilli(),
 	}
+}
+
+func EventId() string {
+	return idx.New("event")
 }
 
 type Event struct {

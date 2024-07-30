@@ -13,6 +13,9 @@ import (
 func TestEventGet(t *testing.T) {
 	ctx := context.Background()
 	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
 	require.NoError(t, err)
 
 	s, _, events := FakeEntities(t, ctx, conn, faker.F.IntBetween(100, 500))

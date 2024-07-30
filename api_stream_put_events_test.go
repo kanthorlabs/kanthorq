@@ -12,6 +12,9 @@ import (
 func TestStreamPut(t *testing.T) {
 	ctx := context.Background()
 	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
 	require.NoError(t, err)
 
 	stream, err := Do(ctx, &StreamRegisterReq{StreamName: faker.StreamName()}, conn)

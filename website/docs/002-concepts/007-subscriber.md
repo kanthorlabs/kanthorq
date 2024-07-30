@@ -24,10 +24,11 @@ sequenceDiagram
 
   Subscriber ->> +Consumer Registry: name: send_cancellation_email
   Consumer Registry -->> Consumer Registry: lock send_cancellation_email
-
-  Consumer Registry ->> +kanthorq_stream_order_update: topic: order.cancelled, cursor: evt_01J36ZJACKR5FXDWVKASC4BNCN, limit: 100
-  kanthorq_stream_order_update -->> -kanthorq_stream_order_update: scanning
-  kanthorq_stream_order_update ->> +send_cancellation_email: found and convert 85 events to tasks
+  loop [got 100 tasks] or [reached max round]
+    Consumer Registry ->> +kanthorq_stream_order_update: topic: order.cancelled, cursor: evt_01J36ZJACKR5FXDWVKASC4BNCN, limit: 100
+    kanthorq_stream_order_update -->> -kanthorq_stream_order_update: scanning
+    kanthorq_stream_order_update ->> +send_cancellation_email: found and convert 85 events to tasks
+  end
 
   send_cancellation_email -->> +Subscriber: 85 tasks
   Subscriber -->> Consumer Registry: update cursor

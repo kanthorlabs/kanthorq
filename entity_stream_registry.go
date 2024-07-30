@@ -1,5 +1,11 @@
 package kanthorq
 
+import "github.com/kanthorlabs/kanthorq/pkg/idx"
+
+func StreamId() string {
+	return idx.New("stream")
+}
+
 type StreamRegistry struct {
 	Id        string `json:"id" validate:"required"`
 	Name      string `json:"name" validate:"required,is_collection_name"`

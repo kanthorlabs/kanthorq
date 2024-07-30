@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
@@ -35,9 +34,9 @@ func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx 
 	var names = make([]string, len(req.Tasks))
 	var args = pgx.NamedArgs{
 		"attempt_max":     req.Consumer.AttemptMax,
-		"discarded_state": int(entities.StateDiscarded),
-		"retryable_state": int(entities.StateRetryable),
-		"running_state":   int(entities.StateRunning),
+		"discarded_state": int(StateDiscarded),
+		"retryable_state": int(StateRetryable),
+		"running_state":   int(StateRunning),
 	}
 	for i, task := range req.Tasks {
 		// we assume that tasks are not able to update firstly

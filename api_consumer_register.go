@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/kanthorq/pkg/idx"
 	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
@@ -43,7 +42,7 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 	var args = pgx.NamedArgs{
 		"stream_id":            stream.StreamRegistry.Id,
 		"stream_name":          stream.StreamRegistry.Name,
-		"consumer_id":          idx.New("consumer"),
+		"consumer_id":          ConsumerId(),
 		"consumer_name":        req.ConsumerName,
 		"consumer_topic":       req.ConsumerTopic,
 		"consumer_attempt_max": req.ConsumerAttemptMax,
