@@ -20,9 +20,19 @@ func (m *Metadata) Scan(value interface{}) error {
 
 // Value implements the driver.Valuer interface to convert the Metadata struct to a value that can be stored in the database
 func (m Metadata) Value() (driver.Value, error) {
-	if m == nil {
-		return nil, errors.New("KANTHORQ.METADATA.VALUE.ERR: metadata is nil")
-
-	}
 	return json.Marshal(m)
+}
+
+func (m Metadata) Clone() Metadata {
+	c := Metadata{}
+	for k, v := range m {
+		c[k] = v
+	}
+	return c
+}
+
+func (m Metadata) Merge(src Metadata) {
+	for k, v := range src {
+		m[k] = v
+	}
 }

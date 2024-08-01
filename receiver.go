@@ -7,7 +7,7 @@ type Receiver interface {
 }
 
 type ReceiverPullReq struct {
-	MinSize        int
+	Size           int
 	ScanWindow     int64
 	ScanRoundMax   int
 	ScanRoundDelay int64

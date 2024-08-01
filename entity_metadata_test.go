@@ -16,10 +16,30 @@ func TestMetadata_Scan(t *testing.T) {
 
 func TestMetadata_Value(t *testing.T) {
 	var nilm Metadata
-	_, err := nilm.Value()
-	require.ErrorContains(t, err, "metadata is ni")
-
-	m := Metadata{"ok": true}
-	_, err = m.Value()
+	nilv, err := nilm.Value()
 	require.NoError(t, err)
+	require.NotNil(t, nilv)
+
+	m := &Metadata{"ok": true}
+	v, err := m.Value()
+	require.NoError(t, err)
+	require.NotNil(t, v)
+}
+
+func TestMetadata_Clone(t *testing.T) {
+	m := Metadata{"ok": true}
+	cm := m.Clone()
+	cm["ok"] = false
+
+	require.True(t, m["ok"].(bool))
+	require.False(t, cm["ok"].(bool))
+}
+
+func TestMetadata_Merge(t *testing.T) {
+	src := Metadata{"say": "hello"}
+	m := Metadata{"ok": true}
+	m.Merge(src)
+
+	require.True(t, m["ok"].(bool))
+	require.Equal(t, m["say"].(string), "hello")
 }

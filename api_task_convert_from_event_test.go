@@ -24,7 +24,7 @@ func TestTaskConvertFromEvent(t *testing.T) {
 	first, err := Do(ctx, &TaskConvertFromEventReq{
 		Consumer:         c,
 		InitialTaskState: StateAvailable,
-		MinSize:          size,
+		Size:             size,
 		ScanWindow:       30000,
 		ScanRoundMax:     3,
 		ScanRoundDelay:   1000,
@@ -37,7 +37,7 @@ func TestTaskConvertFromEvent(t *testing.T) {
 	seconds, err := Do(ctx, &TaskConvertFromEventReq{
 		Consumer:         c,
 		InitialTaskState: StateAvailable,
-		MinSize:          size,
+		Size:             size,
 		ScanWindow:       30000,
 		ScanRoundMax:     3,
 		ScanRoundDelay:   1000,

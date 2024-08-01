@@ -7,12 +7,14 @@ import (
 	"github.com/kanthorlabs/kanthorq/pkg/idx"
 )
 
+var TopicAll = "*"
+
 func NewEvent(topic string, body []byte) *Event {
 	return &Event{
 		Id:        EventId(),
 		Topic:     topic,
 		Body:      body,
-		Metadata:  make(map[string]interface{}),
+		Metadata:  make(Metadata),
 		CreatedAt: time.Now().UnixMilli(),
 	}
 }
@@ -22,11 +24,11 @@ func EventId() string {
 }
 
 type Event struct {
-	Id        string                 `json:"id" validate:"required"`
-	Topic     string                 `json:"topic" validate:"required,is_topic"`
-	Body      []byte                 `json:"body" validate:"required"`
-	Metadata  map[string]interface{} `json:"metadata" validate:"required"`
-	CreatedAt int64                  `json:"created_at"`
+	Id        string   `json:"id" validate:"required"`
+	Topic     string   `json:"topic" validate:"required,is_topic"`
+	Body      []byte   `json:"body" validate:"required"`
+	Metadata  Metadata `json:"metadata" validate:"required"`
+	CreatedAt int64    `json:"created_at"`
 }
 
 func EventProps() []string {

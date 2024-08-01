@@ -16,7 +16,7 @@ func (r *ReceiverDefault) Pull(ctx context.Context, req *ReceiverPullReq) (*Rece
 	converting, err := DoWithCM(ctx, &TaskConvertFromEventReq{
 		Consumer:         r.consumer,
 		InitialTaskState: StateRunning,
-		MinSize:          req.MinSize,
+		Size:             req.Size,
 		ScanWindow:       req.ScanWindow,
 		ScanRoundMax:     req.ScanRoundMax,
 		ScanRoundDelay:   req.ScanRoundDelay,

@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -18,7 +19,7 @@ var TaskConvertFromEventSql string
 type TaskConvertFromEventReq struct {
 	Consumer         *ConsumerRegistry `validate:"required"`
 	InitialTaskState TaskState         `validate:"required,is_enum"`
-	MinSize          int               `validate:"required,gt=0"`
+	Size             int               `validate:"required,gt=0"`
 	ScanWindow       int64             `validate:"required,gte=1000"`
 	ScanRoundMax     int               `validate:"required,gt=0"`
 	ScanRoundDelay   int64             `validate:"required,gte=1000"`
@@ -43,7 +44,7 @@ func (req *TaskConvertFromEventReq) Do(ctx context.Context, tx pgx.Tx) (*TaskCon
 	var res = &TaskConvertFromEventRes{Tasks: make(map[string]*Task)}
 	var round int
 
-	for len(res.EventIds) < req.MinSize && round < req.ScanRoundMax {
+	for len(res.EventIds) < req.Size && round < req.ScanRoundMax {
 		round++
 
 		out, err := req.scan(ctx, tx)
@@ -99,26 +100,35 @@ func (req *TaskConvertFromEventReq) lock(ctx context.Context, tx pgx.Tx) error {
 func (req *TaskConvertFromEventReq) scan(ctx context.Context, tx pgx.Tx) (*TaskConvertFromEventRes, error) {
 	res := &TaskConvertFromEventRes{Tasks: make(map[string]*Task)}
 
-	var cursorq string
 	args := pgx.NamedArgs{
 		"intial_state":          int(req.InitialTaskState),
 		"consumer_topic_filter": TopicFilter(req.Consumer.Topic),
-		"size":                  req.MinSize,
+		"size":                  req.Size,
 	}
 
-	// starting with fresh consumer, cursor will be empty
-	if req.Consumer.Cursor == "" {
-		cursorq = "AND id > @consumer_cursor_start"
-		args["consumer_cursor_start"] = ""
-	} else {
-		cursorq = "AND id > @consumer_cursor_start AND id < @consumer_cursor_end"
+	where := []string{
+		"id > @consumer_cursor_start",
+	}
+
+	// match all topics so we don't need to filter by topic
+	if req.Consumer.Topic == TopicAll {
 		args["consumer_cursor_start"] = req.Consumer.Cursor
-		args["consumer_cursor_end"] = idx.Next(req.Consumer.Cursor, time.Millisecond*time.Duration(req.ScanWindow))
+	} else {
+		where = append(where, "topic LIKE @consumer_topic_filter")
+		args["consumer_topic_filter"] = TopicFilter(req.Consumer.Topic)
+
+		// starting with fresh consumer, cursor will be empty
+		if req.Consumer.Cursor == "" {
+			args["consumer_cursor_start"] = ""
+		} else {
+			where = append(where, "id < @consumer_cursor_end")
+			args["consumer_cursor_end"] = idx.Next(req.Consumer.Cursor, time.Millisecond*time.Duration(req.ScanWindow))
+		}
 	}
 
 	ctable := pgx.Identifier{Collection(req.Consumer.Id)}.Sanitize()
 	stable := pgx.Identifier{Collection(req.Consumer.StreamId)}.Sanitize()
-	query := fmt.Sprintf(TaskConvertFromEventSql, ctable, stable, cursorq)
+	query := fmt.Sprintf(TaskConvertFromEventSql, ctable, stable, strings.Join(where, " AND "))
 
 	rows, err := tx.Query(ctx, query, args)
 	if err != nil {

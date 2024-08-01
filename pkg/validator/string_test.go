@@ -35,6 +35,7 @@ type topicstruct struct {
 
 func TestTopic(t *testing.T) {
 	ok := []string{
+		"*",
 		"event",
 		"event-log",
 		"event_log",
@@ -50,6 +51,7 @@ func TestTopic(t *testing.T) {
 	}
 
 	ko := []string{
+		".*",
 		"_event",
 		"event-log-",
 		"event_log_",

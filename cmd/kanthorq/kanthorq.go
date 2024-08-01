@@ -4,6 +4,7 @@ import (
 	_ "embed"
 
 	"github.com/kanthorlabs/kanthorq/cmd/kanthorq/migrate"
+	"github.com/kanthorlabs/kanthorq/cmd/kanthorq/pub"
 	"github.com/kanthorlabs/kanthorq/cmd/kanthorq/show"
 	"github.com/spf13/cobra"
 )
@@ -29,6 +30,7 @@ func New() *cobra.Command {
 
 	command.AddCommand(show.New(logo, version))
 	command.AddCommand(migrate.New())
+	command.AddCommand(pub.New())
 
 	command.PersistentFlags().BoolP("verbose", "v", false, "show verbose output including debug information")
 

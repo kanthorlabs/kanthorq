@@ -23,6 +23,9 @@ func topic(fl validator.FieldLevel) bool {
 		return false
 	}
 	if len(parts) == 1 {
+		if parts[0] == "*" {
+			return true
+		}
 		return RegexTopicPartLast.MatchString(parts[0])
 	}
 

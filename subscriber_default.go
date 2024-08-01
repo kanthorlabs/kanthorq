@@ -67,7 +67,6 @@ func (sub *subscriber) Stop(ctx context.Context) (err error) {
 }
 
 func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler) (err error) {
-
 	for {
 		// every round, we will set a timeout for current handler
 		hctx, cancel := context.WithTimeout(ctx, time.Millisecond*time.Duration(sub.options.HandleTimeout))
@@ -91,7 +90,7 @@ func (sub *subscriber) handle(ctx context.Context, handler SubscriberHandler) (c
 	// The Pulling Workflow
 	// @TODO: remove hardcode
 	out, err := sub.receiver.Pull(ctx, &ReceiverPullReq{
-		MinSize:        100,
+		Size:           100,
 		ScanWindow:     60000,
 		ScanRoundMax:   3,
 		ScanRoundDelay: 1000,
