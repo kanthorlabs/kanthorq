@@ -22,5 +22,5 @@ func NewPublisher(uri string, options *PublisherOptions) (Publisher, error) {
 type Publisher interface {
 	Start(ctx context.Context) (err error)
 	Stop(ctx context.Context) (err error)
-	Send(ctx context.Context, events ...*Event) (err error)
+	Send(ctx context.Context, events ...*Event) error
 }

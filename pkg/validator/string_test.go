@@ -29,36 +29,38 @@ func TestCollection(t *testing.T) {
 	}
 }
 
-type topicstruct struct {
-	Topic string `validate:"is_topic"`
+type subjectstruct struct {
+	Subject string `validate:"is_subject"`
 }
 
-func TestTopic(t *testing.T) {
+func TestSubject(t *testing.T) {
 	ok := []string{
-		"*",
 		"event",
 		"event-log",
 		"event_log",
+		"EVENT.log",
 		"event.log",
-		"event.log.*",
-		"event.log.created-*",
-		"event.log.created_*",
-		"event.log.created-o*",
-		"event.log.created_o*",
+		"event.log-1",
+		"event.log_1",
 	}
 	for _, v := range ok {
-		require.NoError(t, Validate.Struct(topicstruct{Topic: v}))
+		require.NoError(t, Validate.Struct(subjectstruct{Subject: v}))
 	}
 
 	ko := []string{
-		".*",
+		"$event.log",
+		"event.log+1",
 		"_event",
-		"event-log-",
-		"event_log_",
+		"-event",
+		"event_",
+		"event-",
+		"event._log",
+		"event.-log",
 		"event.log_",
-		"event._*",
-		"event._created_*",
-		"event.-created-*",
+		"event.log-",
+		"event..log",
+		".event.log",
+		"event.log.",
 	}
 	for _, v := range ko {
 		require.Error(t, Validate.Struct(collectionstruct{Stream: v}))

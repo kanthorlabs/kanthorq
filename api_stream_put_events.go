@@ -24,7 +24,7 @@ func (req *StreamPutEventsReq) Do(ctx context.Context, tx pgx.Tx) (*StreamPutEve
 	for i, event := range req.Events {
 		rows[i] = []any{
 			event.Id,
-			event.Topic,
+			event.Subject,
 			event.Body,
 			event.Metadata,
 			event.CreatedAt,

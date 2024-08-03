@@ -10,19 +10,19 @@ import (
 	"github.com/kanthorlabs/kanthorq/pkg/validator"
 )
 
-//go:embed api_event_get.sql
-var EventGetSql string
+//go:embed api_stream_get_event.sql
+var StreamGetEventSql string
 
-type EventGetReq struct {
+type StreamGetEventReq struct {
 	Stream   *StreamRegistry `validate:"required"`
 	EventIds []string        `validate:"required,gt=0,dive,required"`
 }
 
-type EventGetRes struct {
+type StreamGetEventRes struct {
 	Events []*Event
 }
 
-func (req *EventGetReq) Do(ctx context.Context, tx pgx.Tx) (*EventGetRes, error) {
+func (req *StreamGetEventReq) Do(ctx context.Context, tx pgx.Tx) (*StreamGetEventRes, error) {
 	err := validator.Validate.Struct(req)
 	if err != nil {
 		return nil, err
@@ -36,19 +36,19 @@ func (req *EventGetReq) Do(ctx context.Context, tx pgx.Tx) (*EventGetRes, error)
 		args[binding] = id
 	}
 	table := pgx.Identifier{Collection(req.Stream.Id)}.Sanitize()
-	query := fmt.Sprintf(EventGetSql, table, strings.Join(names, ","))
+	query := fmt.Sprintf(StreamGetEventSql, table, strings.Join(names, ","))
 	rows, err := tx.Query(ctx, query, args)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	res := &EventGetRes{Events: make([]*Event, 0)}
+	res := &StreamGetEventRes{Events: make([]*Event, 0)}
 	for rows.Next() {
 		var event Event
 		err := rows.Scan(
 			&event.Id,
-			&event.Topic,
+			&event.Subject,
 			&event.Body,
 			&event.Metadata,
 			&event.CreatedAt,

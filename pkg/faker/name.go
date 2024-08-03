@@ -12,7 +12,7 @@ func ConsumerName() string {
 	return strings.ToLower(strings.Join(words, "_"))
 }
 
-func Topic() string {
+func Subject() string {
 	words := F.Lorem().Words(8)
 	return strings.ToLower(strings.Join(words, "."))
 }

@@ -49,7 +49,6 @@ func (req *TaskMarkRunningAsCompletedReq) Do(ctx context.Context, tx pgx.Tx) (*T
 
 	table := pgx.Identifier{Collection(req.Consumer.Name)}.Sanitize()
 	query := fmt.Sprintf(TaskMarkRunningAsCompletedSql, table, strings.Join(names, ","))
-
 	rows, err := tx.Query(ctx, query, args)
 	if err != nil {
 		return nil, err

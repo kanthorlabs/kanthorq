@@ -20,7 +20,7 @@ func TestStreamPut(t *testing.T) {
 	stream, err := Do(ctx, &StreamRegisterReq{StreamName: faker.StreamName()}, conn)
 	require.NoError(t, err)
 
-	events := FakeEvents(faker.Topic(), faker.F.IntBetween(100, 500))
+	events := FakeEvents(faker.Subject(), faker.F.IntBetween(100, 500))
 
 	req := &StreamPutEventsReq{Stream: stream.StreamRegistry, Events: events}
 	res, err := Do(ctx, req, conn)

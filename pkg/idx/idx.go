@@ -15,16 +15,27 @@ func New(ns string) string {
 	return ns + Separator + strings.ToLower(ulid.Make().String())
 }
 
-// Next generates the next ID with the same namespace after a given duration
-func Next(id string, duration time.Duration) string {
+func Parse(id string) (string, ulid.ULID) {
 	parts := strings.Split(id, Separator)
 	if len(parts) != 2 {
 		panic(fmt.Sprintf("[%s] does not start with namespace and end with ULID", id))
 	}
 
-	uid := ulid.MustParse(parts[1])
-	upper := ulid.Time(uid.Time() + uint64(duration.Milliseconds()))
-	uid.SetTime(ulid.Timestamp(upper))
+	return parts[0], ulid.MustParse(parts[1])
+}
 
-	return parts[0] + Separator + strings.ToLower(uid.String())
+func NewWithTime(ns string, t time.Time) string {
+	return ns + Separator + strings.ToLower(ulid.MustNew(ulid.Timestamp(t), ulid.DefaultEntropy()).String())
+}
+
+// Next generates the next ID with the same namespace after a given duration
+func Next(id string, duration time.Duration) string {
+	ns, uid := Parse(id)
+
+	future := ulid.Timestamp(ulid.Time(uid.Time()).Add(duration))
+	if err := uid.SetTime(future); err != nil {
+		panic(err)
+	}
+
+	return ns + Separator + strings.ToLower(uid.String())
 }

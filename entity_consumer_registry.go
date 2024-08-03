@@ -1,9 +1,17 @@
 package kanthorq
 
-import "github.com/kanthorlabs/kanthorq/pkg/idx"
+import (
+	"time"
+
+	"github.com/kanthorlabs/kanthorq/pkg/idx"
+)
 
 func ConsumerId() string {
 	return idx.New("consumer")
+}
+
+func ConsumerIdFromTime(t time.Time) string {
+	return idx.NewWithTime("consumer", t)
 }
 
 type ConsumerRegistry struct {
@@ -11,7 +19,7 @@ type ConsumerRegistry struct {
 	StreamName string `json:"stream_name" validate:"required,is_collection_name"`
 	Id         string `json:"id" validate:"required"`
 	Name       string `json:"name" validate:"required,is_collection_name"`
-	Topic      string `json:"topic" validate:"required,is_topic"`
+	Subject    string `json:"subject" validate:"required,is_subject"`
 	Cursor     string `json:"cursor"`
 	AttemptMax int16  `json:"attempt_max"`
 	CreatedAt  int64  `json:"created_at"`

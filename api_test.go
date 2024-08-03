@@ -13,14 +13,14 @@ func FakeEntities(t *testing.T, ctx context.Context, conn *pgx.Conn, count int) 
 	creq := &ConsumerRegisterReq{
 		StreamName:         faker.StreamName(),
 		ConsumerName:       faker.ConsumerName(),
-		ConsumerTopic:      faker.Topic(),
+		ConsumerSubject:    faker.Subject(),
 		ConsumerAttemptMax: faker.F.Int16Between(1, 10),
 	}
 	// ConsumerRegister also register stream
 	cres, err := Do(ctx, creq, conn)
 	require.NoError(t, err)
 
-	events := FakeEvents(creq.ConsumerTopic, count)
+	events := FakeEvents(creq.ConsumerSubject, count)
 
 	// put events to stream
 	sreq := &StreamPutEventsReq{
@@ -34,10 +34,10 @@ func FakeEntities(t *testing.T, ctx context.Context, conn *pgx.Conn, count int) 
 	return cres.StreamRegistry, cres.ConsumerRegistry, events
 }
 
-func FakeEvents(topic string, count int) []*Event {
+func FakeEvents(subject string, count int) []*Event {
 	events := make([]*Event, count)
 	for i := 0; i < count; i++ {
-		events[i] = NewEvent(topic, faker.DataOf16Kb())
+		events[i] = NewEvent(subject, faker.DataOf16Kb())
 	}
 	return events
 }

@@ -16,7 +16,7 @@ There is the definition of the `Event` in different places in KanthorQ
     ```go
     type Event struct {
       Id        string         `json:"id"`
-      Topic     string         `json:"topic"`
+      Subject     string         `json:"subject"`
       Body      []byte         `json:"body"`
       Metadata  map[string]any `json:"metadata"`
       CreatedAt int64          `json:"created_at"`
@@ -27,7 +27,7 @@ There is the definition of the `Event` in different places in KanthorQ
     ```sql
     TABLE kanthorq_stream_order_update (
       id VARCHAR(64) NOT NULL,
-      topic VARCHAR(128) NOT NULL,
+      subject VARCHAR(128) NOT NULL,
       body BYTEA NOT NULL,
       metadata jsonb NOT NULL,
       created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000
@@ -47,7 +47,7 @@ To make the communication is easy to integrate we have define some characteristi
 MUST follow requirements includes:
 
 - The `id` property must be Lexicographically Sortable Identifier. For example if you want to use UUID, please use UUIDv7. We are recommend you use the [ULID](https://github.com/ulid/spec)
-- The `topic` property must multiple alphanumeric+hypen strings that could be seperate by a dot.
+- The `subject` property must multiple alphanumeric+hypen strings that could be seperate by a dot.
 
   - OK: `order`, `order.created`, `v2.order.created`, `058434268238.order.created`, `-1002223543143.subscription.created`, `ap-southeast-1.user.created`
   - KO: `order.`, `order.*`

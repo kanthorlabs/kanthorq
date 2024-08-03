@@ -1,8 +1,6 @@
 package kanthorq
 
 import (
-	"strings"
-
 	"github.com/kanthorlabs/kanthorq/pkg/idx"
 )
 
@@ -10,13 +8,9 @@ func TaskId() string {
 	return idx.New("task")
 }
 
-func TopicFilter(topic string) string {
-	return strings.Replace(topic, "*", "%", -1)
-}
-
 type Task struct {
 	EventId      string `json:"event_id" validate:"required"`
-	Topic        string `json:"topic" validate:"required,is_topic"`
+	Subject      string `json:"subject" validate:"required,is_subject"`
 	State        int16  `json:"state"`
 	ScheduleAt   int64  `json:"schedule_at"`
 	AttemptCount int16  `json:"attempt_count"`

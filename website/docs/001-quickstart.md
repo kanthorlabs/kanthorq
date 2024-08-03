@@ -49,7 +49,7 @@ To start publishing events, you need to follow these steps
 
 - Initialize a publisher publisher instance with given PostgreSQL connection string and a Stream name
 - Start the instance so it will prepare everything: connect the database, register the stream for you
-- Send an event that includes its topic and body
+- Send an event that includes its subject and body
 - Stop the instance if you don't need it anymore
 
 Example:
@@ -77,9 +77,9 @@ defer func () {
   }
 }()
 
-topic := "system.ping"
+subject := "system.ping"
 body := []byte("{\"alive\": true}")
-if err:= publisher.Send(ctx, kanthorq.NewEvent(topic, body)); err != nil {
+if err:= publisher.Send(ctx, kanthorq.NewEvent(subject, body)); err != nil {
   // handle error
 }
 ```
@@ -88,7 +88,7 @@ if err:= publisher.Send(ctx, kanthorq.NewEvent(topic, body)); err != nil {
 
 To subscribe to events in KanthorQ system, you need to
 
-- Intialize a subscriber with PostgreSQL connection string and Consumer properties. The Consumer requires unique name and the listening topic (what you use to publish event before)
+- Intialize a subscriber with PostgreSQL connection string and Consumer properties. The Consumer requires unique name and the listening subject (what you use to publish event before)
 - Start the instance so it will prepare everything: connect the database, register the stream and consumer for you
 - Start receiving events from KanthorQ system with given handler
 - Stop the instance if you don't need it anymore
@@ -98,7 +98,7 @@ var DATABASE_URI := "postgres://postgres:changemenowornever@localhost:5432/postg
 var options = &kanthorq.SubscriberOptions{
   StreamName: kanthorq.DefaultStreamName,
   ConsumerName: "internal",
-  ConsumerTopic: "system.ping",
+  ConsumerSubject: "system.ping",
   ConsumerAttemptMax: kanthorq.DefaultConsumerAttemptMax
 }
 

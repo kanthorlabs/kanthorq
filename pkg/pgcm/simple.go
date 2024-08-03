@@ -2,6 +2,7 @@ package pgcm
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -18,14 +19,21 @@ type simple struct {
 	uri string
 
 	mu   sync.Mutex
+	cmu  sync.Mutex
 	conn *pgx.Conn
 }
 
 func (cm *simple) Start(ctx context.Context) error {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
 	return nil
 }
 
 func (cm *simple) Stop(ctx context.Context) error {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
 	if cm.conn == nil {
 		return nil
 	}
@@ -37,12 +45,13 @@ func (cm *simple) Stop(ctx context.Context) error {
 	return cm.conn.Close(ctx)
 }
 
-func (cm *simple) Connection(ctx context.Context) (Connection, error) {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
+func (cm *simple) Acquire(ctx context.Context) (*pgx.Conn, error) {
+	if !cm.cmu.TryLock() {
+		return nil, errors.New("connection already in use")
+	}
 
 	if cm.conn != nil && !cm.conn.IsClosed() {
-		return &simplec{conn: cm.conn}, nil
+		return cm.conn, nil
 	}
 
 	conn, err := pgx.Connect(ctx, cm.uri)
@@ -51,5 +60,11 @@ func (cm *simple) Connection(ctx context.Context) (Connection, error) {
 	}
 	cm.conn = conn
 
-	return &simplec{conn: cm.conn}, nil
+	return cm.conn, nil
+}
+
+func (cm *simple) Release(ctx context.Context, conn *pgx.Conn) error {
+	cm.cmu.Unlock()
+	// don't close the connection
+	return nil
 }

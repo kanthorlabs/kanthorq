@@ -19,7 +19,7 @@ func TestSubscriber_Connection(t *testing.T) {
 		&SubscriberOptions{
 			StreamName:         DefaultStreamName,
 			ConsumerName:       "internal",
-			ConsumerTopic:      "system.ping",
+			ConsumerSubject:    "system.ping",
 			ConsumerAttemptMax: DefaultConsumerAttemptMax,
 		},
 	)

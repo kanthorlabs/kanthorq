@@ -26,7 +26,7 @@ There is the definition of the `Task` in different places in KanthorQ
     ```go
     type Task struct {
       EventId      string `json:"event_id"`
-      Topic        string `json:"topic"`
+      Subject        string `json:"subject"`
       State        int16  `json:"state"`
       ScheduleAt   int64  `json:"schedule_at"`
       FinalizedAt  int64  `json:"finalized_at"`
@@ -41,7 +41,7 @@ There is the definition of the `Task` in different places in KanthorQ
     ```sql
     TABLE kanthorq_consumer_send_confirmed_email (
       event_id VARCHAR(64) NOT NULL,
-      topic VARCHAR(128) NOT NULL,
+      subject VARCHAR(128) NOT NULL,
       state SMALLINT NOT NULL DEFAULT 1,
       schedule_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
       finalized_at BIGINT NOT NULL DEFAULT 0,

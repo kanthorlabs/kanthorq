@@ -23,7 +23,7 @@ There are some characteristics of a stream you should know
 
 - An event stays forever in a stream until you explicitly remove it or a stream is deleted (also must be explicit confirmation)
 - An event could be read and processed by multiple process (we call it `Consumer`) from the stream and nothing else the event data itself is stored in stream.
-- Events in a stream could be only paginated by the order of `event.id` or the tuple of `(event.topic, event.id)`
+- Events in a stream could be only paginated by the order of `event.id` or the tuple of `(event.subject, event.id)`
 
 ## Manage streams
 
@@ -74,7 +74,7 @@ As the definition said about the `Stream`, it's just a **append-only event group
 ```sql
 TABLE kanthorq_stream_order_update (
   id VARCHAR(64) NOT NULL,
-  topic VARCHAR(128) NOT NULL,
+  subject VARCHAR(128) NOT NULL,
   body BYTEA NOT NULL,
   metadata jsonb NOT NULL,
   created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,

@@ -21,7 +21,7 @@ func NewSubscriber(uri string, options *SubscriberOptions) (Subscriber, error) {
 type Subscriber interface {
 	Start(ctx context.Context) (err error)
 	Stop(ctx context.Context) (err error)
-	Receive(ctx context.Context, handler SubscriberHandler) (err error)
+	Receive(ctx context.Context, handler SubscriberHandler) error
 }
 
 type SubscriberHandler func(ctx context.Context, event *Event) error

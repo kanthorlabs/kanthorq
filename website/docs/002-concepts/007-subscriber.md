@@ -25,7 +25,7 @@ sequenceDiagram
   Subscriber ->> +Consumer Registry: name: send_cancellation_email
   Consumer Registry -->> Consumer Registry: lock send_cancellation_email
   loop [got 100 tasks] or [reached max round]
-    Consumer Registry ->> +kanthorq_stream_order_update: topic: order.cancelled, cursor: evt_01J36ZJACKR5FXDWVKASC4BNCN, limit: 100
+    Consumer Registry ->> +kanthorq_stream_order_update: subject: order.cancelled, cursor: evt_01J36ZJACKR5FXDWVKASC4BNCN, limit: 100
     kanthorq_stream_order_update -->> -kanthorq_stream_order_update: scanning
     kanthorq_stream_order_update ->> +send_cancellation_email: found and convert 85 events to tasks
   end
@@ -46,14 +46,14 @@ sequenceDiagram
 
 ```
 
-The Pulling flow contains two child workflow: the Converting flow that help you scans events from a stream with given topic then convert to tasks on a stream and the Fulfilling flow that get event records based on the list of converted tasks of the Converting flow.
+The Pulling flow contains two child workflow: the Converting flow that help you scans events from a stream with given subject then convert to tasks on a stream and the Fulfilling flow that get event records based on the list of converted tasks of the Converting flow.
 
 #### The Converting Flow
 
 1. We connect to the Consumer Registry to start our flow.
 2. We ask Consumer Registry to lock the record of requesting consumer
-3. Then use properties of the consumer: a stream name, a topic and a cursor of previous scanning in the stream to make a request to the stream.
-4. Perform the scaning process on the given stream based on the given topic and cursor to obtain enough events
+3. Then use properties of the consumer: a stream name, a subject and a cursor of previous scanning in the stream to make a request to the stream.
+4. Perform the scaning process on the given stream based on the given subject and cursor to obtain enough events
 5. Convert founding events to tasks
 6. Return tasks to the Subscriber
 7. Update the Consumer Registry with latest cursor (the latest `event_id` of tasks)
@@ -64,7 +64,7 @@ The Pulling flow contains two child workflow: the Converting flow that help you 
 By saying **scanning**, we mean we will query events from a stream from the lower bound that is specify by the **cursor** until we get enough rows (100 events). The simplify query will look like
 
 ```sql
-SELECT * FROM kanthorq_stream_order_update WHERE topic = 'order.cancelled' AND id > 'evt_01J36ZJACKR5FXDWVKASC4BNCN' LIMIT 100
+SELECT * FROM kanthorq_stream_order_update WHERE subject = 'order.cancelled' AND id > 'evt_01J36ZJACKR5FXDWVKASC4BNCN' LIMIT 100
 ```
 
 :::

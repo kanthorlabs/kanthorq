@@ -35,10 +35,6 @@ func New(uri string) (ConnectionManager, error) {
 type ConnectionManager interface {
 	Start(ctx context.Context) error
 	Stop(ctx context.Context) error
-	Connection(ctx context.Context) (Connection, error)
-}
-
-type Connection interface {
-	Raw() *pgx.Conn
-	Close(ctx context.Context)
+	Acquire(ctx context.Context) (*pgx.Conn, error)
+	Release(ctx context.Context, conn *pgx.Conn) error
 }

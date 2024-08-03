@@ -29,14 +29,14 @@ func (pub *publisher) Start(ctx context.Context) (err error) {
 		return
 	}
 
-	conn, err := pub.cm.Connection(ctx)
+	conn, err := pub.cm.Acquire(ctx)
 	if err != nil {
 		return
 	}
-	defer conn.Close(ctx)
+	defer pub.cm.Release(ctx, conn)
 
 	req := &StreamRegisterReq{StreamName: pub.options.StreamName}
-	res, err := Do(ctx, req, conn.Raw())
+	res, err := Do(ctx, req, conn)
 	if err != nil {
 		return
 	}
@@ -57,29 +57,27 @@ func (pub *publisher) Stop(ctx context.Context) (err error) {
 	return
 }
 
-func (pub *publisher) Send(ctx context.Context, events ...*Event) (err error) {
+func (pub *publisher) Send(ctx context.Context, events ...*Event) error {
 	if len(events) == 0 {
-		err = errors.New("no events provided")
-		return
+		return errors.New("no events provided")
 	}
 
 	for i, e := range events {
-		if err = validator.Validate.Struct(e); err != nil {
-			err = fmt.Errorf("event %d: %w", i, err)
-			return
+		if err := validator.Validate.Struct(e); err != nil {
+			return fmt.Errorf("event %d: %w", i, err)
 		}
 	}
 
-	conn, err := pub.cm.Connection(ctx)
+	conn, err := pub.cm.Acquire(ctx)
 	if err != nil {
-		return
+		return err
 	}
-	defer conn.Close(ctx)
+	defer pub.cm.Release(ctx, conn)
 
 	req := &StreamPutEventsReq{Stream: pub.stream, Events: events}
-	res, err := Do(ctx, req, conn.Raw())
+	res, err := Do(ctx, req, conn)
 	if err != nil {
-		return
+		return err
 	}
 
 	if res.InsertCount != int64(len(events)) {

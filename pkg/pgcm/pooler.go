@@ -2,7 +2,6 @@ package pgcm
 
 import (
 	"context"
-	"sync"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -17,8 +16,6 @@ func NewPooler(uri string) ConnectionManager {
 
 type pooler struct {
 	uri string
-
-	mu sync.Mutex
 }
 
 func (cm *pooler) Start(ctx context.Context) error {
@@ -29,14 +26,15 @@ func (cm *pooler) Stop(ctx context.Context) error {
 	return nil
 }
 
-func (cm *pooler) Connection(ctx context.Context) (Connection, error) {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
-
+func (cm *pooler) Acquire(ctx context.Context) (*pgx.Conn, error) {
 	conn, err := pgx.Connect(ctx, cm.uri)
 	if err != nil {
 		return nil, err
 	}
 
-	return &poolerc{conn: conn}, nil
+	return conn, nil
+}
+
+func (cm *pooler) Release(ctx context.Context, conn *pgx.Conn) error {
+	return conn.Close(ctx)
 }

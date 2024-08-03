@@ -3,19 +3,22 @@ package kanthorq
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
+	"fmt"
 )
 
 type Metadata map[string]interface{}
 
 // Scan implements the sql.Scanner interface to scan a value from the database into the Metadata struct
 func (m *Metadata) Scan(value interface{}) error {
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New("KANTHORQ.METADATA.SCAN.ERR: value is not []byte")
+	if data, ok := value.([]byte); ok {
+		return json.Unmarshal(data, m)
 	}
 
-	return json.Unmarshal(bytes, m)
+	if data, ok := value.(string); ok {
+		return json.Unmarshal([]byte(data), m)
+	}
+
+	return fmt.Errorf("KANTHORQ.METADATA.SCAN.ERR: only string or []byte supported, got %T", value)
 }
 
 // Value implements the driver.Valuer interface to convert the Metadata struct to a value that can be stored in the database

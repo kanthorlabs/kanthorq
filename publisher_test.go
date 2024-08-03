@@ -50,6 +50,6 @@ func TestPublisher_Send(t *testing.T) {
 		require.NoError(t, instance.Stop(context.Background()))
 	}()
 
-	event := NewEvent(faker.Topic(), []byte("{\"ping\": true}"))
+	event := NewEvent(faker.Subject(), []byte("{\"ping\": true}"))
 	require.NoError(t, instance.Send(context.Background(), event))
 }

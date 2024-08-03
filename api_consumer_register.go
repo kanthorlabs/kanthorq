@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/pkg/validator"
@@ -18,7 +19,7 @@ var ConsumerRegisterCollectionSql string
 type ConsumerRegisterReq struct {
 	StreamName         string `validate:"required,is_collection_name"`
 	ConsumerName       string `validate:"required,is_collection_name"`
-	ConsumerTopic      string `validate:"required,is_topic"`
+	ConsumerSubject    string `validate:"required,is_subject_filter"`
 	ConsumerAttemptMax int16  `validate:"required,gt=0"`
 }
 
@@ -44,7 +45,8 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 		"stream_name":          stream.StreamRegistry.Name,
 		"consumer_id":          ConsumerId(),
 		"consumer_name":        req.ConsumerName,
-		"consumer_topic":       req.ConsumerTopic,
+		"consumer_subject":     req.ConsumerSubject,
+		"consumer_cursor":      ConsumerIdFromTime(time.UnixMilli(stream.StreamRegistry.CreatedAt)),
 		"consumer_attempt_max": req.ConsumerAttemptMax,
 	}
 	err = tx.
@@ -54,7 +56,7 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 			&registry.StreamName,
 			&registry.Id,
 			&registry.Name,
-			&registry.Topic,
+			&registry.Subject,
 			&registry.Cursor,
 			&registry.AttemptMax,
 			&registry.CreatedAt,

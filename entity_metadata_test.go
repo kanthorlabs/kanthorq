@@ -8,9 +8,14 @@ import (
 
 func TestMetadata_Scan(t *testing.T) {
 	var m Metadata
+
 	require.ErrorContains(t, m.Scan([]byte("ok")), "invalid character")
-	require.ErrorContains(t, m.Scan(nil), "value is not []byte")
+	require.ErrorContains(t, m.Scan(nil), "only string or []byte supported")
+
 	require.NoError(t, m.Scan([]byte(`{"ok":true}`)))
+	require.True(t, m["ok"].(bool))
+
+	require.NoError(t, m.Scan(`{"ok":true}`))
 	require.True(t, m["ok"].(bool))
 }
 

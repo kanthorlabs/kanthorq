@@ -20,7 +20,7 @@ func TestEventGet(t *testing.T) {
 
 	s, _, events := FakeEntities(t, ctx, conn, faker.F.IntBetween(100, 500))
 
-	req := &EventGetReq{
+	req := &StreamGetEventReq{
 		Stream:   s,
 		EventIds: lo.Map(events, func(e *Event, _ int) string { return e.Id }),
 	}

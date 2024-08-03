@@ -11,7 +11,7 @@ Let's discover what the KanthorQ architecture is and how the components communic
 The KanthorQ architecture, depicted in the diagram below, comprises four components:
 
 - **Publisher**: Application code responsible for inserting events into the KanthorQ system. This can be a Command Line Toolor Golang code within your application.
-- **Stream**: Receives events and persists them within the KanthorQ system, categorized by topics.
+- **Stream**: Receives events and persists them within the KanthorQ system, categorized by subjects.
 - **Consumer**: Stores tasks generated from events in the Stream. One event can generate many tasks in different _Consumers_, but in the same _Consumer_, there must be only one task that belongs to an event
 - **Subscriber**: Part of your application that pulls tasks to execute your business logic.
 
@@ -44,7 +44,7 @@ Friendly reminder that a Stream stores many Events
 
 :::
 
-An event in a Stream will be categorized by `topic` what is dot-separated words. We can use it in various usecases an handle them differently
+An event in a Stream will be categorized by `subject` what is dot-separated words. We can use it in various usecases an handle them differently
 
 - `order.cancelled` and `order.created` is normal usecase that events are belonged to different type.
 - `order.cancelled` and `v1.order.cancelled` indicate that events are published by different codebases that has different versions.
@@ -69,7 +69,7 @@ Then we will have 2 separated Consumers that stores same event references but wi
 
 :::tip
 
-Although the diagram showed that each consumer contains only one topic, you can have as many topic as you want to have in a consumer. For example you can define a consumer that contains both `order.cancelled` and `order.failed` to send excuse emails to your customer.
+Although the diagram showed that each consumer contains only one subject, you can have as many subject as you want to have in a consumer. For example you can define a consumer that contains both `order.cancelled` and `order.failed` to send excuse emails to your customer.
 
 :::
 

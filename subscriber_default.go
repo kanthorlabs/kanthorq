@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -30,19 +31,19 @@ func (sub *subscriber) Start(ctx context.Context) (err error) {
 		return
 	}
 
-	conn, err := sub.cm.Connection(ctx)
+	conn, err := sub.cm.Acquire(ctx)
 	if err != nil {
-		return
+		return err
 	}
-	defer conn.Close(ctx)
+	defer sub.cm.Release(ctx, conn)
 
 	req := &ConsumerRegisterReq{
 		StreamName:         sub.options.StreamName,
 		ConsumerName:       sub.options.ConsumerName,
-		ConsumerTopic:      sub.options.ConsumerTopic,
+		ConsumerSubject:    sub.options.ConsumerSubject,
 		ConsumerAttemptMax: sub.options.ConsumerAttemptMax,
 	}
-	res, err := Do(ctx, req, conn.Raw())
+	res, err := Do(ctx, req, conn)
 	if err != nil {
 		return
 	}
@@ -79,7 +80,7 @@ func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler) (
 		default:
 			found, err := sub.handle(hctx, handler)
 			if err != nil {
-				// @TODO: log the error here
+				log.Println(err)
 			}
 			fmt.Printf("handled %d events\n", found)
 		}
@@ -90,10 +91,8 @@ func (sub *subscriber) handle(ctx context.Context, handler SubscriberHandler) (c
 	// The Pulling Workflow
 	// @TODO: remove hardcode
 	out, err := sub.receiver.Pull(ctx, &ReceiverPullReq{
-		Size:           100,
-		ScanWindow:     60000,
-		ScanRoundMax:   3,
-		ScanRoundDelay: 1000,
+		Size:            100,
+		ScanIntervalMax: 3,
 	})
 	if err != nil {
 		return 0, err
@@ -125,9 +124,9 @@ func (sub *subscriber) handle(ctx context.Context, handler SubscriberHandler) (c
 	return len(out.Events), err
 }
 
-func (sub *subscriber) complete(ctx context.Context, tasks []*Task) (err error) {
+func (sub *subscriber) complete(ctx context.Context, tasks []*Task) error {
 	if len(tasks) == 0 {
-		return
+		return nil
 	}
 
 	req := &TaskMarkRunningAsCompletedReq{
@@ -135,21 +134,20 @@ func (sub *subscriber) complete(ctx context.Context, tasks []*Task) (err error) 
 		Tasks:    tasks,
 	}
 	res, err := DoWithCM(ctx, req, sub.cm)
-	if err == nil {
-		return
+	if err != nil {
+		return err
 	}
 
 	if len(res.Noop) > 0 {
 		// @TODO: report that some tasks were not updated
-		return
 	}
 
-	return
+	return nil
 }
 
-func (sub *subscriber) fail(ctx context.Context, tasks []*Task) (err error) {
+func (sub *subscriber) fail(ctx context.Context, tasks []*Task) error {
 	if len(tasks) == 0 {
-		return
+		return nil
 	}
 
 	req := &TaskMarkRunningAsRetryableOrDiscardedReq{
@@ -157,14 +155,13 @@ func (sub *subscriber) fail(ctx context.Context, tasks []*Task) (err error) {
 		Tasks:    tasks,
 	}
 	res, err := DoWithCM(ctx, req, sub.cm)
-	if err == nil {
-		return
+	if err != nil {
+		return err
 	}
 
 	if len(res.Noop) > 0 {
 		// @TODO: report that some tasks were not updated
-		return
 	}
 
-	return
+	return nil
 }

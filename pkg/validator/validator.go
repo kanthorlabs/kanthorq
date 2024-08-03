@@ -12,8 +12,9 @@ var once sync.Once
 func init() {
 	once.Do(func() {
 		Validate = validator.New()
-		Validate.RegisterValidation("is_topic", topic)
-		Validate.RegisterValidation("is_collection_name", collection)
 		Validate.RegisterValidation("is_enum", enum)
+		Validate.RegisterValidation("is_collection_name", collection)
+		Validate.RegisterValidation("is_subject", subject)
+		Validate.RegisterValidation("is_subject_filter", subjectFilter)
 	})
 }
