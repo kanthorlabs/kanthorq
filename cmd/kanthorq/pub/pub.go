@@ -1,8 +1,6 @@
 package pub
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,6 +8,7 @@ import (
 
 	"github.com/kanthorlabs/kanthorq"
 	"github.com/kanthorlabs/kanthorq/pkg/command"
+	"github.com/kanthorlabs/kanthorq/pkg/faker"
 	"github.com/spf13/cobra"
 )
 
@@ -36,29 +35,33 @@ func New() *cobra.Command {
 			// ignore stopping error
 			defer publisher.Stop(ctx)
 
-			subject := command.GetString(cmd.Flags(), "subject")
-			body := GetBody(cmd.Flags())
-			metadata := GetMetadata(cmd.Flags())
+			duration := command.GetInt(cmd.Flags(), "duration")
+			if duration > 0 {
+				timeout := time.After(time.Millisecond * time.Duration(duration))
+				ticker := time.Tick(time.Millisecond * time.Duration(faker.F.IntBetween(100, 1000)))
 
-			count := command.GetInt(cmd.Flags(), "count")
-			for i := 0; i < count; i++ {
-				event := kanthorq.NewEvent(subject, body)
-				event.Metadata.Merge(metadata)
-				event.Metadata["index"] = i
-
-				if err := publisher.Send(ctx, event); err != nil {
-					log.Println(err)
-					continue
+				for {
+					select {
+					case <-ctx.Done():
+						return nil
+					case <-timeout:
+						return nil
+					case <-ticker:
+						events := GetEvents(cmd.Flags())
+						if err := publisher.Send(ctx, events...); err != nil {
+							return err
+						}
+					}
 				}
-
-				ts := time.UnixMilli(event.CreatedAt).Format(time.RFC3339)
-				fmt.Printf("%s | %s | %s\n", event.Id, event.Subject, ts)
 			}
-			return nil
+
+			events := GetEvents(cmd.Flags())
+			return publisher.Send(ctx, events...)
 		},
 	}
 
 	command.Flags().IntP("count", "c", 1, "number of events to publish")
+	command.Flags().Int("duration", 0, "millisecond duration of publishing events")
 	command.Flags().String("connection-string", os.Getenv("KANTHORQ_POSTGRES_URI"), "connection string of storage (PostgreSQL)")
 	command.Flags().StringP("stream", "s", os.Getenv("KANTHORQ_STREAM"), "a stream name to publish event to")
 	command.Flags().StringP("subject", "t", os.Getenv("KANTHORQ_SUBJECT"), "a subject name of published event")

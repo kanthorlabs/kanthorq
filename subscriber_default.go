@@ -67,22 +67,34 @@ func (sub *subscriber) Stop(ctx context.Context) (err error) {
 	return
 }
 
-func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler) (err error) {
+func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler) error {
 	for {
-		// every round, we will set a timeout for current handler
-		hctx, cancel := context.WithTimeout(ctx, time.Millisecond*time.Duration(sub.options.HandleTimeout))
-		defer cancel()
-
 		select {
-		case <-hctx.Done():
-			err = errors.Join(err, hctx.Err())
-			return
+		case <-ctx.Done():
+			return ctx.Err()
 		default:
+			// every round, we will set a timeout for current handler
+			hctx, cancel := context.WithTimeout(ctx, time.Millisecond*time.Duration(sub.options.HandlerTimeout))
+
 			found, err := sub.handle(hctx, handler)
 			if err != nil {
 				log.Println(err)
 			}
+
+			if found == 0 {
+				deadline, _ := hctx.Deadline()
+				select {
+				case <-ctx.Done():
+					cancel()
+					return ctx.Err()
+					// a trick to not overload the datastore by waiting for a while
+				case <-time.After(time.Until(deadline.Add(time.Millisecond * -100))):
+					// if we don't find any events
+				}
+			}
+
 			fmt.Printf("handled %d events\n", found)
+			cancel()
 		}
 	}
 }
@@ -121,7 +133,7 @@ func (sub *subscriber) handle(ctx context.Context, handler SubscriberHandler) (c
 		err = errors.Join(err, cerr)
 	}
 
-	return len(out.Events), err
+	return len(out.Tasks), err
 }
 
 func (sub *subscriber) complete(ctx context.Context, tasks []*Task) error {

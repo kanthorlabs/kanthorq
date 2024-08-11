@@ -57,13 +57,13 @@ func (req *StreamScanReq) scan(ctx context.Context, tx pgx.Tx, res *StreamScanRe
 	}
 	defer rows.Close()
 
-	for rows.Next() {
+	for rows.Next() && len(res.Ids) < req.Size {
 		var id, subject string
 		if err := rows.Scan(&id, &subject); err != nil {
 			return err
 		}
 
-		if MatchSubject(subject, req.Consumer.Subject) {
+		if MatchSubject(req.Consumer.Subject, subject) {
 			res.Ids = append(res.Ids, id)
 		}
 

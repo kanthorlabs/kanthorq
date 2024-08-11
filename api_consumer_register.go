@@ -46,7 +46,7 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 		"consumer_id":          ConsumerId(),
 		"consumer_name":        req.ConsumerName,
 		"consumer_subject":     req.ConsumerSubject,
-		"consumer_cursor":      ConsumerIdFromTime(time.UnixMilli(stream.StreamRegistry.CreatedAt)),
+		"consumer_cursor":      EventIdFromTime(time.UnixMilli(stream.StreamRegistry.CreatedAt)),
 		"consumer_attempt_max": req.ConsumerAttemptMax,
 	}
 	err = tx.
