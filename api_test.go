@@ -15,7 +15,7 @@ func Seed(t *testing.T, ctx context.Context, conn *pgx.Conn) (*StreamRegistry, *
 		StreamName:            faker.StreamName(),
 		ConsumerName:          faker.ConsumerName(),
 		ConsumerSubjectFilter: faker.Subject(),
-		ConsumerAttemptMax:    faker.F.Int16Between(1, 10),
+		ConsumerAttemptMax:    faker.F.Int16Between(2, 10),
 	}
 	// ConsumerRegister also register stream
 	res, err := Do(ctx, req, conn)

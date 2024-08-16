@@ -23,7 +23,7 @@ func TestTaskMarkRunningAsCompleted(t *testing.T) {
 	tasks := SeedTasks(t, ctx, conn, consumer, events, StateRunning)
 
 	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, faker.F.IntBetween(100, 500))
-	noopTasks := SeedTasks(t, ctx, conn, consumer, noopEvents, StateDiscarded)
+	noopTasks := SeedTasks(t, ctx, conn, consumer, noopEvents, StateCancelled)
 
 	req := &TaskMarkRunningAsCompletedReq{
 		Consumer: consumer,

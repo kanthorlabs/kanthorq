@@ -8,5 +8,5 @@ SET
   attempt_count = attempt_count + 1
 WHERE 
   event_id IN (%s) AND state = @running_state::SMALLINT
-RETURNING event_id;
+RETURNING event_id, state;
 ---<<< api_task_mark_running_as_retryable_or_discarded

@@ -21,6 +21,7 @@ type TaskMarkRunningAsRetryableOrDiscardedReq struct {
 type TaskMarkRunningAsRetryableOrDiscardedRes struct {
 	Updated []string
 	Noop    []string
+	States  map[string]TaskState
 }
 
 func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx pgx.Tx) (*TaskMarkRunningAsRetryableOrDiscardedRes, error) {
@@ -56,14 +57,17 @@ func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx 
 	}
 	defer rows.Close()
 
+	states := make(map[string]TaskState)
 	for rows.Next() {
 		var eventId string
-		if err := rows.Scan(&eventId); err != nil {
+		var state int16
+		if err := rows.Scan(&eventId, &state); err != nil {
 			return nil, err
 		}
 
 		// report that we was able to update the task
 		modified[eventId] = true
+		states[eventId] = TaskState(state)
 	}
 
 	// rows.Err returns any error that occurred while reading
@@ -72,7 +76,11 @@ func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx 
 		return nil, err
 	}
 
-	res := &TaskMarkRunningAsRetryableOrDiscardedRes{Updated: make([]string, 0), Noop: make([]string, 0)}
+	res := &TaskMarkRunningAsRetryableOrDiscardedRes{
+		Updated: make([]string, 0),
+		Noop:    make([]string, 0),
+		States:  states,
+	}
 	for id, updated := range modified {
 		if updated {
 			res.Updated = append(res.Updated, id)
