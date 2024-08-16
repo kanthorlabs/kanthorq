@@ -38,10 +38,10 @@ func (sub *subscriber) Start(ctx context.Context) (err error) {
 	defer sub.cm.Release(ctx, conn)
 
 	req := &ConsumerRegisterReq{
-		StreamName:         sub.options.StreamName,
-		ConsumerName:       sub.options.ConsumerName,
-		ConsumerSubject:    sub.options.ConsumerSubject,
-		ConsumerAttemptMax: sub.options.ConsumerAttemptMax,
+		StreamName:            sub.options.StreamName,
+		ConsumerName:          sub.options.ConsumerName,
+		ConsumerSubjectFilter: sub.options.ConsumerSubjectFilter,
+		ConsumerAttemptMax:    sub.options.ConsumerAttemptMax,
 	}
 	res, err := Do(ctx, req, conn)
 	if err != nil {
@@ -103,7 +103,9 @@ func (sub *subscriber) handle(ctx context.Context, handler SubscriberHandler) (c
 	// The Pulling Workflow
 	// @TODO: remove hardcode
 	out, err := sub.receiver.Pull(ctx, &ReceiverPullReq{
-		Size:            100,
+		// PullSize
+		Size: 100,
+		// PullWaitTime
 		ScanIntervalMax: 3,
 	})
 	if err != nil {

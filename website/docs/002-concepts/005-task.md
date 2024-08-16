@@ -25,13 +25,13 @@ There is the definition of the `Task` in different places in KanthorQ
   <TabItem value="go" label="Go" default>
     ```go
     type Task struct {
-      EventId      string `json:"event_id"`
-      Subject        string `json:"subject"`
+      EventId      string `json:"event_id" validate:"required"`
+      Subject      string `json:"subject" validate:"required,is_subject"`
       State        int16  `json:"state"`
       ScheduleAt   int64  `json:"schedule_at"`
-      FinalizedAt  int64  `json:"finalized_at"`
       AttemptCount int16  `json:"attempt_count"`
       AttemptedAt  int64  `json:"attempted_at"`
+      FinalizedAt  int64  `json:"finalized_at"`
       CreatedAt    int64  `json:"created_at"`
       UpdatedAt    int64  `json:"updated_at"`
     }
@@ -41,14 +41,14 @@ There is the definition of the `Task` in different places in KanthorQ
     ```sql
     TABLE kanthorq_consumer_send_confirmed_email (
       event_id VARCHAR(64) NOT NULL,
-      subject VARCHAR(128) NOT NULL,
+      subject VARCHAR(256) NOT NULL,
       state SMALLINT NOT NULL DEFAULT 1,
       schedule_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
       finalized_at BIGINT NOT NULL DEFAULT 0,
       attempt_count SMALLINT NOT NULL DEFAULT 0,
       attempted_at BIGINT NOT NULL DEFAULT 0,
       created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
-      updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
+      updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000
     )
     ```
   </TabItem>

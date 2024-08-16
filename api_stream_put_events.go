@@ -32,7 +32,7 @@ func (req *StreamPutEventsReq) Do(ctx context.Context, tx pgx.Tx) (*StreamPutEve
 	}
 
 	identifier := pgx.Identifier{Collection(req.Stream.Id)}
-	inserted, err := tx.CopyFrom(ctx, identifier, EventProps(), pgx.CopyFromRows(rows))
+	inserted, err := tx.CopyFrom(ctx, identifier, Properties(Event{}), pgx.CopyFromRows(rows))
 	if err != nil {
 		return nil, err
 	}

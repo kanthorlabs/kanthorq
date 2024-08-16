@@ -45,27 +45,31 @@ There is the definition of the `Consumer Registry` in different places in Kantho
   <TabItem value="go" label="Go" default>
     ```go
     type ConsumerRegistry struct {
-        StreamName string `json:"stream_name"`
-        Name       string `json:"name"`
-        Subject      string `json:"subject"`
-        Cursor     string `json:"cursor"`
-        AttemptMax int16  `json:"attempt_max"`
-        CreatedAt  int64  `json:"created_at"`
-        UpdatedAt  int64  `json:"updated_at"`
+      StreamId      string `json:"stream_id" validate:"required"`
+      StreamName    string `json:"stream_name" validate:"required,is_collection_name"`
+      Id            string `json:"id" validate:"required"`
+      Name          string `json:"name" validate:"required,is_collection_name"`
+      SubjectFilter string `json:"subject_filter" validate:"required,is_subject_filter"`
+      Cursor        string `json:"cursor"`
+      AttemptMax    int16  `json:"attempt_max"`
+      CreatedAt     int64  `json:"created_at"`
+      UpdatedAt     int64  `json:"updated_at"`
     }
     ```
   </TabItem>
   <TabItem value="postgresql" label="PostgreSQL">
     ```sql
     TABLE kanthorq_consumer_registry (
-        name VARCHAR(128) NOT NULL,
-        stream_name VARCHAR(128) NOT NULL,
-        subject VARCHAR(128) NOT NULL,
-        cursor VARCHAR(64) NOT NULL,
-        attempt_max SMALLINT NOT NULL DEFAULT 3,
-        created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
-        updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
-        PRIMARY KEY (name)
+      stream_id VARCHAR(64) NOT NULL,
+      stream_name VARCHAR(256) NOT NULL,
+      id VARCHAR(64) NOT NULL,
+      name VARCHAR(256) NOT NULL,
+      subject_filter VARCHAR(256) NOT NULL,
+      cursor VARCHAR(64) NOT NULL,
+      attempt_max SMALLINT NOT NULL DEFAULT 3,
+      created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
+      updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
+      PRIMARY KEY (name)
     )
     ```
   </TabItem>
@@ -107,7 +111,7 @@ If definition of `Stream` is as same as `Event`, definition of `Consumer` is as 
 ```sql
 TABLE kanthorq_consumer_send_cancellation_email (
 	event_id VARCHAR(64) NOT NULL,
-	subject VARCHAR(128) NOT NULL,
+	subject VARCHAR(256) NOT NULL,
 	state SMALLINT NOT NULL DEFAULT 1,
 	schedule_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
 	finalized_at BIGINT NOT NULL DEFAULT 0,

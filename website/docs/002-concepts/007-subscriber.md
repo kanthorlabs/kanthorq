@@ -104,7 +104,7 @@ sequenceDiagram
 
 :::danger
 
-If you plan to update the state by yourself (common, it's just a PostgreSQL query and you can totally do it by yourslef), make sure you keep in mind that you should only move a task from state-A to state-B, not override the task to state B
+If you plan to update the state by yourself (it's just a PostgreSQL query and you can totally do it by yourslef), make sure you keep in mind that you should only move a task from state-A to state-B, not override the task to state B. Update a task from arbitrary state to state B produces lost update and it's hard to debug what wrong happened.
 
 Example:
 

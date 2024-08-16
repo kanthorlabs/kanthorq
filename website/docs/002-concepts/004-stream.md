@@ -49,7 +49,8 @@ There is the definition of the `Stream Registry` in different places in KanthorQ
   <TabItem value="go" label="Go" default>
     ```go
     type StreamRegistry struct {
-      Name      string `json:"name"`
+      Id        string `json:"id" validate:"required"`
+      Name      string `json:"name" validate:"required,is_collection_name"`
       CreatedAt int64  `json:"created_at"`
       UpdatedAt int64  `json:"updated_at"`
     }
@@ -58,26 +59,27 @@ There is the definition of the `Stream Registry` in different places in KanthorQ
   <TabItem value="postgresql" label="PostgreSQL">
     ```sql
     TABLE kanthorq_stream_registry (
-      name VARCHAR(128) NOT NULL,
+      id VARCHAR(64) NOT NULL,
+      name VARCHAR(256) NOT NULL,
       created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
       updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
-      PRIMARY KEY (name)
-    )
+      PRIMARY KEY (id)
+    );
     ```
   </TabItem>
 </Tabs>
 
 ### Stream
 
-As the definition said about the `Stream`, it's just a **append-only event group** so its definition is just the definition of the `Event`.
+As the definition said about the `Stream`, it's just a **append-only event group** so its definition is a shape of of the `Event`.
 
 ```sql
 TABLE kanthorq_stream_order_update (
   id VARCHAR(64) NOT NULL,
-  subject VARCHAR(128) NOT NULL,
+	subject VARCHAR(256) NOT NULL,
   body BYTEA NOT NULL,
-  metadata jsonb NOT NULL,
-  created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
-  PRIMARY KEY (id)
+	metadata jsonb NOT NULL,
+	created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
+	PRIMARY KEY (id)
 )
 ```

@@ -23,11 +23,11 @@ func New() *cobra.Command {
 			consumer := command.GetString(cmd.Flags(), "consumer")
 
 			subscriber, err := kanthorq.NewSubscriber(uri, &kanthorq.SubscriberOptions{
-				StreamName:         stream,
-				ConsumerName:       consumer,
-				ConsumerSubject:    subject,
-				ConsumerAttemptMax: 1,
-				HandlerTimeout:     3000,
+				StreamName:            stream,
+				ConsumerName:          consumer,
+				ConsumerSubjectFilter: subject,
+				ConsumerAttemptMax:    1,
+				HandlerTimeout:        3000,
 			})
 			if err != nil {
 				return err

@@ -2,22 +2,22 @@ package kanthorq
 
 import "strings"
 
-func MatchSubject(pattern, subject string) bool {
-	if len(subject) == 0 || len(pattern) == 0 {
+func MatchSubject(filter, subject string) bool {
+	if len(subject) == 0 || len(filter) == 0 {
 		return false
 	}
 
-	patternTokens := strings.Split(pattern, ".")
+	filterTokens := strings.Split(filter, ".")
 	subjectTokens := strings.Split(subject, ".")
 
 	pIdx, sIdx := 0, 0
 
-	for pIdx < len(patternTokens) && sIdx < len(subjectTokens) {
-		p := patternTokens[pIdx]
+	for pIdx < len(filterTokens) && sIdx < len(subjectTokens) {
+		p := filterTokens[pIdx]
 
 		// '>' matches the rest of the tokens only when it's the last token
 		if p == ">" {
-			return pIdx == len(patternTokens)-1
+			return pIdx == len(filterTokens)-1
 		}
 
 		// '*' matches exactly one token
@@ -37,6 +37,6 @@ func MatchSubject(pattern, subject string) bool {
 		pIdx++
 	}
 
-	// If we've processed all pattern tokens, check if the subject tokens are also fully consumed
-	return pIdx == len(patternTokens) && sIdx == len(subjectTokens)
+	// If we've processed all filter tokens, check if the subject tokens are also fully consumed
+	return pIdx == len(filterTokens) && sIdx == len(subjectTokens)
 }

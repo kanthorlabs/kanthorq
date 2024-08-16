@@ -63,7 +63,6 @@ func (r *ReceiverDefault) convert(ctx context.Context, req *ReceiverPullReq) (ma
 
 	// IMPORTANT: make sure you only use the consumer that was locked successfully
 	// otherwise you cannot get latest consumer cursor
-
 	scan, err := (&StreamScanReq{Stream: r.stream, Consumer: lock.Consumer, Size: req.Size, IntervalMax: req.ScanIntervalMax}).Do(ctx, tx)
 	if err != nil {
 		return nil, nil, errors.Join(err, tx.Rollback(ctx))

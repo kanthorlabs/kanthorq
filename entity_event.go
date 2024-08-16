@@ -1,7 +1,6 @@
 package kanthorq
 
 import (
-	"reflect"
 	"time"
 
 	"github.com/kanthorlabs/kanthorq/pkg/idx"
@@ -23,18 +22,6 @@ func EventId() string {
 
 func EventIdFromTime(t time.Time) string {
 	return idx.NewWithTime("event", t)
-}
-
-func EventProps() []string {
-	var props []string
-	eventType := reflect.TypeOf(Event{})
-
-	for i := 0; i < eventType.NumField(); i++ {
-		field := eventType.Field(i)
-		props = append(props, field.Tag.Get("json"))
-	}
-
-	return props
 }
 
 type Event struct {

@@ -3,6 +3,7 @@ package kanthorq
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -12,6 +13,7 @@ import (
 //go:embed api_stream_scan.sql
 var StreamScanSql string
 
+// TODO: using cursor with safe window (-1000ms)
 type StreamScanReq struct {
 	Stream   *StreamRegistry   `validate:"required"`
 	Consumer *ConsumerRegistry `validate:"required"`
@@ -33,7 +35,7 @@ func (req *StreamScanReq) Do(ctx context.Context, tx pgx.Tx) (*StreamScanRes, er
 
 	var res = &StreamScanRes{Cursor: req.Consumer.Cursor}
 	var interval = 0
-	for len(res.Ids) < req.Size && interval < req.IntervalMax {
+	for interval < req.IntervalMax && len(res.Ids) < req.Size {
 		if err := req.scan(ctx, tx, res); err != nil {
 			return nil, err
 		}
@@ -52,7 +54,7 @@ func (req *StreamScanReq) scan(ctx context.Context, tx pgx.Tx, res *StreamScanRe
 	}
 
 	rows, err := tx.Query(ctx, query, args)
-	if err != nil {
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return err
 	}
 	defer rows.Close()
@@ -63,7 +65,7 @@ func (req *StreamScanReq) scan(ctx context.Context, tx pgx.Tx, res *StreamScanRe
 			return err
 		}
 
-		if MatchSubject(req.Consumer.Subject, subject) {
+		if MatchSubject(req.Consumer.SubjectFilter, subject) {
 			res.Ids = append(res.Ids, id)
 		}
 

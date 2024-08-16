@@ -15,16 +15,19 @@ There is the definition of the `Event` in different places in KanthorQ
   <TabItem value="go" label="Go" default>
     ```go
     type Event struct {
-      Id        string         `json:"id"`
-      Subject     string         `json:"subject"`
-      Body      []byte         `json:"body"`
-      Metadata  map[string]any `json:"metadata"`
-      CreatedAt int64          `json:"created_at"`
+      Id        string   `json:"id" validate:"required"`
+      Subject   string   `json:"subject" validate:"required,is_subject"`
+      Body      []byte   `json:"body" validate:"required"`
+      Metadata  Metadata `json:"metadata" validate:"required"`
+      CreatedAt int64    `json:"created_at"`
     }
+
     ```
+
   </TabItem>
   <TabItem value="postgresql" label="PostgreSQL">
     ```sql
+    -- Example of Event structure in a Stream
     TABLE kanthorq_stream_order_update (
       id VARCHAR(64) NOT NULL,
       subject VARCHAR(128) NOT NULL,

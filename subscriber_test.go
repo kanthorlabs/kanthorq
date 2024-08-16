@@ -17,10 +17,11 @@ func TestSubscriber_Connection(t *testing.T) {
 	instance, err := NewSubscriber(
 		os.Getenv("KANTHORQ_POSTGRES_URI"),
 		&SubscriberOptions{
-			StreamName:         DefaultStreamName,
-			ConsumerName:       "internal",
-			ConsumerSubject:    "system.ping",
-			ConsumerAttemptMax: DefaultConsumerAttemptMax,
+			StreamName:            DefaultStreamName,
+			ConsumerName:          "internal",
+			ConsumerSubjectFilter: "system.ping",
+			ConsumerAttemptMax:    DefaultConsumerAttemptMax,
+			HandlerTimeout:        3000,
 		},
 	)
 	require.NoError(t, err)

@@ -34,7 +34,7 @@ func (req *ConsumerLockReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerLockRes
 		&res.Consumer.StreamName,
 		&res.Consumer.Id,
 		&res.Consumer.Name,
-		&res.Consumer.Subject,
+		&res.Consumer.SubjectFilter,
 		&res.Consumer.Cursor,
 		&res.Consumer.AttemptMax,
 		&res.Consumer.CreatedAt,

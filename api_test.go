@@ -3,35 +3,53 @@ package kanthorq
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/pkg/faker"
 	"github.com/stretchr/testify/require"
 )
 
-func FakeEntities(t *testing.T, ctx context.Context, conn *pgx.Conn, count int) (*StreamRegistry, *ConsumerRegistry, []*Event) {
-	creq := &ConsumerRegisterReq{
-		StreamName:         faker.StreamName(),
-		ConsumerName:       faker.ConsumerName(),
-		ConsumerSubject:    faker.Subject(),
-		ConsumerAttemptMax: faker.F.Int16Between(1, 10),
+func Seed(t *testing.T, ctx context.Context, conn *pgx.Conn) (*StreamRegistry, *ConsumerRegistry) {
+	req := &ConsumerRegisterReq{
+		StreamName:            faker.StreamName(),
+		ConsumerName:          faker.ConsumerName(),
+		ConsumerSubjectFilter: faker.Subject(),
+		ConsumerAttemptMax:    faker.F.Int16Between(1, 10),
 	}
 	// ConsumerRegister also register stream
-	cres, err := Do(ctx, creq, conn)
+	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)
 
-	events := FakeEvents(creq.ConsumerSubject, count)
+	return res.StreamRegistry, res.ConsumerRegistry
+}
 
-	// put events to stream
-	sreq := &StreamPutEventsReq{
-		Stream: cres.StreamRegistry,
+func SeedEvents(t *testing.T, ctx context.Context, conn *pgx.Conn, stream *StreamRegistry, consumer *ConsumerRegistry, count int) []*Event {
+	events := FakeEvents(faker.SubjectWihtPattern(consumer.SubjectFilter), count)
+
+	req := &StreamPutEventsReq{
+		Stream: stream,
 		Events: events,
 	}
-	sres, err := Do(ctx, sreq, conn)
+	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)
-	require.Equal(t, int64(count), sres.InsertCount)
+	require.Equal(t, int64(count), res.InsertCount)
 
-	return cres.StreamRegistry, cres.ConsumerRegistry, events
+	return events
+}
+
+func SeedTasks(t *testing.T, ctx context.Context, conn *pgx.Conn, consumer *ConsumerRegistry, events []*Event, state TaskState) []*Task {
+	tasks := FakeTasks(events, state)
+
+	req := &ConsumerPutTasksReq{
+		Consumer: consumer,
+		Tasks:    tasks,
+	}
+	res, err := Do(ctx, req, conn)
+	require.NoError(t, err)
+	require.Equal(t, int64(len(tasks)), res.InsertCount)
+
+	return tasks
 }
 
 func FakeEvents(subject string, count int) []*Event {
@@ -40,4 +58,22 @@ func FakeEvents(subject string, count int) []*Event {
 		events[i] = NewEvent(subject, faker.DataOf16Kb())
 	}
 	return events
+}
+
+func FakeTasks(events []*Event, state TaskState) []*Task {
+	tasks := make([]*Task, len(events))
+	for i := range events {
+		tasks[i] = &Task{
+			EventId:      events[i].Id,
+			Subject:      events[i].Subject,
+			State:        int16(state),
+			ScheduleAt:   time.Now().UTC().UnixMilli(),
+			AttemptCount: 1,
+			AttemptedAt:  time.Now().UTC().UnixMilli(),
+			FinalizedAt:  0,
+			CreatedAt:    events[i].CreatedAt,
+			UpdatedAt:    time.Now().UTC().UnixMilli(),
+		}
+	}
+	return tasks
 }
