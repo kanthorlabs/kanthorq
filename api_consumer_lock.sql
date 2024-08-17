@@ -4,7 +4,7 @@ SELECT
   stream_name, 
   id, 
   name, 
-  subject, 
+  subject_filter, 
   cursor, 
   attempt_max, 
   created_at, 

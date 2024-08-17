@@ -5,6 +5,9 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
+PUB_COUNT ?= 301
+PUB_DURATION ?= 60000
+
 default: 
 	$(warning oops, select specific command pls)
 
@@ -15,7 +18,10 @@ test:
 refresh:
 	@docker compose -f docker/docker-compose.yaml down
 	@docker compose -f docker/docker-compose.yaml up -d
-	@cd cmd/kanthorq && go run . migrate up -s $$KANTHORQ_MIGRATION_SOURCE -d $$KANTHORQ_POSTGRES_URI
+	cd cmd/kanthorq && go run . migrate up -s $$KANTHORQ_MIGRATION_SOURCE -d $$KANTHORQ_POSTGRES_URI
 
-migrate-up: 
-	@cd cmd/kanthorq && go run . migrate up -s $$KANTHORQ_MIGRATION_SOURCE -d $$KANTHORQ_POSTGRES_URI
+sub:
+	cd cmd/kanthorq && go run . sub
+
+pub:
+	cd cmd/kanthorq && go run . pub -c $(PUB_COUNT) --duration $(PUB_DURATION)

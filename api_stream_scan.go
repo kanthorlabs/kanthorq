@@ -5,6 +5,8 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/pkg/validator"
@@ -18,8 +20,8 @@ type StreamScanReq struct {
 	Stream   *StreamRegistry   `validate:"required"`
 	Consumer *ConsumerRegistry `validate:"required"`
 
-	Size        int `validate:"required,gt=0"`
-	IntervalMax int `validate:"gt=0"`
+	Size        int   `validate:"required,gt=0"`
+	WaitingTime int64 `validate:"gte=1000"`
 }
 
 type StreamScanRes struct {
@@ -33,13 +35,34 @@ func (req *StreamScanReq) Do(ctx context.Context, tx pgx.Tx) (*StreamScanRes, er
 		return nil, err
 	}
 
-	var res = &StreamScanRes{Cursor: req.Consumer.Cursor}
-	var interval = 0
-	for interval < req.IntervalMax && len(res.Ids) < req.Size {
-		if err := req.scan(ctx, tx, res); err != nil {
-			return nil, err
+	waitctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(req.WaitingTime))
+	defer cancel()
+
+	res := &StreamScanRes{Cursor: req.Consumer.Cursor}
+	for len(res.Ids) < req.Size {
+		prev := res.Cursor
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-waitctx.Done():
+			return res, nil
+		default:
+			if err := req.scan(ctx, tx, res); err != nil {
+				return nil, err
+			}
+
+			// if cursor has not changed, that mean there no new rows, wait for a while
+			if prev == res.Cursor {
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-waitctx.Done():
+					return res, nil
+				case <-time.After(time.Millisecond * 300):
+					log.Println("waiting for new events...")
+				}
+			}
 		}
-		interval++
 	}
 
 	return res, nil

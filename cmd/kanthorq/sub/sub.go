@@ -27,7 +27,6 @@ func New() *cobra.Command {
 				ConsumerName:          consumer,
 				ConsumerSubjectFilter: subject,
 				ConsumerAttemptMax:    1,
-				HandlerTimeout:        3000,
 			})
 			if err != nil {
 				return err

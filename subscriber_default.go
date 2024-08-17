@@ -3,10 +3,8 @@ package kanthorq
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"sync"
-	"time"
 
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
 )
@@ -20,7 +18,7 @@ type subscriber struct {
 	cm       pgcm.ConnectionManager
 	stream   *StreamRegistry
 	consumer *ConsumerRegistry
-	receiver Receiver
+	puller   Puller
 }
 
 func (sub *subscriber) Start(ctx context.Context) (err error) {
@@ -50,7 +48,12 @@ func (sub *subscriber) Start(ctx context.Context) (err error) {
 
 	sub.stream = res.StreamRegistry
 	sub.consumer = res.ConsumerRegistry
-	sub.receiver = &ReceiverDefault{cm: sub.cm, stream: sub.stream, consumer: sub.consumer}
+	sub.puller = &PullerDefault{
+		cm:       sub.cm,
+		stream:   sub.stream,
+		consumer: sub.consumer,
+		in:       PullerInDefault,
+	}
 	return nil
 }
 
@@ -73,69 +76,41 @@ func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler) e
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			// every round, we will set a timeout for current handler
-			hctx, cancel := context.WithTimeout(ctx, time.Millisecond*time.Duration(sub.options.HandlerTimeout))
-
-			found, err := sub.handle(hctx, handler)
+			// The Pulling Workflow
+			out, err := sub.puller.Do(ctx)
 			if err != nil {
-				log.Println(err)
+				return err
+			}
+			log.Println("received", len(out.Events), "events")
+			if len(out.Events) == 0 {
+				continue
 			}
 
-			if found == 0 {
-				deadline, _ := hctx.Deadline()
-				select {
-				case <-ctx.Done():
-					cancel()
-					return ctx.Err()
-					// a trick to not overload the datastore by waiting for a while
-				case <-time.After(time.Until(deadline.Add(time.Millisecond * -100))):
-					// if we don't find any events
+			// The Updating Workflow
+			// @TODO: implement task logging
+			succeed := []*Task{}
+			failure := []*Task{}
+			// the events are already sorted ascending by event id
+			// and we should respect the order of events by executing events in order
+			for _, event := range out.Events {
+				if err = handler(ctx, event); err != nil {
+					failure = append(failure, out.Tasks[event.Id])
+					continue
 				}
+
+				succeed = append(succeed, out.Tasks[event.Id])
 			}
+			log.Println("succeed", len(succeed), "failed", len(failure))
 
-			fmt.Printf("handled %d events\n", found)
-			cancel()
+			// we should run both complete and fail actions before report the error
+			if err := sub.fail(ctx, failure); err != nil {
+				log.Println("failed", err)
+			}
+			if err := sub.complete(ctx, succeed); err != nil {
+				log.Println("complete", err)
+			}
 		}
 	}
-}
-
-func (sub *subscriber) handle(ctx context.Context, handler SubscriberHandler) (count int, err error) {
-	// The Pulling Workflow
-	// @TODO: remove hardcode
-	out, err := sub.receiver.Pull(ctx, &ReceiverPullReq{
-		// PullSize
-		Size: 100,
-		// PullWaitTime
-		ScanIntervalMax: 3,
-	})
-	if err != nil {
-		return 0, err
-	}
-
-	// The Updating Workflow
-	// @TODO: implement task logging
-	succeed := []*Task{}
-	failure := []*Task{}
-	// the events are already sorted ascending by event id
-	// and we should respect the order of events by executing events in order
-	for _, event := range out.Events {
-		if err = handler(ctx, event); err != nil {
-			failure = append(failure, out.Tasks[event.Id])
-			continue
-		}
-
-		succeed = append(succeed, out.Tasks[event.Id])
-	}
-
-	// we should run both complete and fail actions before report the error
-	if ferr := sub.fail(ctx, failure); ferr != nil {
-		err = errors.Join(err, ferr)
-	}
-	if cerr := sub.complete(ctx, succeed); cerr != nil {
-		err = errors.Join(err, cerr)
-	}
-
-	return len(out.Tasks), err
 }
 
 func (sub *subscriber) complete(ctx context.Context, tasks []*Task) error {
