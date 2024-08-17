@@ -49,6 +49,10 @@ func (puller *PullerDefault) convert(ctx context.Context, out *PullerOut) error 
 	}
 	lock, err := (&ConsumerLockReq{Name: puller.consumer.Name}).Do(ctx, tx)
 	if err != nil {
+		// unable to lock consumer because it was using by another puller
+		if errors.Is(err, pgx.ErrNoRows) {
+			return tx.Rollback(ctx)
+		}
 		return errors.Join(err, tx.Rollback(ctx))
 	}
 

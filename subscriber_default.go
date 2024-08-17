@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
 )
@@ -83,6 +84,13 @@ func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler) e
 			}
 			log.Println("received", len(out.Events), "events")
 			if len(out.Events) == 0 {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(time.Millisecond * 300):
+					// wait for a while
+					log.Println("no events, wait for a while")
+				}
 				continue
 			}
 
