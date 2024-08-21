@@ -94,71 +94,28 @@ func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler) e
 				continue
 			}
 
-			// The Updating Workflow
-			// @TODO: implement task logging
-			succeed := []*Task{}
-			failure := []*Task{}
 			// the events are already sorted ascending by event id
 			// and we should respect the order of events by executing events in order
 			for _, event := range out.Events {
+				msg := &Message{
+					Event:    event,
+					Task:     out.Tasks[event.Id],
+					cm:       sub.cm,
+					consumer: sub.consumer,
+				}
+
 				if err = handler(ctx, event); err != nil {
-					failure = append(failure, out.Tasks[event.Id])
+					log.Println(err)
+					if err := msg.Nack(ctx); err != nil {
+						log.Println(err)
+					}
 					continue
 				}
 
-				succeed = append(succeed, out.Tasks[event.Id])
-			}
-			log.Println("succeed", len(succeed), "failed", len(failure))
-
-			// we should run both complete and fail actions before report the error
-			if err := sub.fail(ctx, failure); err != nil {
-				log.Println("failed", err)
-			}
-			if err := sub.complete(ctx, succeed); err != nil {
-				log.Println("complete", err)
+				if err := msg.Nack(ctx); err != nil {
+					log.Println(err)
+				}
 			}
 		}
 	}
-}
-
-func (sub *subscriber) complete(ctx context.Context, tasks []*Task) error {
-	if len(tasks) == 0 {
-		return nil
-	}
-
-	req := &TaskMarkRunningAsCompletedReq{
-		Consumer: sub.consumer,
-		Tasks:    tasks,
-	}
-	res, err := DoWithCM(ctx, req, sub.cm)
-	if err != nil {
-		return err
-	}
-
-	if len(res.Noop) > 0 {
-		// @TODO: report that some tasks were not updated
-	}
-
-	return nil
-}
-
-func (sub *subscriber) fail(ctx context.Context, tasks []*Task) error {
-	if len(tasks) == 0 {
-		return nil
-	}
-
-	req := &TaskMarkRunningAsRetryableOrDiscardedReq{
-		Consumer: sub.consumer,
-		Tasks:    tasks,
-	}
-	res, err := DoWithCM(ctx, req, sub.cm)
-	if err != nil {
-		return err
-	}
-
-	if len(res.Noop) > 0 {
-		// @TODO: report that some tasks were not updated
-	}
-
-	return nil
 }
