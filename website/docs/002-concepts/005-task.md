@@ -168,15 +168,16 @@ But if the event countinuely return an error after configurable times, we should
 
 ```mermaid
 ---
-title: Retryable Flow
+title: Discarded Flow
 ---
 stateDiagram-v2
     direction LR
     [*] --> Available
     Available --> Running
+    Running --> Retryable
 
-    Running --> Retryable: if attempt_count <= X
-    Running --> Discarded: if attempt_count > X
+    Retryable --> Retryable: if attempt_count <= attempt_max
+    Retryable --> Discarded: if attempt_count > attempt_max
 
     Discarded--> [*]
 ```

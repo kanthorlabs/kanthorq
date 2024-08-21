@@ -16,7 +16,7 @@ To get started with KanthorQ you needs only one external service, a PostgreSQL d
 If you don't have an instance of PostgreSQL, just start a new one in your local machine with Docker
 
 ```bash
-docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=changemenowornever -d postgres:16
+docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=changemenow -d postgres:16
 ```
 
 ## Installation
@@ -40,10 +40,10 @@ KanthorQ system is replied on PosgreSQL database, and needs a small sets of tabl
 - Run the migration up
 
   ```bash
-  kanthorq migrate up -s 'github://kanthorlabs/kanthorq/migration#main' -d 'postgres://postgres:changemenowornever@localhost:5432/postgres?sslmode=disable'
+  kanthorq migrate up -s 'github://kanthorlabs/kanthorq/migration#main' -d 'postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable'
   ```
 
-## Register producer
+## Register publisher
 
 To start publishing events, you need to follow these steps
 
@@ -55,7 +55,7 @@ To start publishing events, you need to follow these steps
 Example:
 
 ```go
-var DATABASE_URI = "postgres://postgres:changemenowornever@localhost:5432/postgres?sslmode=disable"
+var DATABASE_URI = "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
 var options = &kanthorq.PublisherOptions{
   StreamName: kanthorq.DefaultStreamName
 }
@@ -78,8 +78,10 @@ defer func () {
 }()
 
 subject := "system.ping"
-body := []byte("{\"alive\": true}")
-if err:= publisher.Send(ctx, kanthorq.NewEvent(subject, body)); err != nil {
+body := []byte("{\"msg\": \"Hello World!\"}")
+ectx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+defer cancel()
+if err:= publisher.Send(ectx, kanthorq.NewEvent(subject, body)); err != nil {
   // handle error
 }
 ```
@@ -94,11 +96,11 @@ To subscribe to events in KanthorQ system, you need to
 - Stop the instance if you don't need it anymore
 
 ```go
-var DATABASE_URI := "postgres://postgres:changemenowornever@localhost:5432/postgres?sslmode=disable"
+var DATABASE_URI = "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
 var options = &kanthorq.SubscriberOptions{
   StreamName: kanthorq.DefaultStreamName,
-  ConsumerName: "internal",
-  ConsumerSubject: "system.ping",
+  ConsumerName: kanthorq.DefaultConsumerName,
+  ConsumerSubjectFilter: "system.>",
   ConsumerAttemptMax: kanthorq.DefaultConsumerAttemptMax
 }
 

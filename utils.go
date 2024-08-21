@@ -40,3 +40,9 @@ func MatchSubject(filter, subject string) bool {
 	// If we've processed all filter tokens, check if the subject tokens are also fully consumed
 	return pIdx == len(filterTokens) && sIdx == len(subjectTokens)
 }
+
+func NoError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
