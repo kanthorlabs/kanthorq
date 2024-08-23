@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
-	"github.com/kanthorlabs/kanthorq/pkg/validator"
+	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 )
 
 //go:embed task_state_transition.sql
@@ -26,7 +26,7 @@ type TaskStateTransitionRes struct {
 }
 
 func (req *TaskStateTransitionReq) Do(ctx context.Context, tx pgx.Tx) (*TaskStateTransitionRes, error) {
-	err := validator.Validate.Struct(req)
+	err := xvalidator.Validate.Struct(req)
 	if err != nil {
 		return nil, err
 	}

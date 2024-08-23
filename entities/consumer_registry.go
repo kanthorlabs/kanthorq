@@ -3,15 +3,15 @@ package entities
 import (
 	"time"
 
-	"github.com/kanthorlabs/kanthorq/pkg/idx"
+	"github.com/kanthorlabs/kanthorq/pkg/xid"
 )
 
 func ConsumerId() string {
-	return idx.New("consumer")
+	return xid.New("consumer")
 }
 
 func ConsumerIdFromTime(t time.Time) string {
-	return idx.NewWithTime("consumer", t)
+	return xid.NewWithTime("consumer", t)
 }
 
 type ConsumerRegistry struct {

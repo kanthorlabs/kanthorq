@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 )
 
 type ConsumerPutTasksReq struct {
@@ -17,6 +18,11 @@ type ConsumerPutTasksRes struct {
 }
 
 func (req *ConsumerPutTasksReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPutTasksRes, error) {
+	err := xvalidator.Validate.Struct(req)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(req.Tasks) == 0 {
 		return &ConsumerPutTasksRes{InsertCount: 0}, nil
 	}

@@ -3,7 +3,7 @@ package entities
 import (
 	"time"
 
-	"github.com/kanthorlabs/kanthorq/pkg/idx"
+	"github.com/kanthorlabs/kanthorq/pkg/xid"
 )
 
 func NewEvent(subject string, body []byte) *Event {
@@ -17,11 +17,11 @@ func NewEvent(subject string, body []byte) *Event {
 }
 
 func EventId() string {
-	return idx.New("event")
+	return xid.New("event")
 }
 
 func EventIdFromTime(t time.Time) string {
-	return idx.NewWithTime("event", t)
+	return xid.NewWithTime("event", t)
 }
 
 type Event struct {
@@ -29,5 +29,5 @@ type Event struct {
 	Subject   string   `json:"subject" validate:"required,is_subject"`
 	Body      []byte   `json:"body" validate:"required"`
 	Metadata  Metadata `json:"metadata" validate:"required"`
-	CreatedAt int64    `json:"created_at"`
+	CreatedAt int64    `json:"created_at" validate:"required,gte=0"`
 }

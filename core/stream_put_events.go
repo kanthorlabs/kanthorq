@@ -5,11 +5,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 )
 
 type StreamPutEventsReq struct {
-	Stream *entities.StreamRegistry
-	Events []*entities.Event
+	Stream *entities.StreamRegistry `validate:"required"`
+	Events []*entities.Event        `validate:"required"`
 }
 
 type StreamPutEventsRes struct {
@@ -17,6 +18,11 @@ type StreamPutEventsRes struct {
 }
 
 func (req *StreamPutEventsReq) Do(ctx context.Context, tx pgx.Tx) (*StreamPutEventsRes, error) {
+	err := xvalidator.Validate.Struct(req)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(req.Events) == 0 {
 		return &StreamPutEventsRes{InsertCount: 0}, nil
 	}

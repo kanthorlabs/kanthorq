@@ -8,8 +8,8 @@ import (
 
 	"github.com/kanthorlabs/kanthorq"
 	"github.com/kanthorlabs/kanthorq/entities"
-	"github.com/kanthorlabs/kanthorq/pkg/command"
-	"github.com/kanthorlabs/kanthorq/pkg/faker"
+	"github.com/kanthorlabs/kanthorq/pkg/xcmd"
+	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/kanthorlabs/kanthorq/publisher"
 	"github.com/spf13/cobra"
 )
@@ -19,16 +19,13 @@ func New() *cobra.Command {
 		Use:   "pub",
 		Short: "publish events to KanthorQ",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			connection := command.GetString(cmd.Flags(), "connection")
-			stream := command.GetString(cmd.Flags(), "stream")
-
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
 			ch := make(chan *entities.Event, 1)
 			options := &publisher.Options{
-				Connection: connection,
-				StreamName: stream,
+				Connection: xcmd.GetString(cmd.Flags(), "connection"),
+				StreamName: xcmd.GetString(cmd.Flags(), "stream"),
 			}
 			go func() {
 				if err := kanthorq.Pub(ctx, options, ch); err != nil {
@@ -36,10 +33,10 @@ func New() *cobra.Command {
 				}
 			}()
 
-			duration := command.GetInt(cmd.Flags(), "duration")
+			duration := xcmd.GetInt(cmd.Flags(), "duration")
 			if duration > 0 {
 				timeout := time.After(time.Millisecond * time.Duration(duration))
-				ticker := time.Tick(time.Millisecond * time.Duration(faker.F.IntBetween(100, 1000)))
+				ticker := time.Tick(time.Millisecond * time.Duration(xfaker.F.IntBetween(100, 1000)))
 
 				for {
 					select {

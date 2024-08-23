@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
-	"github.com/kanthorlabs/kanthorq/pkg/faker"
+	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/kanthorlabs/kanthorq/tester"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +21,7 @@ func TestStreamRegister(t *testing.T) {
 	require.NoError(t, err)
 
 	req := &StreamRegisterReq{
-		StreamName: faker.StreamName(),
+		StreamName: xfaker.StreamName(),
 	}
 	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)
@@ -33,7 +33,7 @@ func TestStreamRegister(t *testing.T) {
 func TestStreamRegister_Parallel(t *testing.T) {
 	ctx := context.Background()
 
-	count := faker.F.IntBetween(20, 30)
+	count := xfaker.F.IntBetween(20, 30)
 	// setup all connections so we don't waste time on it during the test
 	conns := make([]*pgx.Conn, count)
 	for i := 0; i < count; i++ {
@@ -44,7 +44,7 @@ func TestStreamRegister_Parallel(t *testing.T) {
 
 	// will try to register same stream
 	req := &StreamRegisterReq{
-		StreamName: faker.StreamName(),
+		StreamName: xfaker.StreamName(),
 	}
 
 	for i := 0; i < count; i++ {

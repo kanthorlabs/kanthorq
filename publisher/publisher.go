@@ -5,12 +5,12 @@ import (
 
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
-	"github.com/kanthorlabs/kanthorq/pkg/validator"
+	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 )
 
 // NewPublisher creates a new publisher that uses the default stream
 func New(options *Options) (Publisher, error) {
-	if err := validator.Validate.Struct(options); err != nil {
+	if err := xvalidator.Validate.Struct(options); err != nil {
 		return nil, err
 	}
 	cm, err := pgcm.New(options.Connection)

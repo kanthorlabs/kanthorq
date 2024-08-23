@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kanthorlabs/kanthorq/pkg/faker"
+	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/kanthorlabs/kanthorq/tester"
 	"github.com/stretchr/testify/require"
 )
@@ -17,10 +17,10 @@ func TestStreamPutEvents(t *testing.T) {
 	}()
 	require.NoError(t, err)
 
-	stream, err := Do(ctx, &StreamRegisterReq{StreamName: faker.StreamName()}, conn)
+	stream, err := Do(ctx, &StreamRegisterReq{StreamName: xfaker.StreamName()}, conn)
 	require.NoError(t, err)
 
-	events := FakeEvents(faker.Subject(), faker.F.IntBetween(100, 500))
+	events := FakeEvents(xfaker.Subject(), xfaker.F.IntBetween(100, 500))
 
 	req := &StreamPutEventsReq{Stream: stream.StreamRegistry, Events: events}
 	res, err := Do(ctx, req, conn)

@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/kanthorlabs/kanthorq"
-	"github.com/kanthorlabs/kanthorq/pkg/command"
+	"github.com/kanthorlabs/kanthorq/pkg/xcmd"
 	"github.com/kanthorlabs/kanthorq/puller"
 	"github.com/kanthorlabs/kanthorq/subscriber"
 	"github.com/spf13/cobra"
@@ -19,19 +19,14 @@ func New() *cobra.Command {
 		Use:   "sub",
 		Short: "subscribe task from KanthorQ",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			connection := command.GetString(cmd.Flags(), "connection")
-			stream := command.GetString(cmd.Flags(), "stream")
-			consumer := command.GetString(cmd.Flags(), "consumer")
-			subjects := command.GetStringSlice(cmd.Flags(), "subjects")
-
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
 			options := &subscriber.Options{
-				Connection:            connection,
-				StreamName:            stream,
-				ConsumerName:          consumer,
-				ConsumerSubjectFilter: subjects,
+				Connection:            xcmd.GetString(cmd.Flags(), "connection"),
+				StreamName:            xcmd.GetString(cmd.Flags(), "stream"),
+				ConsumerName:          xcmd.GetString(cmd.Flags(), "consumer"),
+				ConsumerSubjectFilter: xcmd.GetStringSlice(cmd.Flags(), "subjects"),
 				ConsumerAttemptMax:    1,
 				Puller: &puller.PullerIn{
 					Size:        100,

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/kanthorlabs/kanthorq/entities"
-	"github.com/kanthorlabs/kanthorq/pkg/command"
-	"github.com/kanthorlabs/kanthorq/pkg/faker"
+	"github.com/kanthorlabs/kanthorq/pkg/xcmd"
+	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/spf13/pflag"
 )
 
@@ -18,7 +18,7 @@ func GetBody(flags *pflag.FlagSet) []byte {
 	}
 
 	if data == "__KANTHORQ_FAKE__.__DATA_OF_16KB__" {
-		return faker.DataOf16Kb()
+		return xfaker.DataOf16Kb()
 	}
 
 	return []byte(data)
@@ -40,14 +40,14 @@ func GetMetadata(flags *pflag.FlagSet) entities.Metadata {
 }
 
 func GetEvents(flags *pflag.FlagSet) []*entities.Event {
-	subjectOrPattern := command.GetString(flags, "subject")
+	subjectOrPattern := xcmd.GetString(flags, "subject")
 	body := GetBody(flags)
 	metadata := GetMetadata(flags)
 
-	count := command.GetInt(flags, "count")
+	count := xcmd.GetInt(flags, "count")
 	events := make([]*entities.Event, count)
 	for i := 0; i < count; i++ {
-		subject := faker.SubjectWihtPattern(subjectOrPattern)
+		subject := xfaker.SubjectWihtPattern(subjectOrPattern)
 		event := entities.NewEvent(subject, body)
 		event.Metadata.Merge(metadata)
 		event.Metadata["index"] = i

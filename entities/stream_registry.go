@@ -1,9 +1,9 @@
 package entities
 
-import "github.com/kanthorlabs/kanthorq/pkg/idx"
+import "github.com/kanthorlabs/kanthorq/pkg/xid"
 
 func StreamId() string {
-	return idx.New("stream")
+	return xid.New("stream")
 }
 
 type StreamRegistry struct {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
-	"github.com/kanthorlabs/kanthorq/pkg/validator"
+	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 )
 
 //go:embed stream_get_event.sql
@@ -24,7 +24,7 @@ type StreamGetEventRes struct {
 }
 
 func (req *StreamGetEventReq) Do(ctx context.Context, tx pgx.Tx) (*StreamGetEventRes, error) {
-	err := validator.Validate.Struct(req)
+	err := xvalidator.Validate.Struct(req)
 	if err != nil {
 		return nil, err
 	}

@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
-	"github.com/kanthorlabs/kanthorq/pkg/faker"
+	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,10 +17,10 @@ func Seed(
 	conn *pgx.Conn,
 ) (*entities.StreamRegistry, *entities.ConsumerRegistry) {
 	req := &ConsumerRegisterReq{
-		StreamName:            faker.StreamName(),
-		ConsumerName:          faker.ConsumerName(),
-		ConsumerSubjectFilter: []string{faker.Subject()},
-		ConsumerAttemptMax:    faker.F.Int16Between(2, 10),
+		StreamName:            xfaker.StreamName(),
+		ConsumerName:          xfaker.ConsumerName(),
+		ConsumerSubjectFilter: []string{xfaker.Subject()},
+		ConsumerAttemptMax:    xfaker.F.Int16Between(2, 10),
 	}
 	// ConsumerRegister also register stream
 	res, err := Do(ctx, req, conn)
@@ -37,7 +37,7 @@ func SeedEvents(
 	consumer *entities.ConsumerRegistry,
 	count int,
 ) []*entities.Event {
-	events := FakeEvents(faker.SubjectWihtPattern(consumer.SubjectFilter[0]), count)
+	events := FakeEvents(xfaker.SubjectWihtPattern(consumer.SubjectFilter[0]), count)
 
 	req := &StreamPutEventsReq{
 		Stream: stream,
@@ -74,7 +74,7 @@ func SeedTasks(
 func FakeEvents(subject string, count int) []*entities.Event {
 	events := make([]*entities.Event, count)
 	for i := 0; i < count; i++ {
-		events[i] = entities.NewEvent(subject, faker.DataOf16Kb())
+		events[i] = entities.NewEvent(subject, xfaker.DataOf16Kb())
 	}
 	return events
 }

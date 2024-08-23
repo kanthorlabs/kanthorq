@@ -1,4 +1,4 @@
-package command
+package xcmd
 
 import (
 	"github.com/spf13/pflag"

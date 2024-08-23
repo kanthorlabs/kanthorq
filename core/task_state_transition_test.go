@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/kanthorlabs/kanthorq/entities"
-	"github.com/kanthorlabs/kanthorq/pkg/faker"
+	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/kanthorlabs/kanthorq/tester"
 	"github.com/stretchr/testify/require"
 )
@@ -20,10 +20,10 @@ func TestTaskStateTransition(t *testing.T) {
 
 	stream, consumer := Seed(t, ctx, conn)
 
-	events := SeedEvents(t, ctx, conn, stream, consumer, faker.F.IntBetween(100, 500))
+	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
 	tasks := SeedTasks(t, ctx, conn, consumer, events, entities.StateRetryable)
 
-	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, faker.F.IntBetween(100, 500))
+	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
 	noopTasks := SeedTasks(t, ctx, conn, consumer, noopEvents, entities.StateCancelled)
 
 	req := &TaskStateTransitionReq{

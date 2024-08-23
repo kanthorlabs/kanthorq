@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
-	"github.com/kanthorlabs/kanthorq/pkg/validator"
+	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 )
 
 //go:embed task_mark_running_as_retryable_or_discarded.sql
@@ -26,7 +26,7 @@ type TaskMarkRunningAsRetryableOrDiscardedRes struct {
 }
 
 func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx pgx.Tx) (*TaskMarkRunningAsRetryableOrDiscardedRes, error) {
-	err := validator.Validate.Struct(req)
+	err := xvalidator.Validate.Struct(req)
 	if err != nil {
 		return nil, err
 	}

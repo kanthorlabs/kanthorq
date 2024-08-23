@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/kanthorlabs/kanthorq/entities"
-	"github.com/kanthorlabs/kanthorq/pkg/faker"
+	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/kanthorlabs/kanthorq/tester"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +19,7 @@ func TestConsumerPutTasks(t *testing.T) {
 	require.NoError(t, err)
 
 	stream, consumer := Seed(t, ctx, conn)
-	events := SeedEvents(t, ctx, conn, stream, consumer, faker.F.IntBetween(100, 500))
+	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
 
 	tasks := FakeTasks(events, entities.StateAvailable)
 	req := &ConsumerPutTasksReq{

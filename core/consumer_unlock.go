@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
-	"github.com/kanthorlabs/kanthorq/pkg/validator"
+	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 )
 
 //go:embed consumer_unlock.sql
@@ -22,7 +22,7 @@ type ConsumerUnlockRes struct {
 }
 
 func (req *ConsumerUnlockReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerUnlockRes, error) {
-	err := validator.Validate.Struct(req)
+	err := xvalidator.Validate.Struct(req)
 	if err != nil {
 		return nil, err
 	}

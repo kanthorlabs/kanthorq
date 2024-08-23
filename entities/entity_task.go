@@ -1,11 +1,11 @@
 package entities
 
 import (
-	"github.com/kanthorlabs/kanthorq/pkg/idx"
+	"github.com/kanthorlabs/kanthorq/pkg/xid"
 )
 
 func TaskId() string {
-	return idx.New("task")
+	return xid.New("task")
 }
 
 type Task struct {

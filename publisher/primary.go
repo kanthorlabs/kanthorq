@@ -10,7 +10,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
-	"github.com/kanthorlabs/kanthorq/pkg/validator"
+	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 )
 
 var _ Publisher = (*primary)(nil)
@@ -65,7 +65,7 @@ func (pub *primary) Send(ctx context.Context, events ...*entities.Event) error {
 	}
 
 	for i, e := range events {
-		if err := validator.Validate.Struct(e); err != nil {
+		if err := xvalidator.Validate.Struct(e); err != nil {
 			return fmt.Errorf("event %d: %w", i, err)
 		}
 	}

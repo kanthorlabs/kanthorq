@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
-	"github.com/kanthorlabs/kanthorq/pkg/validator"
+	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 )
 
 //go:embed task_mark_running_as_completed.sql
@@ -26,7 +26,7 @@ type TaskMarkRunningAsCompletedRes struct {
 }
 
 func (req *TaskMarkRunningAsCompletedReq) Do(ctx context.Context, tx pgx.Tx) (*TaskMarkRunningAsCompletedRes, error) {
-	err := validator.Validate.Struct(req)
+	err := xvalidator.Validate.Struct(req)
 	if err != nil {
 		return nil, err
 	}

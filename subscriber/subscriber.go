@@ -5,12 +5,12 @@ import (
 
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
-	"github.com/kanthorlabs/kanthorq/pkg/validator"
+	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 	"github.com/kanthorlabs/kanthorq/puller"
 )
 
 func New(options *Options) (Subscriber, error) {
-	if err := validator.Validate.Struct(options); err != nil {
+	if err := xvalidator.Validate.Struct(options); err != nil {
 		return nil, err
 	}
 	cm, err := pgcm.New(options.Connection)
@@ -22,7 +22,7 @@ func New(options *Options) (Subscriber, error) {
 }
 
 func NewRetry(options *Options) (Subscriber, error) {
-	if err := validator.Validate.Struct(options); err != nil {
+	if err := xvalidator.Validate.Struct(options); err != nil {
 		return nil, err
 	}
 	cm, err := pgcm.New(options.Connection)

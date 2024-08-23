@@ -1,4 +1,4 @@
-package faker
+package xfaker
 
 import (
 	lib "github.com/jaswdr/faker/v2"
