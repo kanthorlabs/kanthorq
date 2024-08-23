@@ -16,7 +16,8 @@ func main() {
 	var DATABASE_URI = "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
 
 	// Initialize a publisher
-	pub, _ := publisher.New(DATABASE_URI, &publisher.Options{
+	pub, _ := publisher.New(&publisher.Options{
+		Connection: DATABASE_URI,
 		StreamName: entities.DefaultStreamName,
 	})
 	NoError(pub.Start(context.Background()))
@@ -30,7 +31,8 @@ func main() {
 
 	// Initialize a subscriber that will process events that has subject that match with the filter "system.>"
 	// so both system.say_hello and system.say_goodbye will be processed
-	sub, _ := subscriber.New(DATABASE_URI, &subscriber.Options{
+	sub, _ := subscriber.New(&subscriber.Options{
+		Connection:            DATABASE_URI,
 		StreamName:            entities.DefaultStreamName,
 		ConsumerName:          entities.DefaultConsumerName,
 		ConsumerSubjectFilter: []string{"system.>"},

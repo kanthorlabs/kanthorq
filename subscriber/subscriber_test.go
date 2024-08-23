@@ -17,8 +17,8 @@ func TestSubscriber_Connection(t *testing.T) {
 	defer conn.Close(context.Background())
 
 	instance, err := New(
-		os.Getenv("KANTHORQ_POSTGRES_URI"),
 		&Options{
+			Connection:            os.Getenv("KANTHORQ_POSTGRES_URI"),
 			StreamName:            entities.DefaultStreamName,
 			ConsumerName:          "internal",
 			ConsumerSubjectFilter: []string{"system.ping"},

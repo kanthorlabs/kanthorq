@@ -17,10 +17,12 @@ import (
 var _ Subscriber = (*primary)(nil)
 
 type primary struct {
-	options *Options
-	mu      sync.Mutex
+	mu sync.Mutex
 
-	cm       pgcm.ConnectionManager
+	options *Options
+	cm      pgcm.ConnectionManager
+	pullerF puller.PullerFactory
+
 	stream   *entities.StreamRegistry
 	consumer *entities.ConsumerRegistry
 	puller   puller.Puller
@@ -53,7 +55,7 @@ func (sub *primary) Start(ctx context.Context) (err error) {
 
 	sub.stream = res.StreamRegistry
 	sub.consumer = res.ConsumerRegistry
-	sub.puller = puller.New(sub.cm, sub.stream, sub.consumer, sub.options.Puller)
+	sub.puller = sub.pullerF(sub.cm, sub.stream, sub.consumer, sub.options.Puller)
 	return nil
 }
 
@@ -61,7 +63,7 @@ func (sub *primary) Stop(ctx context.Context) (err error) {
 	sub.mu.Lock()
 	defer sub.mu.Unlock()
 
-	if cmerr := sub.cm.Start(ctx); cmerr != nil {
+	if cmerr := sub.cm.Stop(ctx); cmerr != nil {
 		err = errors.Join(err, cmerr)
 	}
 

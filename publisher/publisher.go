@@ -9,11 +9,11 @@ import (
 )
 
 // NewPublisher creates a new publisher that uses the default stream
-func New(uri string, options *Options) (Publisher, error) {
+func New(options *Options) (Publisher, error) {
 	if err := validator.Validate.Struct(options); err != nil {
 		return nil, err
 	}
-	cm, err := pgcm.New(uri)
+	cm, err := pgcm.New(options.Connection)
 	if err != nil {
 		return nil, err
 	}

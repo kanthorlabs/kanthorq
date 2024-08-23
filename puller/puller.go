@@ -25,6 +25,8 @@ func NewRetry(
 	return &retry{cm: cm, stream: stream, consumer: consumer, in: in}
 }
 
+type PullerFactory func(cm pgcm.ConnectionManager, stream *entities.StreamRegistry, consumer *entities.ConsumerRegistry, in *PullerIn) Puller
+
 type Puller interface {
 	Do(ctx context.Context) (*PullerOut, error)
 }

@@ -24,9 +24,6 @@ type simple struct {
 }
 
 func (cm *simple) Start(ctx context.Context) error {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
-
 	return nil
 }
 

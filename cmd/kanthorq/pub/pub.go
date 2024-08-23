@@ -6,6 +6,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kanthorlabs/kanthorq"
+	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/command"
 	"github.com/kanthorlabs/kanthorq/pkg/faker"
 	"github.com/kanthorlabs/kanthorq/publisher"
@@ -17,23 +19,22 @@ func New() *cobra.Command {
 		Use:   "pub",
 		Short: "publish events to KanthorQ",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			uri := command.GetString(cmd.Flags(), "connection-string")
+			connection := command.GetString(cmd.Flags(), "connection")
 			stream := command.GetString(cmd.Flags(), "stream")
-
-			pub, err := publisher.New(uri, &publisher.Options{
-				StreamName: stream,
-			})
-			if err != nil {
-				return err
-			}
 
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
-			if err := pub.Start(ctx); err != nil {
-				return err
+
+			ch := make(chan *entities.Event, 1)
+			options := &publisher.Options{
+				Connection: connection,
+				StreamName: stream,
 			}
-			// ignore stopping error
-			defer pub.Stop(ctx)
+			go func() {
+				if err := kanthorq.Pub(ctx, options, ch); err != nil {
+					panic(err)
+				}
+			}()
 
 			duration := command.GetInt(cmd.Flags(), "duration")
 			if duration > 0 {
@@ -48,15 +49,18 @@ func New() *cobra.Command {
 						return nil
 					case <-ticker:
 						events := GetEvents(cmd.Flags())
-						if err := pub.Send(ctx, events...); err != nil {
-							return err
+						for i := 0; i < len(events); i++ {
+							ch <- events[i]
 						}
 					}
 				}
 			}
 
 			events := GetEvents(cmd.Flags())
-			return pub.Send(ctx, events...)
+			for i := 0; i < len(events); i++ {
+				ch <- events[i]
+			}
+			return nil
 		},
 	}
 
