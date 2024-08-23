@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/kanthorlabs/kanthorq"
 	"github.com/kanthorlabs/kanthorq/pkg/command"
+	"github.com/kanthorlabs/kanthorq/subscriber"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +22,7 @@ func New() *cobra.Command {
 			subjects := command.GetStringSlice(cmd.Flags(), "subject")
 			consumer := command.GetString(cmd.Flags(), "consumer")
 
-			subscriber, err := kanthorq.NewSubscriber(uri, &kanthorq.SubscriberOptions{
+			sub, err := subscriber.New(uri, &subscriber.Options{
 				StreamName:            stream,
 				ConsumerName:          consumer,
 				ConsumerSubjectFilter: subjects,
@@ -34,13 +34,13 @@ func New() *cobra.Command {
 
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
-			if err := subscriber.Start(ctx); err != nil {
+			if err := sub.Start(ctx); err != nil {
 				return err
 			}
 			// ignore stopping error
-			defer subscriber.Stop(ctx)
+			defer sub.Stop(ctx)
 
-			if err := subscriber.Receive(ctx, kanthorq.SubscriberHandlerPrinter()); !errors.Is(err, context.Canceled) {
+			if err := sub.Receive(ctx, subscriber.PrinterHandler()); !errors.Is(err, context.Canceled) {
 				return err
 			}
 

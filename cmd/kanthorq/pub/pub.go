@@ -6,9 +6,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kanthorlabs/kanthorq"
 	"github.com/kanthorlabs/kanthorq/pkg/command"
 	"github.com/kanthorlabs/kanthorq/pkg/faker"
+	"github.com/kanthorlabs/kanthorq/publisher"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ func New() *cobra.Command {
 			uri := command.GetString(cmd.Flags(), "connection-string")
 			stream := command.GetString(cmd.Flags(), "stream")
 
-			publisher, err := kanthorq.NewPublisher(uri, &kanthorq.PublisherOptions{
+			pub, err := publisher.New(uri, &publisher.Options{
 				StreamName: stream,
 			})
 			if err != nil {
@@ -29,11 +29,11 @@ func New() *cobra.Command {
 
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
-			if err := publisher.Start(ctx); err != nil {
+			if err := pub.Start(ctx); err != nil {
 				return err
 			}
 			// ignore stopping error
-			defer publisher.Stop(ctx)
+			defer pub.Stop(ctx)
 
 			duration := command.GetInt(cmd.Flags(), "duration")
 			if duration > 0 {
@@ -48,7 +48,7 @@ func New() *cobra.Command {
 						return nil
 					case <-ticker:
 						events := GetEvents(cmd.Flags())
-						if err := publisher.Send(ctx, events...); err != nil {
+						if err := pub.Send(ctx, events...); err != nil {
 							return err
 						}
 					}
@@ -56,7 +56,7 @@ func New() *cobra.Command {
 			}
 
 			events := GetEvents(cmd.Flags())
-			return publisher.Send(ctx, events...)
+			return pub.Send(ctx, events...)
 		},
 	}
 
