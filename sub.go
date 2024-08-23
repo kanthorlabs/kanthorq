@@ -44,11 +44,14 @@ func Sub(ctx context.Context, options *subscriber.Options, handler subscriber.Ha
 		}
 	}
 
+	rctx, stop := context.WithCancel(ctx)
+	defer stop()
 	errc := make(chan error, 1)
 
 	for _, client := range clients {
 		go func(c subscriber.Subscriber) {
-			if err := c.Receive(ctx, handler); err != nil {
+			if err := c.Receive(rctx, handler); err != nil {
+				stop()
 				// if one of the clients return error, stop all clients
 				errc <- err
 			}

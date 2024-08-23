@@ -1,6 +1,9 @@
 package pub
 
 import (
+	"context"
+	"errors"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,13 +26,16 @@ func New() *cobra.Command {
 			defer stop()
 
 			ch := make(chan *entities.Event, 1)
+			defer close(ch)
+
 			options := &publisher.Options{
 				Connection: xcmd.GetString(cmd.Flags(), "connection"),
 				StreamName: xcmd.GetString(cmd.Flags(), "stream"),
 			}
 			go func() {
-				if err := kanthorq.Pub(ctx, options, ch); err != nil {
-					panic(err)
+				err := kanthorq.Pub(ctx, options, ch)
+				if err != nil && !errors.Is(err, context.Canceled) {
+					log.Println(err)
 				}
 			}()
 

@@ -21,7 +21,7 @@ refresh:
 	cd cmd/kanthorq && go run . migrate up -s $$KANTHORQ_MIGRATION_SOURCE -d $$KANTHORQ_POSTGRES_URI
 
 sub:
-	cd cmd/kanthorq && go run . sub
+	cd cmd/kanthorq && go run . sub --handler __KANTHORQ__.RANDOM_ERROR
 
 pub:
 	cd cmd/kanthorq && go run . pub -c $(PUB_COUNT) --duration $(PUB_DURATION)

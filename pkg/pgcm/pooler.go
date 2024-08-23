@@ -27,6 +27,10 @@ func (cm *pooler) Stop(ctx context.Context) error {
 }
 
 func (cm *pooler) Acquire(ctx context.Context) (*pgx.Conn, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
 	conn, err := pgx.Connect(ctx, cm.uri)
 	if err != nil {
 		return nil, err

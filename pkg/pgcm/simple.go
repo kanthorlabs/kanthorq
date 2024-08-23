@@ -2,7 +2,6 @@ package pgcm
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -43,9 +42,11 @@ func (cm *simple) Stop(ctx context.Context) error {
 }
 
 func (cm *simple) Acquire(ctx context.Context) (*pgx.Conn, error) {
-	if !cm.cmu.TryLock() {
-		return nil, errors.New("connection already in use")
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
+
+	cm.cmu.Lock()
 
 	if cm.conn != nil && !cm.conn.IsClosed() {
 		return cm.conn, nil
@@ -53,6 +54,8 @@ func (cm *simple) Acquire(ctx context.Context) (*pgx.Conn, error) {
 
 	conn, err := pgx.Connect(ctx, cm.uri)
 	if err != nil {
+		// once we got an error, we should release the lock
+		cm.cmu.Unlock()
 		return nil, err
 	}
 	cm.conn = conn
@@ -63,5 +66,5 @@ func (cm *simple) Acquire(ctx context.Context) (*pgx.Conn, error) {
 func (cm *simple) Release(ctx context.Context, conn *pgx.Conn) error {
 	cm.cmu.Unlock()
 	// don't close the connection
-	return nil
+	return ctx.Err()
 }

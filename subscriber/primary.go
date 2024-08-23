@@ -3,6 +3,7 @@ package subscriber
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
 	"github.com/kanthorlabs/kanthorq/puller"
-	"github.com/sourcegraph/conc"
 )
 
 var _ Subscriber = (*primary)(nil)
@@ -96,29 +96,33 @@ func (sub *primary) Receive(ctx context.Context, handler Handler) error {
 				continue
 			}
 
-			var wg conc.WaitGroup
+			var wg sync.WaitGroup
 			for _, event := range out.Events {
-				msg := &Message{
-					Event:    event,
-					Task:     out.Tasks[event.Id],
-					cm:       sub.cm,
-					consumer: sub.consumer,
-				}
+				wg.Add(1)
 
-				wg.Go(func() {
-					if err = handler(ctx, event); err != nil {
-						log.Println(err)
-						if err := msg.Nack(ctx); err != nil {
-							log.Println(err)
+				go func(hctx context.Context, e *entities.Event) {
+					defer wg.Done()
+
+					msg := &Message{
+						Event:    event,
+						Task:     out.Tasks[event.Id],
+						cm:       sub.cm,
+						consumer: sub.consumer,
+					}
+
+					if err = handler(hctx, event); err != nil {
+						if nerr := msg.Nack(hctx); nerr != nil {
+							log.Println(fmt.Errorf("failed to nack message: %w", errors.Join(err, nerr)))
 						}
 						return
 					}
 
-					if err := msg.Nack(ctx); err != nil {
-						log.Println(err)
+					if err := msg.Ack(hctx); err != nil {
+						log.Println(fmt.Errorf("failed to ack message: %w", err))
 					}
-				})
+				}(ctx, event)
 			}
+
 			wg.Wait()
 		}
 	}

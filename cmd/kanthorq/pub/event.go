@@ -17,7 +17,7 @@ func GetBody(flags *pflag.FlagSet) []byte {
 		panic(err)
 	}
 
-	if data == "__KANTHORQ_FAKE__.__DATA_OF_16KB__" {
+	if data == "__KANTHORQ__.FAKE_DATA_16KB" {
 		return xfaker.DataOf16Kb()
 	}
 

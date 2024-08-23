@@ -9,6 +9,7 @@ import (
 
 	"github.com/kanthorlabs/kanthorq"
 	"github.com/kanthorlabs/kanthorq/pkg/xcmd"
+	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/kanthorlabs/kanthorq/puller"
 	"github.com/kanthorlabs/kanthorq/subscriber"
 	"github.com/spf13/cobra"
@@ -34,7 +35,7 @@ func New() *cobra.Command {
 				},
 			}
 
-			err := kanthorq.Sub(ctx, options, subscriber.PrinterHandler())
+			err := kanthorq.Sub(ctx, options, GetHandler(cmd))
 			if err != nil && !errors.Is(err, context.Canceled) {
 				return err
 			}
@@ -47,6 +48,15 @@ func New() *cobra.Command {
 	command.Flags().StringP("stream", "s", os.Getenv("KANTHORQ_STREAM"), "a stream name we want to subscribe events from")
 	command.Flags().StringP("consumer", "c", os.Getenv("KANTHORQ_CONSUMER"), "a consumer name")
 	command.Flags().StringSliceP("subjects", "t", []string{os.Getenv("KANTHORQ_SUBJECT")}, "a subject name we want to subscribe")
+	command.Flags().String("handler", "", "select the handler to handle the events")
 
 	return command
+}
+
+func GetHandler(cmd *cobra.Command) subscriber.Handler {
+	handler := xcmd.GetString(cmd.Flags(), "handler")
+	if handler == "__KANTHORQ__.RANDOM_ERROR" {
+		return subscriber.RandomErrorHandler(xfaker.F.Int64Between(1, 9))
+	}
+	return subscriber.PrinterHandler()
 }
