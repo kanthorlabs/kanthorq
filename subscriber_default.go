@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
+	"github.com/sourcegraph/conc"
 )
 
 var _ Subscriber = (*subscriber)(nil)
@@ -94,8 +95,7 @@ func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler) e
 				continue
 			}
 
-			// the events are already sorted ascending by event id
-			// and we should respect the order of events by executing events in order
+			var wg conc.WaitGroup
 			for _, event := range out.Events {
 				msg := &Message{
 					Event:    event,
@@ -104,18 +104,21 @@ func (sub *subscriber) Receive(ctx context.Context, handler SubscriberHandler) e
 					consumer: sub.consumer,
 				}
 
-				if err = handler(ctx, event); err != nil {
-					log.Println(err)
+				wg.Go(func() {
+					if err = handler(ctx, event); err != nil {
+						log.Println(err)
+						if err := msg.Nack(ctx); err != nil {
+							log.Println(err)
+						}
+						return
+					}
+
 					if err := msg.Nack(ctx); err != nil {
 						log.Println(err)
 					}
-					continue
-				}
-
-				if err := msg.Nack(ctx); err != nil {
-					log.Println(err)
-				}
+				})
 			}
+			wg.Wait()
 		}
 	}
 }

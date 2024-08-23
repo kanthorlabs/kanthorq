@@ -19,13 +19,13 @@ func New() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uri := command.GetString(cmd.Flags(), "connection-string")
 			stream := command.GetString(cmd.Flags(), "stream")
-			subject := command.GetString(cmd.Flags(), "subject")
+			subjects := command.GetStringSlice(cmd.Flags(), "subject")
 			consumer := command.GetString(cmd.Flags(), "consumer")
 
 			subscriber, err := kanthorq.NewSubscriber(uri, &kanthorq.SubscriberOptions{
 				StreamName:            stream,
 				ConsumerName:          consumer,
-				ConsumerSubjectFilter: subject,
+				ConsumerSubjectFilter: subjects,
 				ConsumerAttemptMax:    1,
 			})
 			if err != nil {
@@ -48,7 +48,7 @@ func New() *cobra.Command {
 		},
 	}
 
-	command.Flags().String("connection-string", os.Getenv("KANTHORQ_POSTGRES_URI"), "connection string of storage (PostgreSQL)")
+	command.Flags().String("connection", os.Getenv("KANTHORQ_POSTGRES_URI"), "connection string of storage (PostgreSQL)")
 	command.Flags().StringP("stream", "s", os.Getenv("KANTHORQ_STREAM"), "a stream name we want to subscribe events from")
 	command.Flags().StringP("subject", "t", os.Getenv("KANTHORQ_SUBJECT"), "a subject name we want to subscribe")
 	command.Flags().StringP("consumer", "c", os.Getenv("KANTHORQ_CONSUMER"), "a consumer name")

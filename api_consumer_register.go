@@ -17,10 +17,10 @@ var ConsumerRegisterRegistrySql string
 var ConsumerRegisterCollectionSql string
 
 type ConsumerRegisterReq struct {
-	StreamName            string `validate:"required,is_collection_name"`
-	ConsumerName          string `validate:"required,is_collection_name"`
-	ConsumerSubjectFilter string `validate:"required,is_subject_filter"`
-	ConsumerAttemptMax    int16  `validate:"required,gt=0"`
+	StreamName            string   `validate:"required,is_collection_name"`
+	ConsumerName          string   `validate:"required,is_collection_name"`
+	ConsumerSubjectFilter []string `validate:"required,gt=0,dive,is_subject_filter"`
+	ConsumerAttemptMax    int16    `validate:"required,gt=0"`
 }
 
 type ConsumerRegisterRes struct {

@@ -98,10 +98,14 @@ func (puller *PullerDefault) fulfill(ctx context.Context, out *PullerOut) error 
 		return nil
 	}
 
-	fulfill, err := DoWithCM(ctx, &StreamGetEventReq{Stream: puller.stream, EventIds: out.EventIds}, puller.cm)
+	req := &StreamGetEventReq{
+		Stream:   puller.stream,
+		EventIds: out.EventIds,
+	}
+	res, err := DoWithCM(ctx, req, puller.cm)
 	if err != nil {
 		return err
 	}
-	out.Events = fulfill.Events
+	out.Events = res.Events
 	return nil
 }

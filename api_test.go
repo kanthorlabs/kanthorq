@@ -14,7 +14,7 @@ func Seed(t *testing.T, ctx context.Context, conn *pgx.Conn) (*StreamRegistry, *
 	req := &ConsumerRegisterReq{
 		StreamName:            faker.StreamName(),
 		ConsumerName:          faker.ConsumerName(),
-		ConsumerSubjectFilter: faker.Subject(),
+		ConsumerSubjectFilter: []string{faker.Subject()},
 		ConsumerAttemptMax:    faker.F.Int16Between(2, 10),
 	}
 	// ConsumerRegister also register stream
@@ -25,7 +25,7 @@ func Seed(t *testing.T, ctx context.Context, conn *pgx.Conn) (*StreamRegistry, *
 }
 
 func SeedEvents(t *testing.T, ctx context.Context, conn *pgx.Conn, stream *StreamRegistry, consumer *ConsumerRegistry, count int) []*Event {
-	events := FakeEvents(faker.SubjectWihtPattern(consumer.SubjectFilter), count)
+	events := FakeEvents(faker.SubjectWihtPattern(consumer.SubjectFilter[0]), count)
 
 	req := &StreamPutEventsReq{
 		Stream: stream,

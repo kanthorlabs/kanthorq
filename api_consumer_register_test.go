@@ -23,7 +23,7 @@ func TestConsumerRegister(t *testing.T) {
 	req := &ConsumerRegisterReq{
 		StreamName:            faker.StreamName(),
 		ConsumerName:          faker.ConsumerName(),
-		ConsumerSubjectFilter: faker.Subject(),
+		ConsumerSubjectFilter: []string{faker.Subject()},
 		ConsumerAttemptMax:    faker.F.Int16Between(1, 10),
 	}
 	res, err := Do(ctx, req, conn)
@@ -49,7 +49,7 @@ func TestConsumerRegister_Parallel(t *testing.T) {
 	req := &ConsumerRegisterReq{
 		StreamName:            faker.StreamName(),
 		ConsumerName:          faker.ConsumerName(),
-		ConsumerSubjectFilter: faker.Subject(),
+		ConsumerSubjectFilter: []string{faker.Subject()},
 		ConsumerAttemptMax:    faker.F.Int16Between(1, 10),
 	}
 

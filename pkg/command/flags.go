@@ -13,6 +13,15 @@ func GetString(flags *pflag.FlagSet, name string) string {
 	return data
 }
 
+func GetStringSlice(flags *pflag.FlagSet, name string) []string {
+	data, err := flags.GetStringSlice(name)
+	if err != nil {
+		panic(err)
+	}
+
+	return data
+}
+
 func GetInt(flags *pflag.FlagSet, name string) int {
 	data, err := flags.GetInt(name)
 	if err != nil {

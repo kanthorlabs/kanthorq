@@ -82,21 +82,42 @@ func (req *StreamScanReq) scan(ctx context.Context, tx pgx.Tx, res *StreamScanRe
 	}
 	defer rows.Close()
 
+	checked := make(map[string]bool)
 	for rows.Next() && len(res.Ids) < req.Size {
 		var id, subject string
 		if err := rows.Scan(&id, &subject); err != nil {
 			return err
 		}
 
-		if MatchSubject(req.Consumer.SubjectFilter, subject) {
-			res.Ids = append(res.Ids, id)
-		}
-
 		// override cursor with newest id
 		res.Cursor = id
+
+		// a subject was already checked
+		exist, seen := checked[subject]
+		if exist {
+			if seen {
+				res.Ids = append(res.Ids, id)
+			}
+			continue
+		}
+
+		checked[subject] = req.match(subject)
+		if checked[subject] {
+			res.Ids = append(res.Ids, id)
+		}
 	}
 
 	// rows.Err returns any error that occurred while reading
 	// always check it before finishing the read
 	return rows.Err()
+}
+
+func (req *StreamScanReq) match(subject string) bool {
+	for i := 0; i < len(req.Consumer.SubjectFilter); i++ {
+		if MatchSubject(req.Consumer.SubjectFilter[i], subject) {
+			return true
+		}
+	}
+
+	return false
 }

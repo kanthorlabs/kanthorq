@@ -62,7 +62,7 @@ func New() *cobra.Command {
 
 	command.Flags().IntP("count", "c", 1, "number of events to publish")
 	command.Flags().Int("duration", 0, "millisecond duration of publishing events")
-	command.Flags().String("connection-string", os.Getenv("KANTHORQ_POSTGRES_URI"), "connection string of storage (PostgreSQL)")
+	command.Flags().String("connection", os.Getenv("KANTHORQ_POSTGRES_URI"), "connection string of storage (PostgreSQL)")
 	command.Flags().StringP("stream", "s", os.Getenv("KANTHORQ_STREAM"), "a stream name to publish event to")
 	command.Flags().StringP("subject", "t", os.Getenv("KANTHORQ_SUBJECT"), "a subject name of published event")
 	command.Flags().StringP("body", "b", os.Getenv("KANTHORQ_BODY"), "a body of published event")

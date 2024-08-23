@@ -31,7 +31,7 @@ func main() {
 	subscriber, _ := kanthorq.NewSubscriber(DATABASE_URI, &kanthorq.SubscriberOptions{
 		StreamName:            kanthorq.DefaultStreamName,
 		ConsumerName:          kanthorq.DefaultConsumerName,
-		ConsumerSubjectFilter: "system.>",
+		ConsumerSubjectFilter: []string{"system.>"},
 		ConsumerAttemptMax:    kanthorq.DefaultConsumerAttemptMax,
 	})
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
