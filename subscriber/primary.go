@@ -84,14 +84,12 @@ func (sub *primary) Receive(ctx context.Context, handler Handler) error {
 			if err != nil {
 				return err
 			}
-			log.Println("received", len(out.Events), "events")
 			if len(out.Events) == 0 {
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
 				case <-time.After(time.Millisecond * 300):
 					// wait for a while
-					log.Println("no events, wait for a while")
 				}
 				continue
 			}

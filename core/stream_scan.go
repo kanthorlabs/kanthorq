@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -60,7 +59,6 @@ func (req *StreamScanReq) Do(ctx context.Context, tx pgx.Tx) (*StreamScanRes, er
 				case <-waitctx.Done():
 					return res, nil
 				case <-time.After(time.Millisecond * 300):
-					log.Println("waiting for new events...")
 				}
 			}
 		}

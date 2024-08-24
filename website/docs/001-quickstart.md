@@ -23,7 +23,7 @@ docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=changemenow -d post
 
 To install KanthorQ, run the following in the directory of a Go project (where a go.mod file is present):
 
-```
+```bash
 go get github.com/kanthorlabs/kanthorq
 ```
 
@@ -43,90 +43,70 @@ KanthorQ system is replied on PosgreSQL database, and needs a small sets of tabl
   kanthorq migrate up -s 'github://kanthorlabs/kanthorq/migration#main' -d 'postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable'
   ```
 
-## Register publisher
-
-To start publishing events, you need to follow these steps
-
-- Initialize a publisher publisher instance with given PostgreSQL connection string and a Stream name
-- Start the instance so it will prepare everything: connect the database, register the stream for you
-- Send an event that includes its subject and body
-- Stop the instance if you don't need it anymore
-
-Example:
+## Sending event with a publisher
 
 ```go
 var DATABASE_URI = "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
 var options = &kanthorq.PublisherOptions{
+  Connection: DATABASE_URI,
   StreamName: kanthorq.DefaultStreamName
 }
 
-publisher, err := kanthorq.NewPublisher(DATABASE_URI, options)
-if err != nil {
-  log.Panicf("could not create new publisher because of %v", err)
-}
-
+// init a context with 5 seconds timeout
 ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 defer cancel()
 
-if err:= publisher.Start(ctx); err != nil {
-  log.Panicf("could not start the publisher because of %v", err)
-}
-defer func () {
-  if err:= publisher.Stop(ctx); err != nil {
-    log.Panicf("could not stop the publisher because of %v", err)
-  }
-}()
+// init a publisher
+pub, cleanup := kanthorq.Pub(ctx, &publisher.Options{
+  Connection: DATABASE_URI,
+  StreamName: entities.DefaultStreamName,
+})
+defer cleanup()
 
-subject := "system.ping"
+// define an event
+subject := "system.say_hello"
 body := []byte("{\"msg\": \"Hello World!\"}")
-ectx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-defer cancel()
-if err:= publisher.Send(ectx, kanthorq.NewEvent(subject, body)); err != nil {
+event := entities.NewEvent(subject, body)
+
+// sending it to the stream with name entities.DefaultStreamName
+if err:= pub.Send(ctx, event); err != nil {
   // handle error
 }
 ```
 
-## Register subscriber
-
-To subscribe to events in KanthorQ system, you need to
-
-- Intialize a subscriber with PostgreSQL connection string and Consumer properties. The Consumer requires unique name and the listening subject (what you use to publish event before)
-- Start the instance so it will prepare everything: connect the database, register the stream and consumer for you
-- Start receiving events from KanthorQ system with given handler
-- Stop the instance if you don't need it anymore
+## Handling events with a subscriber
 
 ```go
 var DATABASE_URI = "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
+
+// listen for SIGINT and SIGTERM so if you press Ctrl-C you can stop the program
+ctx, stop := signal.NotifyContext(context.TODO(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+defer stop()
+
 var options = &kanthorq.SubscriberOptions{
   StreamName: kanthorq.DefaultStreamName,
   ConsumerName: kanthorq.DefaultConsumerName,
-  ConsumerSubjectFilter: "system.>",
-  ConsumerAttemptMax: kanthorq.DefaultConsumerAttemptMax
+  ConsumerSubjectFilter: []string{"system.>"},
+  ConsumerAttemptMax: kanthorq.DefaultConsumerAttemptMax,
+  Puller: &puller.PullerIn{
+	  // Size is how many events you want to pull at one batch
+    Size:        100,
+    // WaitingTime is how long you want to wait before pulling again
+    // if you didn't get enough events in current batch
+    WaitingTime: 1000,
+  },
 }
 
-subscriber, err := kanthorq.NewSubscriber(DATABASE_URI, options)
-if err != nil {
-  log.Panicf("could not create new subscriber because of %v", err)
-}
-
-ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-defer cancel()
-
-if err:= subscriber.Start(ctx); err != nil {
-  log.Panicf("could not start the subscriber because of %v", err)
-}
-defer func () {
-  if err:= subscriber.Stop(ctx); err != nil {
-    log.Panicf("could not stop the subscriber because of %v", err)
-  }
-}()
-
-go subscriber.Receive(ctx, func(ctx context.Context, event *kanthorq.Event) error {
-  // handle event logic
+// hanlding events, the gorouting will be block until you press Ctrl-C
+err := kanthorq.Sub(ctx, options, func(ctx context.Context, event *kanthorq.Event) error {
+  ts := time.UnixMilli(event.CreatedAt).Format(time.RFC3339)
+  // print out recevied events
+  fmt.Printf("RECEIVED: %s | %s | %s\n", event.Id, event.Subject, ts)
+  return nil
 })
 
-// listen for the cancellation signal.
-<-ctx
+// print out error if any
+if err != nil && !errors.Is(err, context.Canceled) {
+  log.Fatal(err)
+}
 ```
-
-If you feel the initialization of the subscriber includes some options that you do not fully understand, don't worry. Go to the next step, and I will explain it to you.

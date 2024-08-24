@@ -21,10 +21,16 @@ func RandomErrorHandler(mod int64) Handler {
 		ts := time.UnixMilli(event.CreatedAt).Format(time.RFC3339)
 		fmt.Printf("RANDOM_ERROR: %s | %s | %s\n", event.Id, event.Subject, ts)
 
-		if event.CreatedAt%mod == 0 {
+		modulus := event.CreatedAt % mod
+		if modulus == 0 {
 			return fmt.Errorf("random error because %d %% %d = 0", event.CreatedAt, mod)
 		}
 
-		return nil
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(time.Second * time.Duration(modulus)):
+			return nil
+		}
 	}
 }

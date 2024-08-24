@@ -1,16 +1,12 @@
 package pub
 
 import (
-	"context"
-	"errors"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/kanthorlabs/kanthorq"
-	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/xcmd"
 	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/kanthorlabs/kanthorq/publisher"
@@ -25,19 +21,13 @@ func New() *cobra.Command {
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
-			ch := make(chan *entities.Event, 1)
-			defer close(ch)
-
 			options := &publisher.Options{
 				Connection: xcmd.GetString(cmd.Flags(), "connection"),
 				StreamName: xcmd.GetString(cmd.Flags(), "stream"),
 			}
-			go func() {
-				err := kanthorq.Pub(ctx, options, ch)
-				if err != nil && !errors.Is(err, context.Canceled) {
-					log.Println(err)
-				}
-			}()
+
+			pub, cleanup := kanthorq.Pub(ctx, options)
+			defer cleanup()
 
 			duration := xcmd.GetInt(cmd.Flags(), "duration")
 			if duration > 0 {
@@ -52,18 +42,15 @@ func New() *cobra.Command {
 						return nil
 					case <-ticker:
 						events := GetEvents(cmd.Flags())
-						for i := 0; i < len(events); i++ {
-							ch <- events[i]
+						if err := pub.Send(ctx, events...); err != nil {
+							return err
 						}
 					}
 				}
 			}
 
 			events := GetEvents(cmd.Flags())
-			for i := 0; i < len(events); i++ {
-				ch <- events[i]
-			}
-			return nil
+			return pub.Send(ctx, events...)
 		},
 	}
 
