@@ -21,10 +21,11 @@ func TestConsumerRegister(t *testing.T) {
 	require.NoError(t, err)
 
 	req := &ConsumerRegisterReq{
-		StreamName:            xfaker.StreamName(),
-		ConsumerName:          xfaker.ConsumerName(),
-		ConsumerSubjectFilter: []string{xfaker.Subject()},
-		ConsumerAttemptMax:    xfaker.F.Int16Between(1, 10),
+		StreamName:                xfaker.StreamName(),
+		ConsumerName:              xfaker.ConsumerName(),
+		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerAttemptMax:        xfaker.F.Int16Between(1, 10),
+		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
 	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)
@@ -47,10 +48,11 @@ func TestConsumerRegister_Parallel(t *testing.T) {
 
 	// will try to register same Consumer
 	req := &ConsumerRegisterReq{
-		StreamName:            xfaker.StreamName(),
-		ConsumerName:          xfaker.ConsumerName(),
-		ConsumerSubjectFilter: []string{xfaker.Subject()},
-		ConsumerAttemptMax:    xfaker.F.Int16Between(1, 10),
+		StreamName:                xfaker.StreamName(),
+		ConsumerName:              xfaker.ConsumerName(),
+		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerAttemptMax:        xfaker.F.Int16Between(1, 10),
+		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
 
 	for i := 0; i < count; i++ {

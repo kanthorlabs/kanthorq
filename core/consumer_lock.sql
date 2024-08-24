@@ -1,13 +1,14 @@
 --->>> consumer_lock
 SELECT 
-  stream_id, 
-  stream_name, 
-  id, 
-  name, 
-  subject_filter, 
-  cursor, 
-  attempt_max, 
-  created_at, 
+  stream_id,
+  stream_name,
+  id,
+  name,
+  subject_filter,
+  cursor,
+  attempt_max,
+  visibility_timeout,
+  created_at,
   updated_at 
 FROM kanthorq_consumer_registry
 WHERE name = @consumer_name FOR UPDATE SKIP LOCKED;

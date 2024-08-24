@@ -87,7 +87,8 @@ var options = &kanthorq.SubscriberOptions{
   StreamName: kanthorq.DefaultStreamName,
   ConsumerName: kanthorq.DefaultConsumerName,
   ConsumerSubjectFilter: []string{"system.>"},
-  ConsumerAttemptMax: kanthorq.DefaultConsumerAttemptMax,
+  ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
+  ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
   Puller: &puller.PullerIn{
 	  // Size is how many events you want to pull at one batch
     Size:        100,

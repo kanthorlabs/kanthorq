@@ -38,6 +38,7 @@ func (req *ConsumerLockReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerLockRes
 		&res.Consumer.SubjectFilter,
 		&res.Consumer.Cursor,
 		&res.Consumer.AttemptMax,
+		&res.Consumer.VisibilityTimeout,
 		&res.Consumer.CreatedAt,
 		&res.Consumer.UpdatedAt,
 	)

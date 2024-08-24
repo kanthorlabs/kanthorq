@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/kanthorlabs/kanthorq"
+	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/xcmd"
 	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/kanthorlabs/kanthorq/puller"
@@ -24,11 +25,12 @@ func New() *cobra.Command {
 			defer stop()
 
 			options := &subscriber.Options{
-				Connection:            xcmd.GetString(cmd.Flags(), "connection"),
-				StreamName:            xcmd.GetString(cmd.Flags(), "stream"),
-				ConsumerName:          xcmd.GetString(cmd.Flags(), "consumer"),
-				ConsumerSubjectFilter: xcmd.GetStringSlice(cmd.Flags(), "subjects"),
-				ConsumerAttemptMax:    1,
+				Connection:                xcmd.GetString(cmd.Flags(), "connection"),
+				StreamName:                xcmd.GetString(cmd.Flags(), "stream"),
+				ConsumerName:              xcmd.GetString(cmd.Flags(), "consumer"),
+				ConsumerSubjectFilter:     xcmd.GetStringSlice(cmd.Flags(), "subjects"),
+				ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
+				ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
 				Puller: &puller.PullerIn{
 					Size:        100,
 					WaitingTime: 5000,

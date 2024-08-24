@@ -43,10 +43,11 @@ func (sub *primary) Start(ctx context.Context) (err error) {
 	defer sub.cm.Release(ctx, conn)
 
 	req := &core.ConsumerRegisterReq{
-		StreamName:            sub.options.StreamName,
-		ConsumerName:          sub.options.ConsumerName,
-		ConsumerSubjectFilter: sub.options.ConsumerSubjectFilter,
-		ConsumerAttemptMax:    sub.options.ConsumerAttemptMax,
+		StreamName:                sub.options.StreamName,
+		ConsumerName:              sub.options.ConsumerName,
+		ConsumerSubjectFilter:     sub.options.ConsumerSubjectFilter,
+		ConsumerAttemptMax:        sub.options.ConsumerAttemptMax,
+		ConsumerVisibilityTimeout: sub.options.ConsumerVisibilityTimeout,
 	}
 	res, err := core.Do(ctx, req, conn)
 	if err != nil {

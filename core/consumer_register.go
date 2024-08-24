@@ -18,10 +18,11 @@ var ConsumerRegisterRegistrySql string
 var ConsumerRegisterCollectionSql string
 
 type ConsumerRegisterReq struct {
-	StreamName            string   `validate:"required,is_collection_name"`
-	ConsumerName          string   `validate:"required,is_collection_name"`
-	ConsumerSubjectFilter []string `validate:"required,gt=0,dive,is_subject_filter"`
-	ConsumerAttemptMax    int16    `validate:"required,gt=0"`
+	StreamName                string   `validate:"required,is_collection_name"`
+	ConsumerName              string   `validate:"required,is_collection_name"`
+	ConsumerSubjectFilter     []string `validate:"required,gt=0,dive,is_subject_filter"`
+	ConsumerAttemptMax        int16    `validate:"required,gt=0"`
+	ConsumerVisibilityTimeout int64    `validate:"required,gt=0"`
 }
 
 type ConsumerRegisterRes struct {
@@ -42,13 +43,14 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 
 	var registry entities.ConsumerRegistry
 	var args = pgx.NamedArgs{
-		"stream_id":               stream.StreamRegistry.Id,
-		"stream_name":             stream.StreamRegistry.Name,
-		"consumer_id":             entities.ConsumerId(),
-		"consumer_name":           req.ConsumerName,
-		"consumer_subject_filter": req.ConsumerSubjectFilter,
-		"consumer_cursor":         entities.EventIdFromTime(time.UnixMilli(stream.StreamRegistry.CreatedAt)),
-		"consumer_attempt_max":    req.ConsumerAttemptMax,
+		"stream_id":                   stream.StreamRegistry.Id,
+		"stream_name":                 stream.StreamRegistry.Name,
+		"consumer_id":                 entities.ConsumerId(),
+		"consumer_name":               req.ConsumerName,
+		"consumer_subject_filter":     req.ConsumerSubjectFilter,
+		"consumer_cursor":             entities.EventIdFromTime(time.UnixMilli(stream.StreamRegistry.CreatedAt)),
+		"consumer_attempt_max":        req.ConsumerAttemptMax,
+		"consumer_visibility_timeout": req.ConsumerVisibilityTimeout,
 	}
 	err = tx.
 		QueryRow(ctx, ConsumerRegisterRegistrySql, args).
@@ -60,6 +62,7 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 			&registry.SubjectFilter,
 			&registry.Cursor,
 			&registry.AttemptMax,
+			&registry.VisibilityTimeout,
 			&registry.CreatedAt,
 			&registry.UpdatedAt,
 		)

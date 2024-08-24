@@ -47,11 +47,12 @@ func main() {
 	// Initialize a subscriber that will process events that has subject that match with the filter "system.>"
 	// so both system.say_hello and system.say_goodbye will be processed
 	err := kanthorq.Sub(ctx, &subscriber.Options{
-		Connection:            DATABASE_URI,
-		StreamName:            entities.DefaultStreamName,
-		ConsumerName:          entities.DefaultConsumerName,
-		ConsumerSubjectFilter: []string{"system.>"},
-		ConsumerAttemptMax:    entities.DefaultConsumerAttemptMax,
+		Connection:                DATABASE_URI,
+		StreamName:                entities.DefaultStreamName,
+		ConsumerName:              entities.DefaultConsumerName,
+		ConsumerSubjectFilter:     []string{"system.>"},
+		ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
+		ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
 		Puller: &puller.PullerIn{
 			Size:        100,
 			WaitingTime: 1000,
