@@ -5,8 +5,8 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-PUB_COUNT ?= 301
-PUB_DURATION ?= 60000
+PUB_COUNT ?= 101
+PUB_DURATION ?= 30000
 
 default: 
 	$(warning oops, select specific command pls)

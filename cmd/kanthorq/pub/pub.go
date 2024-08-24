@@ -1,6 +1,7 @@
 package pub
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,28 +30,38 @@ func New() *cobra.Command {
 			pub, cleanup := kanthorq.Pub(ctx, options)
 			defer cleanup()
 
+			var count int
+
 			duration := xcmd.GetInt(cmd.Flags(), "duration")
 			if duration > 0 {
 				timeout := time.After(time.Millisecond * time.Duration(duration))
 				ticker := time.Tick(time.Millisecond * time.Duration(xfaker.F.IntBetween(100, 1000)))
-
 				for {
 					select {
 					case <-ctx.Done():
+						fmt.Printf("published %d events\n", count)
 						return nil
 					case <-timeout:
+						fmt.Printf("--------- %d events ---------\n", count)
 						return nil
 					case <-ticker:
 						events := GetEvents(cmd.Flags())
 						if err := pub.Send(ctx, events...); err != nil {
 							return err
 						}
+						count += len(events)
 					}
 				}
 			}
 
 			events := GetEvents(cmd.Flags())
-			return pub.Send(ctx, events...)
+			count += len(events)
+			if err := pub.Send(ctx, events...); err != nil {
+				return err
+			}
+
+			fmt.Printf("--------- %d events ---------\n", count)
+			return nil
 		},
 	}
 

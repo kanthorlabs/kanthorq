@@ -23,6 +23,12 @@ func Sub(ctx context.Context, options *subscriber.Options, handler subscriber.Ha
 		return err
 	}
 
+	if visibility, err := subscriber.NewVisibility(options); err == nil {
+		clients = append(clients, visibility)
+	} else {
+		return err
+	}
+
 	// defer stop all clients
 	defer func() {
 		stopctx, cancel := context.WithTimeout(ctx, time.Second*5)

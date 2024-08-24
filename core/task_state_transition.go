@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
@@ -31,11 +32,14 @@ func (req *TaskStateTransitionReq) Do(ctx context.Context, tx pgx.Tx) (*TaskStat
 		return nil, err
 	}
 
+	now := time.Now().UnixMilli()
 	var args = pgx.NamedArgs{
-		"attempt_max": req.Consumer.AttemptMax,
-		"from_state":  int(req.FromState),
-		"to_state":    int(req.ToState),
-		"size":        req.Size,
+		"attempt_max":  req.Consumer.AttemptMax,
+		"attempted_at": now,
+		"schedule_at":  now + req.Consumer.VisibilityTimeout,
+		"from_state":   int(req.FromState),
+		"to_state":     int(req.ToState),
+		"size":         req.Size,
 	}
 	table := pgx.Identifier{entities.Collection(req.Consumer.Id)}.Sanitize()
 	query := fmt.Sprintf(TaskStateTransitionSql, table, table)

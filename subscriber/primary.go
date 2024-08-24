@@ -100,23 +100,33 @@ func (sub *primary) Receive(ctx context.Context, handler Handler) error {
 				wg.Add(1)
 
 				go func(hctx context.Context, e *entities.Event) {
-					defer wg.Done()
-
-					msg := &Message{
+					message := &Message{
 						Event:    event,
 						Task:     out.Tasks[event.Id],
 						cm:       sub.cm,
 						consumer: sub.consumer,
 					}
 
+					defer func(msg *Message) {
+						if r := recover(); r != nil {
+							fmt.Println("Recovered in f", r)
+
+							if nerr := msg.Nack(hctx); nerr != nil {
+								log.Println(fmt.Errorf("failed to nack message: %w", errors.Join(err, nerr)))
+							}
+						}
+
+						wg.Done()
+					}(message)
+
 					if err = handler(hctx, event); err != nil {
-						if nerr := msg.Nack(hctx); nerr != nil {
+						if nerr := message.Nack(hctx); nerr != nil {
 							log.Println(fmt.Errorf("failed to nack message: %w", errors.Join(err, nerr)))
 						}
 						return
 					}
 
-					if err := msg.Ack(hctx); err != nil {
+					if err := message.Ack(hctx); err != nil {
 						log.Println(fmt.Errorf("failed to ack message: %w", err))
 					}
 				}(ctx, event)

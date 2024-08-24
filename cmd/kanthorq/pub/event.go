@@ -54,7 +54,7 @@ func GetEvents(flags *pflag.FlagSet) []*entities.Event {
 		events[i] = event
 
 		ts := time.UnixMilli(event.CreatedAt).Format(time.RFC3339)
-		fmt.Printf("%s | %s | %s\n", event.Id, event.Subject, ts)
+		fmt.Printf("> %s | %s | %s\n", event.Id, event.Subject, ts)
 	}
 
 	return events

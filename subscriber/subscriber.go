@@ -33,6 +33,18 @@ func NewRetry(options *Options) (Subscriber, error) {
 	return &primary{options: options, cm: cm, pullerF: puller.NewRetry}, nil
 }
 
+func NewVisibility(options *Options) (Subscriber, error) {
+	if err := xvalidator.Validate.Struct(options); err != nil {
+		return nil, err
+	}
+	cm, err := pgcm.New(options.Connection)
+	if err != nil {
+		return nil, err
+	}
+
+	return &primary{options: options, cm: cm, pullerF: puller.NewVisibility}, nil
+}
+
 type Subscriber interface {
 	Start(ctx context.Context) (err error)
 	Stop(ctx context.Context) (err error)

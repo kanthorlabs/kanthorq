@@ -5,7 +5,7 @@ WITH locked_tasks AS (
   WHERE
     l_tasks.state = @from_state
     AND l_tasks.attempt_count <= @attempt_max
-    AND l_tasks.schedule_at < EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000
+    AND l_tasks.schedule_at < @attempted_at
   ORDER BY
     l_tasks.state ASC,
     l_tasks.schedule_at ASC
@@ -16,7 +16,8 @@ UPDATE %s AS u_tasks
 SET
   state = @to_state,
   attempt_count = attempt_count + 1,
-  attempted_at = EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000
+  attempted_at = @attempted_at,
+  schedule_at = @schedule_at
 FROM locked_tasks
 WHERE u_tasks.event_id = locked_tasks.event_id 
 RETURNING 

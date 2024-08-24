@@ -9,15 +9,34 @@ func TaskId() string {
 }
 
 type Task struct {
-	EventId      string `json:"event_id" validate:"required"`
-	Subject      string `json:"subject" validate:"required,is_subject"`
-	State        int16  `json:"state"`
-	ScheduleAt   int64  `json:"schedule_at"`
-	AttemptCount int16  `json:"attempt_count"`
-	AttemptedAt  int64  `json:"attempted_at"`
-	FinalizedAt  int64  `json:"finalized_at"`
-	CreatedAt    int64  `json:"created_at"`
-	UpdatedAt    int64  `json:"updated_at"`
+	EventId string `json:"event_id" validate:"required"`
+	Subject string `json:"subject" validate:"required,is_subject"`
+
+	// State is the state of task like `available` or `completed`.
+	State int16 `json:"state"`
+	// ScheduledAt is when the task is scheduled to become available to be
+	// worked. Tasks default to running immediately, but may be scheduled
+	// for the future when they're inserted. They may also be scheduled for
+	// later because they were snoozed or because they errored and have
+	// additional retry attempts remaining.
+	ScheduleAt int64 `json:"schedule_at"`
+	// AttemptCount is the attempt number of the task. Tasks are inserted at 0, the
+	// number is incremented to 1 the first time work its worked, and may
+	// increment further if it's either snoozed or errors.
+	AttemptCount int16 `json:"attempt_count"`
+	// AttemptedAt is the time that the task was last worked. Starts out as NOW()
+	// on a new insert.
+	AttemptedAt int64 `json:"attempted_at"`
+	// AttemptedBy is the set of client IDs that have worked this task.
+	AttemptedBy []string
+	// FinalizedAt is the time at which the task was "finalized", meaning it was
+	// either completed successfully or errored for the last time such that
+	// it'll no longer be retried.
+	FinalizedAt int64 `json:"finalized_at"`
+	// CreatedAt is when the task record was created.
+	CreatedAt int64 `json:"created_at"`
+	// CreatedAt is when the task record was updated.
+	UpdatedAt int64 `json:"updated_at"`
 }
 
 type TaskState int
