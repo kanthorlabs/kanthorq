@@ -1,6 +1,6 @@
 --->>> task_convert
-INSERT INTO %s (event_id, subject, state)
-SELECT id, subject, @intial_state::SMALLINT as state
+INSERT INTO %s (event_id, subject, state, schedule_at)
+SELECT id, subject, @intial_state::SMALLINT as state, @schedule_at
 FROM %s
 WHERE id IN (%s)
 ON CONFLICT(event_id) DO NOTHING

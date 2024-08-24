@@ -89,8 +89,9 @@ func (sub *primary) Receive(ctx context.Context, handler Handler) error {
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
-				case <-time.After(time.Millisecond * 300):
+				case <-time.After(time.Millisecond * 500):
 					// wait for a while
+					fmt.Println("waiting for events...")
 				}
 				continue
 			}
@@ -99,40 +100,40 @@ func (sub *primary) Receive(ctx context.Context, handler Handler) error {
 			for _, event := range out.Events {
 				wg.Add(1)
 
-				go func(hctx context.Context, e *entities.Event) {
-					message := &Message{
-						Event:    event,
-						Task:     out.Tasks[event.Id],
-						cm:       sub.cm,
-						consumer: sub.consumer,
-					}
-
-					defer func(msg *Message) {
-						if r := recover(); r != nil {
-							fmt.Println("Recovered in f", r)
-
-							if nerr := msg.Nack(hctx); nerr != nil {
-								log.Println(fmt.Errorf("failed to nack message: %w", errors.Join(err, nerr)))
-							}
-						}
-
-						wg.Done()
-					}(message)
-
-					if err = handler(hctx, event); err != nil {
-						if nerr := message.Nack(hctx); nerr != nil {
-							log.Println(fmt.Errorf("failed to nack message: %w", errors.Join(err, nerr)))
-						}
-						return
-					}
-
-					if err := message.Ack(hctx); err != nil {
-						log.Println(fmt.Errorf("failed to ack message: %w", err))
-					}
-				}(ctx, event)
+				msg := &Message{
+					Event:    event,
+					Task:     out.Tasks[event.Id],
+					cm:       sub.cm,
+					consumer: sub.consumer,
+				}
+				go sub.handle(ctx, handler, msg, &wg)
 			}
-
 			wg.Wait()
 		}
+	}
+}
+
+func (sub *primary) handle(ctx context.Context, handler Handler, msg *Message, wg *sync.WaitGroup) {
+	defer func(msg *Message) {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+
+			if err := msg.Nack(ctx); err != nil {
+				log.Println(fmt.Errorf("failed to nack message: %w", err))
+			}
+		}
+
+		wg.Done()
+	}(msg)
+
+	if err := handler(ctx, msg); err != nil {
+		if nerr := msg.Nack(ctx); nerr != nil {
+			log.Println(fmt.Errorf("failed to nack message: %w", errors.Join(err, nerr)))
+		}
+		return
+	}
+
+	if err := msg.Ack(ctx); err != nil {
+		log.Println(fmt.Errorf("failed to ack message: %w", err))
 	}
 }

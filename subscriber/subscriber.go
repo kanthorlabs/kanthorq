@@ -3,7 +3,6 @@ package subscriber
 import (
 	"context"
 
-	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
 	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 	"github.com/kanthorlabs/kanthorq/puller"
@@ -51,4 +50,4 @@ type Subscriber interface {
 	Receive(ctx context.Context, handler Handler) error
 }
 
-type Handler func(ctx context.Context, event *entities.Event) error
+type Handler func(ctx context.Context, msg *Message) error

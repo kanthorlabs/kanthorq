@@ -17,7 +17,7 @@ SET
   state = @to_state,
   attempt_count = attempt_count + 1,
   attempted_at = @attempted_at,
-  schedule_at = @schedule_at
+  schedule_at = @schedule_at + + ((attempt_count ^ 4) * (1 + RANDOM() * 0.2 - 0.1)) * 1000
 FROM locked_tasks
 WHERE u_tasks.event_id = locked_tasks.event_id 
 RETURNING 

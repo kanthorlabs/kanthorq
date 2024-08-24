@@ -58,10 +58,10 @@ func main() {
 			WaitingTime: 1000,
 		},
 	},
-		func(ctx context.Context, event *entities.Event) error {
-			ts := time.UnixMilli(event.CreatedAt).Format(time.RFC3339)
-			// print out recevied events
-			fmt.Printf("RECEIVED: %s | %s | %s\n", event.Id, event.Subject, ts)
+		func(ctx context.Context, msg *subscriber.Message) error {
+			ts := time.UnixMilli(msg.Event.CreatedAt).Format(time.RFC3339)
+			// print out recevied event
+			fmt.Printf("RECEIVED: %s | %s | %s\n", msg.Event.Id, msg.Event.Subject, ts)
 			return nil
 		},
 	)

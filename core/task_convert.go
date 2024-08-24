@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
@@ -33,6 +34,7 @@ func (req *TaskConvertReq) Do(ctx context.Context, tx pgx.Tx) (*TaskConvertRes, 
 
 	var args = pgx.NamedArgs{
 		"intial_state": int(req.InitialState),
+		"schedule_at":  time.Now().UnixMilli() + req.Consumer.VisibilityTimeout,
 	}
 	var names = make([]string, len(req.EventIds))
 	for i, id := range req.EventIds {

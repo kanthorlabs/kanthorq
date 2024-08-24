@@ -99,10 +99,10 @@ var options = &kanthorq.SubscriberOptions{
 }
 
 // hanlding events, the gorouting will be block until you press Ctrl-C
-err := kanthorq.Sub(ctx, options, func(ctx context.Context, event *kanthorq.Event) error {
-  ts := time.UnixMilli(event.CreatedAt).Format(time.RFC3339)
-  // print out recevied events
-  fmt.Printf("RECEIVED: %s | %s | %s\n", event.Id, event.Subject, ts)
+err := kanthorq.Sub(ctx, options, func(ctx context.Context, msg *subscriber.Message) error {
+  ts := time.UnixMilli(msg.Event.CreatedAt).Format(time.RFC3339)
+  // print out recevied event
+  fmt.Printf("RECEIVED: %s | %s | %s\n", msg.Event.Id, msg.Event.Subject, ts)
   return nil
 })
 
