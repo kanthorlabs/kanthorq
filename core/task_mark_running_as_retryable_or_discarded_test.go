@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"runtime/debug"
 	"testing"
+	"time"
 
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
@@ -29,6 +31,11 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToRetryable(t *testing.T) {
 	req := &TaskMarkRunningAsRetryableOrDiscardedReq{
 		Consumer: consumer,
 		Tasks:    append(tasks, noopTasks...),
+		Error: entities.AttemptedError{
+			At:    time.Now().UnixMilli(),
+			Error: "error",
+			Stack: string(debug.Stack()),
+		},
 	}
 	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)
@@ -58,10 +65,7 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToDiscarded(t *testing.T) {
 		// simulate that we have reached the max attempts
 		tasks[i].AttemptCount = consumer.AttemptMax + 1
 	}
-	_, err = Do(ctx, &ConsumerPutTasksReq{
-		Consumer: consumer,
-		Tasks:    tasks,
-	}, conn)
+	_, err = Do(ctx, &ConsumerPutTasksReq{Consumer: consumer, Tasks: tasks}, conn)
 	require.NoError(t, err)
 
 	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
@@ -70,6 +74,11 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToDiscarded(t *testing.T) {
 	req := &TaskMarkRunningAsRetryableOrDiscardedReq{
 		Consumer: consumer,
 		Tasks:    append(tasks, noopTasks...),
+		Error: entities.AttemptedError{
+			At:    time.Now().UnixMilli(),
+			Error: "error",
+			Stack: string(debug.Stack()),
+		},
 	}
 	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)

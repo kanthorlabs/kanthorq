@@ -2,7 +2,9 @@ package subscriber
 
 import (
 	"context"
+	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/kanthorlabs/kanthorq/entities"
@@ -41,7 +43,7 @@ func (msg *Message) Ack(ctx context.Context) error {
 }
 
 // Nack is safe to call multiple times
-func (msg *Message) Nack(ctx context.Context) error {
+func (msg *Message) Nack(ctx context.Context, reason error) error {
 	msg.mu.Lock()
 	defer msg.mu.Unlock()
 
@@ -53,9 +55,16 @@ func (msg *Message) Nack(ctx context.Context) error {
 	req := &core.TaskMarkRunningAsRetryableOrDiscardedReq{
 		Consumer: msg.consumer,
 		Tasks:    []*entities.Task{msg.Task},
+		Error: entities.AttemptedError{
+			At:    time.Now().UnixMilli(),
+			Error: reason.Error(),
+			Stack: string(debug.Stack()),
+		},
 	}
 
 	// @TODO: if res.Noop has value, should log it here
-	_, err := core.DoWithCM(ctx, req, msg.cm)
-	return err
+	if _, err := core.DoWithCM(ctx, req, msg.cm); err != nil {
+		return err
+	}
+	return nil
 }

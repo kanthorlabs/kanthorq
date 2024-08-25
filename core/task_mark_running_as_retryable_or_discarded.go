@@ -17,6 +17,7 @@ var TaskMarkRunningAsRetryableOrDiscardedSql string
 type TaskMarkRunningAsRetryableOrDiscardedReq struct {
 	Consumer *entities.ConsumerRegistry `validate:"required"`
 	Tasks    []*entities.Task           `validate:"required,gt=0,dive,required"`
+	Error    entities.AttemptedError    `validate:"required"`
 }
 
 type TaskMarkRunningAsRetryableOrDiscardedRes struct {
@@ -36,6 +37,7 @@ func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx 
 	var names = make([]string, len(req.Tasks))
 	var args = pgx.NamedArgs{
 		"attempt_max":     req.Consumer.AttemptMax,
+		"attempted_error": req.Error,
 		"discarded_state": int(entities.StateDiscarded),
 		"retryable_state": int(entities.StateRetryable),
 		"running_state":   int(entities.StateRunning),

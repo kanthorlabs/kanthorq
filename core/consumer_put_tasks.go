@@ -36,6 +36,7 @@ func (req *ConsumerPutTasksReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPut
 			event.ScheduleAt,
 			event.AttemptCount,
 			event.AttemptedAt,
+			event.AttemptedError,
 			event.FinalizedAt,
 			event.CreatedAt,
 			event.UpdatedAt,

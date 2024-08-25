@@ -118,7 +118,14 @@ func (sub *primary) handle(ctx context.Context, handler Handler, msg *Message, w
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in f", r)
 
-			if err := msg.Nack(ctx); err != nil {
+			var reason error
+			if e, ok := r.(error); ok {
+				reason = e
+			} else {
+				reason = fmt.Errorf("%v", r)
+			}
+
+			if err := msg.Nack(ctx, reason); err != nil {
 				log.Println(fmt.Errorf("failed to nack message: %w", err))
 			}
 		}
@@ -127,7 +134,7 @@ func (sub *primary) handle(ctx context.Context, handler Handler, msg *Message, w
 	}(msg)
 
 	if err := handler(ctx, msg); err != nil {
-		if nerr := msg.Nack(ctx); nerr != nil {
+		if nerr := msg.Nack(ctx, err); nerr != nil {
 			log.Println(fmt.Errorf("failed to nack message: %w", errors.Join(err, nerr)))
 		}
 		return

@@ -17,10 +17,11 @@ func Seed(
 	conn *pgx.Conn,
 ) (*entities.StreamRegistry, *entities.ConsumerRegistry) {
 	req := &ConsumerRegisterReq{
-		StreamName:            xfaker.StreamName(),
-		ConsumerName:          xfaker.ConsumerName(),
-		ConsumerSubjectFilter: []string{xfaker.Subject()},
-		ConsumerAttemptMax:    xfaker.F.Int16Between(2, 10),
+		StreamName:                xfaker.StreamName(),
+		ConsumerName:              xfaker.ConsumerName(),
+		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
+		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
 	// ConsumerRegister also register stream
 	res, err := Do(ctx, req, conn)
@@ -83,15 +84,16 @@ func FakeTasks(events []*entities.Event, state entities.TaskState) []*entities.T
 	tasks := make([]*entities.Task, len(events))
 	for i := range events {
 		tasks[i] = &entities.Task{
-			EventId:      events[i].Id,
-			Subject:      events[i].Subject,
-			State:        int16(state),
-			ScheduleAt:   time.Now().UTC().UnixMilli(),
-			AttemptCount: 1,
-			AttemptedAt:  time.Now().UTC().UnixMilli(),
-			FinalizedAt:  0,
-			CreatedAt:    events[i].CreatedAt,
-			UpdatedAt:    time.Now().UTC().UnixMilli(),
+			EventId:        events[i].Id,
+			Subject:        events[i].Subject,
+			State:          state,
+			ScheduleAt:     time.Now().UTC().UnixMilli(),
+			AttemptCount:   1,
+			AttemptedAt:    time.Now().UTC().UnixMilli(),
+			AttemptedError: []entities.AttemptedError{},
+			FinalizedAt:    0,
+			CreatedAt:      events[i].CreatedAt,
+			UpdatedAt:      time.Now().UTC().UnixMilli(),
 		}
 	}
 	return tasks

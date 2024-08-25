@@ -29,5 +29,5 @@ type Event struct {
 	Subject   string   `json:"subject" validate:"required,is_subject"`
 	Body      []byte   `json:"body" validate:"required"`
 	Metadata  Metadata `json:"metadata" validate:"required"`
-	CreatedAt int64    `json:"created_at" validate:"required,gte=0"`
+	CreatedAt int64    `json:"created_at" validate:"required,gt=0"`
 }
