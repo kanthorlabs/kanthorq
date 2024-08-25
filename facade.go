@@ -5,8 +5,31 @@ import (
 	"log"
 	"time"
 
+	"github.com/kanthorlabs/kanthorq/publisher"
 	"github.com/kanthorlabs/kanthorq/subscriber"
 )
+
+func Pub(ctx context.Context, options *publisher.Options) (p publisher.Publisher, c func()) {
+	p, err := publisher.New(options)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	startctx, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
+	if err := p.Start(startctx); err != nil {
+		log.Fatal(err)
+	}
+
+	return p, func() {
+		stopctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+
+		if err := p.Stop(stopctx); err != nil {
+			log.Println(err)
+		}
+	}
+}
 
 func Sub(ctx context.Context, options *subscriber.Options, handler subscriber.Handler) error {
 	clients := make([]subscriber.Subscriber, 0)
@@ -52,17 +75,15 @@ func Sub(ctx context.Context, options *subscriber.Options, handler subscriber.Ha
 
 	rctx, stop := context.WithCancel(ctx)
 	defer stop()
-	errc := make(chan error, 1)
 
 	for _, client := range clients {
 		go func(c subscriber.Subscriber) {
 			if err := c.Receive(rctx, handler); err != nil {
 				stop()
-				// if one of the clients return error, stop all clients
-				errc <- err
 			}
 		}(client)
 	}
 
-	return <-errc
+	<-rctx.Done()
+	return ctx.Err()
 }

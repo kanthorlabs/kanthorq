@@ -51,7 +51,7 @@ func (pub *primary) Stop(ctx context.Context) (err error) {
 	pub.mu.Lock()
 	defer pub.mu.Unlock()
 
-	if cmerr := pub.cm.Start(ctx); cmerr != nil {
+	if cmerr := pub.cm.Stop(ctx); cmerr != nil {
 		err = errors.Join(err, cmerr)
 	}
 
