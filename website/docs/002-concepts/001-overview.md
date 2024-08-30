@@ -38,12 +38,6 @@ When we said that a Stream is time-series data, that mean you should only perfor
 
 :::
 
-:::note
-
-Friendly reminder that a Stream stores many Events
-
-:::
-
 An event in a Stream will be categorized by `subject` what is dot-separated words. We can use it in various usecases an handle them differently
 
 - `order.cancelled` and `order.created` is normal usecase that events are belonged to different type.
