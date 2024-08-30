@@ -79,6 +79,7 @@ func Sub(ctx context.Context, options *subscriber.Options, handler subscriber.Ha
 	for _, client := range clients {
 		go func(c subscriber.Subscriber) {
 			if err := c.Receive(rctx, handler); err != nil {
+				log.Println(err)
 				stop()
 			}
 		}(client)

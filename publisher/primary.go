@@ -59,7 +59,7 @@ func (pub *primary) Stop(ctx context.Context) (err error) {
 	return
 }
 
-func (pub *primary) Send(ctx context.Context, events ...*entities.Event) error {
+func (pub *primary) Send(ctx context.Context, events []*entities.Event) error {
 	if len(events) == 0 {
 		return errors.New("no events provided")
 	}

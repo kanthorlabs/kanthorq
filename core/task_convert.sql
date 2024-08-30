@@ -1,6 +1,6 @@
 --->>> task_convert
-INSERT INTO %s (event_id, subject, state, schedule_at)
-SELECT id, subject, @intial_state::SMALLINT as state, @schedule_at
+INSERT INTO %s (event_id, subject, state, schedule_at, metadata)
+SELECT id, subject, @intial_state::SMALLINT as state, @schedule_at as schedule_at, metadata
 FROM %s
 WHERE id IN (%s)
 ON CONFLICT(event_id) DO NOTHING
@@ -9,9 +9,11 @@ RETURNING
   subject,
   state,
   schedule_at,
+  finalized_at,
   attempt_count,
   attempted_at,
-  finalized_at,
+  attempted_error,
+  metadata,
   created_at,
   updated_at;
 ---<<< task_convert

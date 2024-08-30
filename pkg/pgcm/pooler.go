@@ -6,6 +6,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+var _ ConnectionManager = (*pooler)(nil)
+
 // NewPooler initializes a ConnectionManager that connect to an external PG pooler
 // PGBouncer for instance
 // connections should be handled by the pooler instead of our client code

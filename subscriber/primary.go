@@ -91,7 +91,7 @@ func (sub *primary) Receive(ctx context.Context, handler Handler) error {
 					return ctx.Err()
 				case <-time.After(time.Millisecond * 500):
 					// wait for a while
-					fmt.Println("waiting for events...")
+					log.Println("waiting for events...")
 				}
 				continue
 			}

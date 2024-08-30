@@ -32,16 +32,21 @@ func main() {
 	defer cleanup()
 
 	// start sending an event, it will be stored int the stream entities.DefaultStreamName
-	event := entities.NewEvent("system.say_hello", []byte("{\"msg\": \"Hello World!\"}"))
-	NoError(pub.Send(ctx, event))
+	events := []*entities.Event{
+		entities.NewEvent("system.say_hello", []byte("{\"msg\": \"Hello World!\"}")),
+		entities.NewEvent("system.say_hello", []byte("{\"msg\": \"I'm comming!\"}")),
+	}
+	NoError(pub.Send(ctx, events))
 
 	go func() {
 		// wait a few seconds to send another event
 		time.Sleep(time.Second * 3)
 
 		// start sending another event
-		event := entities.NewEvent("system.say_goodbye", []byte("{\"msg\": \"See you!\"}"))
-		NoError(pub.Send(ctx, event))
+		events := []*entities.Event{
+			entities.NewEvent("system.say_goodbye", []byte("{\"msg\": \"See you!\"}")),
+		}
+		NoError(pub.Send(ctx, events))
 	}()
 
 	// Initialize a subscriber that will process events that has subject that match with the filter "system.>"
@@ -54,14 +59,17 @@ func main() {
 		ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
 		ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
 		Puller: &puller.PullerIn{
-			Size:        100,
+			// Size is how many events you want to pull at one batch
+			Size: 100,
+			// WaitingTime is how long you want to wait before pulling again
+			// if you didn't get enough events in current batch
 			WaitingTime: 1000,
 		},
 	},
 		func(ctx context.Context, msg *subscriber.Message) error {
 			ts := time.UnixMilli(msg.Event.CreatedAt).Format(time.RFC3339)
 			// print out recevied event
-			fmt.Printf("RECEIVED: %s | %s | %s\n", msg.Event.Id, msg.Event.Subject, ts)
+			log.Printf("RECEIVED: %s | %s | %s\n", msg.Event.Id, msg.Event.Subject, ts)
 			return nil
 		},
 	)

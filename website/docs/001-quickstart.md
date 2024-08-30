@@ -63,20 +63,20 @@ func main() {
   // clean up the publisher after everything is done
   defer cleanup()
 
-  // define an event
   subject := "system.say_hello"
   body := []byte("{\"msg\": \"Hello World!\"}")
+  // define your first event
   event := entities.NewEvent(subject, body)
 
-  // send an event to the stream
-  if err:= pub.Send(ctx, event); err != nil {
-    // handle error
+  events:= []*entities.Event{
+    event,
+    // another event
+    entities.NewEvent("system.say_hello", []byte("{\"msg\": \"I'm comming!\"}")),
+    // and yet another event
+    entities.NewEvent("system.say_goodbye", []byte("{\"msg\": \"See you!!\"}")),
   }
 
-  // or you can send multiple events at once
-  otherE := entities.NewEvent("system.say_hello", []byte("{\"msg\": \"I'm comming!\"}")),
-  anotherE := entities.NewEvent("system.say_goodbye", []byte("{\"msg\": \"See you!!\"}")),
-   if err:= pub.Send(ctx, otherE, anotherE); err != nil {
+  if err:= pub.Send(ctx, events); err != nil {
     // handle error
   }
 }
@@ -158,3 +158,7 @@ After running the example, you should see the following output:
 2024/08/30 09:18:46 waiting for events...
 2024/08/30 09:18:46 waiting for events...
 ```
+
+## Conclusion
+
+By this tutorial, we showed you how quickly use Kanthorq in your project, the full and interactive example can be found in the [examples](https://github.com/kanthorlabs/kanthorq/blob/main/example/default/main.go) folder.

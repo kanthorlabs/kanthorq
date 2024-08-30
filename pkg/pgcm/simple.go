@@ -7,6 +7,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+var _ ConnectionManager = (*simple)(nil)
+
 // NewSimple initializes a simple implementation of ConnectionManager
 // it holds a single connection to the database at once
 // if the connection is closed, it will create a new one
