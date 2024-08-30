@@ -24,6 +24,7 @@ type Task struct {
 	// later because they were snoozed or because they errored and have
 	// additional retry attempts remaining.
 	ScheduleAt int64 `json:"schedule_at" validate:"required,gt=0"`
+
 	// AttemptCount is the attempt number of the task. Tasks are inserted at 0, the
 	// number is incremented to 1 the first time work its worked, and may
 	// increment further if it's either snoozed or errors.
@@ -37,6 +38,9 @@ type Task struct {
 	// either completed successfully or errored for the last time such that
 	// it'll no longer be retried.
 	FinalizedAt int64 `json:"finalized_at" validate:"gte=0"`
+
+	// Metadata carry additional information about the task.
+	Metadata Metadata `json:"metadata" validate:"required"`
 	// CreatedAt is when the task record was created.
 	CreatedAt int64 `json:"created_at" validate:"required,gt=0"`
 	// CreatedAt is when the task record was updated.

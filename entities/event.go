@@ -25,9 +25,12 @@ func EventIdFromTime(t time.Time) string {
 }
 
 type Event struct {
-	Id        string   `json:"id" validate:"required"`
-	Subject   string   `json:"subject" validate:"required,is_subject"`
-	Body      []byte   `json:"body" validate:"required"`
-	Metadata  Metadata `json:"metadata" validate:"required"`
-	CreatedAt int64    `json:"created_at" validate:"required,gt=0"`
+	Id      string `json:"id" validate:"required"`
+	Subject string `json:"subject" validate:"required,is_subject"`
+	Body    []byte `json:"body" validate:"required"`
+
+	// Metadata carry additional information about the event.
+	Metadata Metadata `json:"metadata" validate:"required"`
+	// CreatedAt is when the event record was created.
+	CreatedAt int64 `json:"created_at" validate:"required,gt=0"`
 }
