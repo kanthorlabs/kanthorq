@@ -46,7 +46,7 @@ func New() *cobra.Command {
 						return nil
 					case <-ticker:
 						events := GetEvents(cmd.Flags())
-						if err := pub.Send(ctx, events...); err != nil {
+						if err := pub.Send(ctx, events); err != nil {
 							return err
 						}
 						count += len(events)
@@ -56,7 +56,7 @@ func New() *cobra.Command {
 
 			events := GetEvents(cmd.Flags())
 			count += len(events)
-			if err := pub.Send(ctx, events...); err != nil {
+			if err := pub.Send(ctx, events); err != nil {
 				return err
 			}
 
