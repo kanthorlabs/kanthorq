@@ -81,13 +81,14 @@ To intialize the publisher, you must define two options:
     - The `StreamName` is the name of the stream you want to store events. Think about [NATS JetStream Streams](https://docs.nats.io/nats-concepts/jetstream/streams) or [RabbitMQ Exchange](https://www.rabbitmq.com/tutorials/tutorial-three-go#exchanges)
 
 ```go
-// Initialize a publisher
-pub, cleanup := kanthorq.Pub(ctx, &publisher.Options{
-  // replace DATABASE_URI with your database URI
+options := &publisher.Options{
+  // replace connection string with your database URI
   Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
   // using default stream for demo
   StreamName: entities.DefaultStreamName,
-})
+}
+// Initialize a publisher
+pub, cleanup := kanthorq.Pub(ctx, options)
 // clean up the publisher after everything is done
 defer cleanup()
 ```
@@ -106,13 +107,14 @@ event.Metadata["traceparent"] = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b71692
 Bring them up together, we will have a pseudo code like this
 
 ```go
-// Initialize a publisher
-pub, cleanup := kanthorq.Pub(ctx, &publisher.Options{
-  // replace DATABASE_URI with your database URI
+options := &publisher.Options{
+  // replace connection string with your database URI
   Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
   // using default stream for demo
   StreamName: entities.DefaultStreamName,
-})
+}
+// Initialize a publisher
+pub, cleanup := kanthorq.Pub(ctx, options)
 // clean up the publisher after everything is done
 defer cleanup()
 
@@ -137,24 +139,16 @@ One of the coolest features we have at KanthorQ is you can publish events in a t
 If you get back to the example before about the order events, you can realise that you can expect that both your updating and the event publishing are either success or failure. You will not be able to fall into a case that you publish an event success but your updating is failed or vice versa.
 
 ```go
-// ------------ THE DIFFERENT IS HERE ---------
-pub, cleanup := kanthorq.PubTx(ctx, &publisher.Options{
+options := &publisher.Options{
+  // replace connection string with your database URI
+  Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
   // using default stream for demo
   StreamName: entities.DefaultStreamName,
-})
+}
+// Initialize a publisher
+pub, cleanup := kanthorq.Pub(ctx, options)
 // clean up the publisher after everything is done
 defer cleanup()
-
-// ------------ THE DIFFERENT IS HERE ---------
-tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
-if err != nil {
-  return nil, err
-}
-// wrap the context with your transcation to use it
-ctx = kanthorq.WithTx(ctx, tx)
-// do your work
-// do something
-// do another thing
 
 subject := "system.say_hello"
 body := []byte("{\"msg\": \"Hello World!\"}")
@@ -165,16 +159,20 @@ event.Metadata["traceparent"] = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b71692
 
 // publish events
 events := []*entities.Event{event}
-if err:= pub.Send(ctx, events); err != nil {
-  // handle error
-  // then rollback the transcation
-  if err:= tx.Rollback(ctx); err != nil {
-    // handle error
-  }
+// ------------ THE DIFFERENT IS HERE ---------
+// start a different connection
+conn, err := pgx.Connect(ctx, cm.uri)
+if err != nil {
+  return nil, err
+}
+tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+if err != nil {
+  return nil, err
 }
 
-// now commit the transcation
-if err:= tx.Commit(ctx); err != nil {
+if err:= pub.SendTx(ctx, events, tx); err != nil {
   // handle error
 }
 ```
+
+The full example can be found at our example of [Transactional Publisher](https://github.com/kanthor/kanthorq/blob/main/example/transactional-publisher/main.go)

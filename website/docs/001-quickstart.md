@@ -55,7 +55,7 @@ import "github.com/kanthorlabs/kanthorq"
 func main() {
   // Initialize a publisher
   pub, cleanup := kanthorq.Pub(ctx, &publisher.Options{
-    // replace DATABASE_URI with your database URI
+    // replace connection string with your database URI
     Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
     // using default stream for demo
     StreamName: entities.DefaultStreamName,
@@ -93,7 +93,7 @@ func main() {
   defer stop()
 
   var options = &kanthorq.SubscriberOptions{
-    // replace DATABASE_URI with your database URI
+    // replace connection string with your database URI
     Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
     // we use default stream for demo
     StreamName:                entities.DefaultStreamName,
@@ -161,4 +161,4 @@ After running the example, you should see the following output:
 
 ## Conclusion
 
-By this tutorial, we showed you how quickly use Kanthorq in your project, the full and interactive example can be found in the [examples](https://github.com/kanthorlabs/kanthorq/blob/main/example/default/main.go) folder.
+By this tutorial, we showed you how quickly use Kanthorq in your project, the full and interactive example can be found in the [Default Example](https://github.com/kanthorlabs/kanthorq/blob/main/example/default/main.go).

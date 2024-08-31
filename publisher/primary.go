@@ -7,6 +7,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
@@ -70,14 +71,22 @@ func (pub *primary) Send(ctx context.Context, events []*entities.Event) error {
 		}
 	}
 
-	conn, err := pub.cm.Acquire(ctx)
+	req := &core.StreamPutEventsReq{Stream: pub.stream, Events: events}
+	res, err := core.DoWithCM(ctx, req, pub.cm)
 	if err != nil {
 		return err
 	}
-	defer pub.cm.Release(ctx, conn)
 
+	if res.InsertCount != int64(len(events)) {
+		log.Println("inserted ", res.InsertCount, " events, expected ", len(events))
+	}
+
+	return nil
+}
+
+func (pub *primary) SendTx(ctx context.Context, events []*entities.Event, tx pgx.Tx) error {
 	req := &core.StreamPutEventsReq{Stream: pub.stream, Events: events}
-	res, err := core.Do(ctx, req, conn)
+	res, err := req.Do(ctx, tx)
 	if err != nil {
 		return err
 	}

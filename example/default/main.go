@@ -19,6 +19,9 @@ import (
 
 func main() {
 	var DATABASE_URI = "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable"
+	if uri := os.Getenv("KANTHORQ_POSTGRES_URI"); uri != "" {
+		DATABASE_URI = uri
+	}
 
 	// listen for SIGINT and SIGTERM so if you press Ctrl-C you can stop the program
 	ctx, stop := signal.NotifyContext(context.TODO(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
