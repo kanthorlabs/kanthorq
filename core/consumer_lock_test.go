@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
 	"github.com/kanthorlabs/kanthorq/tester"
 	"github.com/stretchr/testify/require"
 )
@@ -24,8 +25,14 @@ func TestConsumerLock(t *testing.T) {
 		Name: consumer.Name,
 	}
 
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	require.NoError(t, err)
+	_, err = req.Do(ctx, tx)
+	require.NoError(t, err)
+
+	var count = xfaker.F.IntBetween(11, 21)
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for i := 0; i < count; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -36,14 +43,28 @@ func TestConsumerLock(t *testing.T) {
 				require.NoError(t, conn.Close(ctx))
 			}()
 
-			res, err := Do(ctx, req, conn)
-			if err != nil {
-				require.ErrorIs(t, err, pgx.ErrNoRows)
-			}
-			if res != nil {
-				require.Equal(t, res.Consumer.Name, consumer.Name)
-			}
+			_, err = Do(ctx, req, conn)
+			require.ErrorIs(t, err, pgx.ErrNoRows)
 		}()
 	}
 	wg.Wait()
+
+	require.NoError(t, tx.Commit(ctx))
+}
+
+func TestConsumerLock_Failure(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	_, _ = Seed(t, ctx, conn)
+
+	req := &ConsumerLockReq{
+		Name: xfaker.ConsumerName(),
+	}
+	_, err = Do(ctx, req, conn)
+	require.ErrorIs(t, err, pgx.ErrNoRows)
 }

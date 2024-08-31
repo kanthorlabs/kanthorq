@@ -47,5 +47,6 @@ func (req *ConsumerUnlockReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerUnloc
 	if err != nil {
 		return nil, err
 	}
+
 	return res, nil
 }
