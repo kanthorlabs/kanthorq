@@ -92,6 +92,7 @@ func FakeTasks(events []*entities.Event, state entities.TaskState) []*entities.T
 			AttemptedAt:    time.Now().UTC().UnixMilli(),
 			AttemptedError: []entities.AttemptedError{},
 			FinalizedAt:    0,
+			Metadata:       events[i].Metadata,
 			CreatedAt:      events[i].CreatedAt,
 			UpdatedAt:      time.Now().UTC().UnixMilli(),
 		}

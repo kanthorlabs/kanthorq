@@ -3,6 +3,7 @@ package puller
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/core"
@@ -49,7 +50,7 @@ func (puller *primary) convert(ctx context.Context, out *PullerOut) error {
 	if err != nil {
 		return err
 	}
-	lock, err := (&core.ConsumerLockReq{Name: puller.consumer.Name}).Do(ctx, tx)
+	lock, err := puller.lockr().Do(ctx, tx)
 	if err != nil {
 		// unable to lock consumer because it was using by another puller
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -60,13 +61,13 @@ func (puller *primary) convert(ctx context.Context, out *PullerOut) error {
 
 	// IMPORTANT: make sure you only use the consumer that was locked successfully
 	// otherwise you cannot get latest consumer cursor
-	scan, err := (&core.StreamScanReq{Stream: puller.stream, Consumer: lock.Consumer, Size: puller.in.Size, WaitingTime: puller.in.WaitingTime}).Do(ctx, tx)
+	scan, err := puller.scanr(lock.Consumer).Do(ctx, tx)
 	if err != nil {
 		return errors.Join(err, tx.Rollback(ctx))
 	}
 
 	if scan.Cursor != "" && scan.Cursor != lock.Consumer.Cursor {
-		unlock, err := (&core.ConsumerUnlockReq{Name: lock.Consumer.Name, Cursor: scan.Cursor}).Do(ctx, tx)
+		unlock, err := puller.unlockr(lock.Consumer, scan.Cursor).Do(ctx, tx)
 		if err != nil {
 			return errors.Join(err, tx.Rollback(ctx))
 		}
@@ -80,7 +81,7 @@ func (puller *primary) convert(ctx context.Context, out *PullerOut) error {
 		return tx.Commit(ctx)
 	}
 
-	convert, err := (&core.TaskConvertReq{Consumer: lock.Consumer, EventIds: scan.Ids, InitialState: entities.StateRunning}).Do(ctx, tx)
+	convert, err := puller.convertr(lock.Consumer, scan.Ids).Do(ctx, tx)
 	if err != nil {
 		return errors.Join(err, tx.Rollback(ctx))
 	}
@@ -92,6 +93,27 @@ func (puller *primary) convert(ctx context.Context, out *PullerOut) error {
 	out.Tasks = convert.Tasks
 	out.EventIds = convert.EventIds
 	return nil
+}
+
+func (puller *primary) lockr() *core.ConsumerLockReq {
+	return &core.ConsumerLockReq{Name: puller.consumer.Name}
+}
+
+func (puller *primary) unlockr(consumer *entities.ConsumerRegistry, cursor string) *core.ConsumerUnlockReq {
+	return &core.ConsumerUnlockReq{Name: consumer.Name, Cursor: cursor}
+}
+
+func (puller *primary) scanr(consumer *entities.ConsumerRegistry) *core.StreamScanReq {
+	return &core.StreamScanReq{
+		Stream:      puller.stream,
+		Consumer:    consumer,
+		Size:        puller.in.Size,
+		WaitingTime: time.Millisecond * time.Duration(puller.in.WaitingTime),
+	}
+}
+
+func (puller *primary) convertr(consumer *entities.ConsumerRegistry, ids []string) *core.TaskConvertReq {
+	return &core.TaskConvertReq{Consumer: consumer, EventIds: ids, InitialState: entities.StateRunning}
 }
 
 func (puller *primary) fulfill(ctx context.Context, out *PullerOut) error {

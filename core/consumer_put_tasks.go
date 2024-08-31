@@ -38,6 +38,7 @@ func (req *ConsumerPutTasksReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPut
 			event.AttemptedAt,
 			event.AttemptedError,
 			event.FinalizedAt,
+			event.Metadata,
 			event.CreatedAt,
 			event.UpdatedAt,
 		}

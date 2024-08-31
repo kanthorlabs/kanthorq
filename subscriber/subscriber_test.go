@@ -18,11 +18,12 @@ func TestSubscriber_Connection(t *testing.T) {
 
 	instance, err := New(
 		&Options{
-			Connection:            os.Getenv("KANTHORQ_POSTGRES_URI"),
-			StreamName:            entities.DefaultStreamName,
-			ConsumerName:          "internal",
-			ConsumerSubjectFilter: []string{"system.ping"},
-			ConsumerAttemptMax:    entities.DefaultConsumerAttemptMax,
+			Connection:                os.Getenv("KANTHORQ_POSTGRES_URI"),
+			StreamName:                entities.DefaultStreamName,
+			ConsumerName:              "internal",
+			ConsumerSubjectFilter:     []string{"system.ping"},
+			ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
+			ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
 			Puller: &puller.PullerIn{
 				Size:        100,
 				WaitingTime: 5000,

@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/entities"
@@ -37,6 +38,7 @@ func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx 
 	var names = make([]string, len(req.Tasks))
 	var args = pgx.NamedArgs{
 		"attempt_max":     req.Consumer.AttemptMax,
+		"finalized_at":    time.Now().UnixMilli(),
 		"attempted_error": req.Error,
 		"discarded_state": int(entities.StateDiscarded),
 		"retryable_state": int(entities.StateRetryable),

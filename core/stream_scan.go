@@ -20,8 +20,8 @@ type StreamScanReq struct {
 	Stream   *entities.StreamRegistry   `validate:"required"`
 	Consumer *entities.ConsumerRegistry `validate:"required"`
 
-	Size        int   `validate:"required,gt=0"`
-	WaitingTime int64 `validate:"gte=1000"`
+	Size        int           `validate:"required,gt=0"`
+	WaitingTime time.Duration `validate:"gte=1000"`
 }
 
 type StreamScanRes struct {
@@ -35,7 +35,7 @@ func (req *StreamScanReq) Do(ctx context.Context, tx pgx.Tx) (*StreamScanRes, er
 		return nil, err
 	}
 
-	waitctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(req.WaitingTime))
+	waitctx, cancel := context.WithTimeout(context.Background(), req.WaitingTime)
 	defer cancel()
 
 	res := &StreamScanRes{Cursor: req.Consumer.Cursor}
