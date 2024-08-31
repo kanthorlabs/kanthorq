@@ -175,4 +175,4 @@ if err:= pub.SendTx(ctx, events, tx); err != nil {
 }
 ```
 
-The full example can be found at our example of [Transactional Publisher](https://github.com/kanthor/kanthorq/blob/main/example/transactional-publisher/main.go)
+The full example can be found at our example of [Transactional Publisher](https://github.com/kanthorlabs/kanthorq/blob/main/example/transactional-publisher/main.go)
