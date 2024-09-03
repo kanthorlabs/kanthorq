@@ -116,14 +116,13 @@ func (sub *primary) Receive(ctx context.Context, handler Handler) error {
 func (sub *primary) handle(ctx context.Context, handler Handler, msg *Message, wg *sync.WaitGroup) {
 	defer func(msg *Message) {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-
 			var reason error
 			if e, ok := r.(error); ok {
 				reason = e
 			} else {
 				reason = fmt.Errorf("%v", r)
 			}
+			fmt.Println("Recovered in f", reason)
 
 			if err := msg.Nack(ctx, reason); err != nil {
 				log.Println(fmt.Errorf("failed to nack message: %w", err))

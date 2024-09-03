@@ -2,6 +2,7 @@ package subscriber
 
 import (
 	"context"
+	"errors"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -18,8 +19,9 @@ type Message struct {
 	cm       pgcm.ConnectionManager
 	consumer *entities.ConsumerRegistry
 
-	mu   sync.Mutex
-	done bool
+	mu     sync.Mutex
+	acked  bool
+	nacked bool
 }
 
 // Ack is safe to call multiple times
@@ -27,10 +29,14 @@ func (msg *Message) Ack(ctx context.Context) error {
 	msg.mu.Lock()
 	defer msg.mu.Unlock()
 
-	if msg.done {
+	if msg.nacked {
+		return errors.New("message already nacked")
+	}
+
+	if msg.acked {
 		return nil
 	}
-	msg.done = true
+	msg.acked = true
 
 	req := &core.TaskMarkRunningAsCompletedReq{
 		Consumer: msg.consumer,
@@ -47,10 +53,14 @@ func (msg *Message) Nack(ctx context.Context, reason error) error {
 	msg.mu.Lock()
 	defer msg.mu.Unlock()
 
-	if msg.done {
+	if msg.acked {
+		return errors.New("message already acked")
+	}
+
+	if msg.nacked {
 		return nil
 	}
-	msg.done = true
+	msg.nacked = true
 
 	req := &core.TaskMarkRunningAsRetryableOrDiscardedReq{
 		Consumer: msg.consumer,
