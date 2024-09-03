@@ -24,9 +24,9 @@ func TestSubscriber_Connection(t *testing.T) {
 			ConsumerSubjectFilter:     []string{"system.ping"},
 			ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
 			ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
-			Puller: &puller.PullerIn{
+			Puller: puller.PullerIn{
 				Size:        100,
-				WaitingTime: 5000,
+				WaitingTime: 3000,
 			},
 		},
 	)

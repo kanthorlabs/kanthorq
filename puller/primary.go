@@ -17,7 +17,7 @@ type primary struct {
 	cm       pgcm.ConnectionManager
 	stream   *entities.StreamRegistry
 	consumer *entities.ConsumerRegistry
-	in       *PullerIn
+	in       PullerIn
 }
 
 func (puller *primary) Do(ctx context.Context) (*PullerOut, error) {
@@ -66,6 +66,7 @@ func (puller *primary) convert(ctx context.Context, out *PullerOut) error {
 		return errors.Join(err, tx.Rollback(ctx))
 	}
 
+	// unlock as soon as possible to let other puller can lock the consumer
 	if scan.Cursor != "" && scan.Cursor != lock.Consumer.Cursor {
 		unlock, err := puller.unlockr(lock.Consumer, scan.Cursor).Do(ctx, tx)
 		if err != nil {

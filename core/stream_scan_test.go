@@ -93,7 +93,7 @@ func TestStreamScan_MixEventSubjects(t *testing.T) {
 	// first, seed event with given subject pattern again
 	_ = SeedEvents(t, ctx, conn, stream, consumer, count/2+1)
 	// then seed events with other subjects
-	events := FakeEvents(xfaker.Subject(), xfaker.F.IntBetween(100, 500))
+	events := tester.FakeEvents(xfaker.Subject(), xfaker.F.IntBetween(100, 500))
 	_, err = Do(ctx, &StreamPutEventsReq{Stream: stream, Events: events}, conn)
 	require.NoError(t, err)
 	// finally, seed event with given subject pattern again

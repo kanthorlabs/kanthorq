@@ -21,7 +21,7 @@ func TestConsumerPutTasks(t *testing.T) {
 	stream, consumer := Seed(t, ctx, conn)
 	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
 
-	tasks := FakeTasks(events, entities.StateAvailable)
+	tasks := tester.FakeTasks(events, entities.StateAvailable)
 	req := &ConsumerPutTasksReq{
 		Consumer: consumer,
 		Tasks:    tasks,

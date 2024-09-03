@@ -31,7 +31,7 @@ func New() *cobra.Command {
 				ConsumerSubjectFilter:     xcmd.GetStringSlice(cmd.Flags(), "subjects"),
 				ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
 				ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
-				Puller: &puller.PullerIn{
+				Puller: puller.PullerIn{
 					Size:        100,
 					WaitingTime: 5000,
 				},

@@ -106,7 +106,7 @@ func main() {
     ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
     // if task is stuck, we will wait this amount of time to reprocess it
     ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
-    Puller: &puller.PullerIn{
+    Puller: puller.PullerIn{
       // Size is how many events you want to pull at one batch
       Size:        100,
       // WaitingTime is how long you want to wait before pulling again

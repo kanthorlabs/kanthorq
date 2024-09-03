@@ -60,7 +60,7 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToDiscarded(t *testing.T) {
 	stream, consumer := Seed(t, ctx, conn)
 
 	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
-	tasks := FakeTasks(events, entities.StateRunning)
+	tasks := tester.FakeTasks(events, entities.StateRunning)
 	for i := range tasks {
 		// simulate that we have reached the max attempts
 		tasks[i].AttemptCount = consumer.AttemptMax + 1

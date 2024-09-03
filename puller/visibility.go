@@ -14,7 +14,7 @@ type visibility struct {
 	cm       pgcm.ConnectionManager
 	stream   *entities.StreamRegistry
 	consumer *entities.ConsumerRegistry
-	in       *PullerIn
+	in       PullerIn
 }
 
 func (puller *visibility) Do(ctx context.Context) (*PullerOut, error) {

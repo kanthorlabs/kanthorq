@@ -14,7 +14,7 @@ type retry struct {
 	cm       pgcm.ConnectionManager
 	stream   *entities.StreamRegistry
 	consumer *entities.ConsumerRegistry
-	in       *PullerIn
+	in       PullerIn
 }
 
 func (puller *retry) Do(ctx context.Context) (*PullerOut, error) {
