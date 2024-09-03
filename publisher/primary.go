@@ -16,6 +16,18 @@ import (
 
 var _ Publisher = (*primary)(nil)
 
+// NewPublisher creates a new publisher that uses the default stream
+func New(options *Options) (Publisher, error) {
+	if err := xvalidator.Validate.Struct(options); err != nil {
+		return nil, err
+	}
+	cm, err := pgcm.New(options.Connection)
+	if err != nil {
+		return nil, err
+	}
+	return &primary{options: options, cm: cm}, nil
+}
+
 type primary struct {
 	options *Options
 	mu      sync.Mutex

@@ -10,6 +10,15 @@ import (
 
 var _ Puller = (*retry)(nil)
 
+func NewRetry(
+	cm pgcm.ConnectionManager,
+	stream *entities.StreamRegistry,
+	consumer *entities.ConsumerRegistry,
+	in PullerIn,
+) Puller {
+	return &retry{cm: cm, stream: stream, consumer: consumer, in: in}
+}
+
 type retry struct {
 	cm       pgcm.ConnectionManager
 	stream   *entities.StreamRegistry

@@ -13,6 +13,15 @@ import (
 
 var _ Puller = (*primary)(nil)
 
+func New(
+	cm pgcm.ConnectionManager,
+	stream *entities.StreamRegistry,
+	consumer *entities.ConsumerRegistry,
+	in PullerIn,
+) Puller {
+	return &primary{cm: cm, stream: stream, consumer: consumer, in: in}
+}
+
 type primary struct {
 	cm       pgcm.ConnectionManager
 	stream   *entities.StreamRegistry

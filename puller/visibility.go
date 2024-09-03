@@ -10,6 +10,15 @@ import (
 
 var _ Puller = (*visibility)(nil)
 
+func NewVisibility(
+	cm pgcm.ConnectionManager,
+	stream *entities.StreamRegistry,
+	consumer *entities.ConsumerRegistry,
+	in PullerIn,
+) Puller {
+	return &visibility{cm: cm, stream: stream, consumer: consumer, in: in}
+}
+
 type visibility struct {
 	cm       pgcm.ConnectionManager
 	stream   *entities.StreamRegistry

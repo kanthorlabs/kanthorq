@@ -47,12 +47,7 @@ func TestPrimary_Do(t *testing.T) {
 		Size:        100,
 		WaitingTime: 3000,
 	}
-	p := &primary{
-		stream:   res.StreamRegistry,
-		consumer: res.ConsumerRegistry,
-		cm:       cm,
-		in:       in,
-	}
+	p := New(cm, res.StreamRegistry, res.ConsumerRegistry, in)
 
 	first, err := p.Do(ctx)
 	require.NoError(t, err)
@@ -106,12 +101,7 @@ func TestPrimary_Do_NoEvent(t *testing.T) {
 		Size:        100,
 		WaitingTime: 3000,
 	}
-	p := &primary{
-		stream:   res.StreamRegistry,
-		consumer: res.ConsumerRegistry,
-		cm:       cm,
-		in:       in,
-	}
+	p := New(cm, res.StreamRegistry, res.ConsumerRegistry, in)
 
 	out, err := p.Do(ctx)
 	require.NoError(t, err)

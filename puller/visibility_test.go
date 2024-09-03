@@ -53,12 +53,7 @@ func TestVisibility_Do(t *testing.T) {
 		Size:        100,
 		WaitingTime: 3000,
 	}
-	p := &visibility{
-		stream:   res.StreamRegistry,
-		consumer: res.ConsumerRegistry,
-		cm:       cm,
-		in:       in,
-	}
+	p := NewVisibility(cm, res.StreamRegistry, res.ConsumerRegistry, in)
 
 	first, err := p.Do(ctx)
 	require.NoError(t, err)
@@ -126,12 +121,7 @@ func TestVisibility_Do_NoVisiableTask(t *testing.T) {
 		Size:        100,
 		WaitingTime: 3000,
 	}
-	p := &visibility{
-		stream:   res.StreamRegistry,
-		consumer: res.ConsumerRegistry,
-		cm:       cm,
-		in:       in,
-	}
+	p := NewVisibility(cm, res.StreamRegistry, res.ConsumerRegistry, in)
 
 	out, err := p.Do(ctx)
 	require.NoError(t, err)
@@ -165,12 +155,7 @@ func TestVisibility_Do_NoTask(t *testing.T) {
 		Size:        100,
 		WaitingTime: 3000,
 	}
-	p := &visibility{
-		stream:   res.StreamRegistry,
-		consumer: res.ConsumerRegistry,
-		cm:       cm,
-		in:       in,
-	}
+	p := NewVisibility(cm, res.StreamRegistry, res.ConsumerRegistry, in)
 
 	out, err := p.Do(ctx)
 	require.NoError(t, err)

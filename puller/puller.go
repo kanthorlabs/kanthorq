@@ -7,33 +7,6 @@ import (
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
 )
 
-func New(
-	cm pgcm.ConnectionManager,
-	stream *entities.StreamRegistry,
-	consumer *entities.ConsumerRegistry,
-	in PullerIn,
-) Puller {
-	return &primary{cm: cm, stream: stream, consumer: consumer, in: in}
-}
-
-func NewRetry(
-	cm pgcm.ConnectionManager,
-	stream *entities.StreamRegistry,
-	consumer *entities.ConsumerRegistry,
-	in PullerIn,
-) Puller {
-	return &retry{cm: cm, stream: stream, consumer: consumer, in: in}
-}
-
-func NewVisibility(
-	cm pgcm.ConnectionManager,
-	stream *entities.StreamRegistry,
-	consumer *entities.ConsumerRegistry,
-	in PullerIn,
-) Puller {
-	return &visibility{cm: cm, stream: stream, consumer: consumer, in: in}
-}
-
 type PullerFactory func(cm pgcm.ConnectionManager, stream *entities.StreamRegistry, consumer *entities.ConsumerRegistry, in PullerIn) Puller
 
 type Puller interface {
