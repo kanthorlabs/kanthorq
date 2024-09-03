@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/kanthorlabs/kanthorq/entities"
@@ -13,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPrimary_Do(t *testing.T) {
+func TestRetry_Do(t *testing.T) {
 	ctx := context.Background()
 	conn, err := tester.SetupPostgres(ctx)
 	defer func() {
@@ -36,10 +37,15 @@ func TestPrimary_Do(t *testing.T) {
 	// need 2 batches of events to pull
 	count := xfaker.F.IntBetween(101, 199)
 	events := tester.FakeEvents(xfaker.SubjectWihtPattern(res.ConsumerRegistry.SubjectFilter[0]), count)
-
 	_, err = core.DoWithCM(ctx, &core.StreamPutEventsReq{
 		Stream: res.StreamRegistry,
 		Events: events,
+	}, cm)
+	require.NoError(t, err)
+	tasks := tester.FakeTasks(events, entities.StateRetryable)
+	_, err = core.DoWithCM(ctx, &core.ConsumerPutTasksReq{
+		Consumer: res.ConsumerRegistry,
+		Tasks:    tasks,
 	}, cm)
 	require.NoError(t, err)
 
@@ -47,7 +53,7 @@ func TestPrimary_Do(t *testing.T) {
 		Size:        100,
 		WaitingTime: 3000,
 	}
-	p := &primary{
+	p := &retry{
 		stream:   res.StreamRegistry,
 		consumer: res.ConsumerRegistry,
 		cm:       cm,
@@ -79,10 +85,63 @@ func TestPrimary_Do(t *testing.T) {
 	for _, task := range second.Tasks {
 		require.Equal(t, entities.StateRunning, task.State)
 	}
-
 }
 
-func TestPrimary_Do_NoEvent(t *testing.T) {
+func TestRetry_Do_NoVisiableTask(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	cm, err := pgcm.New(os.Getenv("KANTHORQ_POSTGRES_URI"))
+	require.NoError(t, err)
+
+	res, err := core.DoWithCM(ctx, &core.ConsumerRegisterReq{
+		StreamName:                xfaker.StreamName(),
+		ConsumerName:              xfaker.ConsumerName(),
+		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
+		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
+	}, cm)
+	require.NoError(t, err)
+
+	// need 2 batches of events to pull
+	count := xfaker.F.IntBetween(101, 199)
+	events := tester.FakeEvents(xfaker.SubjectWihtPattern(res.ConsumerRegistry.SubjectFilter[0]), count)
+	_, err = core.DoWithCM(ctx, &core.StreamPutEventsReq{
+		Stream: res.StreamRegistry,
+		Events: events,
+	}, cm)
+	require.NoError(t, err)
+	tasks := tester.FakeTasksWithSchedule(events, entities.StateRetryable, time.Now().Add(time.Hour))
+	_, err = core.DoWithCM(ctx, &core.ConsumerPutTasksReq{
+		Consumer: res.ConsumerRegistry,
+		Tasks:    tasks,
+	}, cm)
+	require.NoError(t, err)
+
+	in := PullerIn{
+		Size:        100,
+		WaitingTime: 3000,
+	}
+	p := &retry{
+		stream:   res.StreamRegistry,
+		consumer: res.ConsumerRegistry,
+		cm:       cm,
+		in:       in,
+	}
+
+	out, err := p.Do(ctx)
+	require.NoError(t, err)
+
+	require.Empty(t, out.Tasks)
+	require.Empty(t, out.Events)
+	require.Empty(t, out.EventIds)
+}
+
+func TestRetry_Do_NoTask(t *testing.T) {
 	ctx := context.Background()
 	conn, err := tester.SetupPostgres(ctx)
 	defer func() {
@@ -106,7 +165,7 @@ func TestPrimary_Do_NoEvent(t *testing.T) {
 		Size:        100,
 		WaitingTime: 3000,
 	}
-	p := &primary{
+	p := &retry{
 		stream:   res.StreamRegistry,
 		consumer: res.ConsumerRegistry,
 		cm:       cm,

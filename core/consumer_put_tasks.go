@@ -9,8 +9,8 @@ import (
 )
 
 type ConsumerPutTasksReq struct {
-	Consumer *entities.ConsumerRegistry
-	Tasks    []*entities.Task
+	Consumer *entities.ConsumerRegistry `validate:"required"`
+	Tasks    []*entities.Task           `validate:"required,dive,required"`
 }
 
 type ConsumerPutTasksRes struct {
@@ -23,24 +23,20 @@ func (req *ConsumerPutTasksReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerPut
 		return nil, err
 	}
 
-	if len(req.Tasks) == 0 {
-		return &ConsumerPutTasksRes{InsertCount: 0}, nil
-	}
-
 	var rows = make([][]any, len(req.Tasks))
-	for i, event := range req.Tasks {
+	for i, task := range req.Tasks {
 		rows[i] = []any{
-			event.EventId,
-			event.Subject,
-			event.State,
-			event.ScheduleAt,
-			event.AttemptCount,
-			event.AttemptedAt,
-			event.AttemptedError,
-			event.FinalizedAt,
-			event.Metadata,
-			event.CreatedAt,
-			event.UpdatedAt,
+			task.EventId,
+			task.Subject,
+			task.State,
+			task.ScheduleAt,
+			task.AttemptCount,
+			task.AttemptedAt,
+			task.AttemptedError,
+			task.FinalizedAt,
+			task.Metadata,
+			task.CreatedAt,
+			task.UpdatedAt,
 		}
 	}
 
