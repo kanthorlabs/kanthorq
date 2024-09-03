@@ -1,9 +1,17 @@
 package entities
 
-import "github.com/kanthorlabs/kanthorq/pkg/xid"
+import (
+	"time"
+
+	"github.com/kanthorlabs/kanthorq/pkg/xid"
+)
 
 func StreamId() string {
 	return xid.New("stream")
+}
+
+func StreamIdFromTime(t time.Time) string {
+	return xid.NewWithTime("stream", t)
 }
 
 type StreamRegistry struct {

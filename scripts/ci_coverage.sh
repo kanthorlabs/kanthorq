@@ -5,8 +5,6 @@ COVERAGE_EXPECTED=${COVERAGE_EXPECTED:-"90.0"}
 COVEROUT_FILE=${COVEROUT_FILE:-"cover.out"}
 COVERAGE_FILE=${COVERAGE_FILE:-"coverage.out"}
 
-COVERAGE_OLD=$(cat $COVERAGE_FILE)
-
 if test -f $COVEROUT_FILE; then
   go tool cover -func $COVEROUT_FILE | grep total | awk '{print substr($3, 1, length($3)-1)}' > $COVERAGE_FILE
 
@@ -17,6 +15,7 @@ if test -f $COVEROUT_FILE; then
     exit 1
   fi
 
+  COVERAGE_OLD=$(cat $COVERAGE_FILE)
   # warn if coverage is decreased
   if [ $(echo "${COVERAGE_ACUTAL} < ${COVERAGE_OLD}" | bc) -eq 1 ]; 
   then

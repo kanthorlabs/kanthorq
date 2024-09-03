@@ -6,6 +6,13 @@ import (
 	"github.com/kanthorlabs/kanthorq/pkg/xid"
 )
 
+func EventId() string {
+	return xid.New("event")
+}
+
+func EventIdFromTime(t time.Time) string {
+	return xid.NewWithTime("event", t)
+}
 func NewEvent(subject string, body []byte) *Event {
 	return &Event{
 		Id:        EventId(),
@@ -14,14 +21,6 @@ func NewEvent(subject string, body []byte) *Event {
 		Metadata:  make(Metadata),
 		CreatedAt: time.Now().UnixMilli(),
 	}
-}
-
-func EventId() string {
-	return xid.New("event")
-}
-
-func EventIdFromTime(t time.Time) string {
-	return xid.NewWithTime("event", t)
 }
 
 type Event struct {

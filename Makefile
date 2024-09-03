@@ -14,6 +14,7 @@ default:
 test:
 	@rm -rf ./checksum
 	@./scripts/ci_test.sh
+	@./scripts/ci_coverage.sh
 
 refresh:
 	@docker compose -f docker/docker-compose.yaml down

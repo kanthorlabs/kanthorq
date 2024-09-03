@@ -10,11 +10,17 @@ func Collection(name string) string {
 }
 
 func Properties(entity any) []string {
-	var props []string
-	eventType := reflect.TypeOf(entity)
+	typeof := reflect.TypeOf(entity)
 
-	for i := 0; i < eventType.NumField(); i++ {
-		field := eventType.Field(i)
+	// Check if the entity is a pointer, and get the underlying element if it is
+	if typeof.Kind() == reflect.Ptr {
+		typeof = typeof.Elem()
+	}
+
+	var props []string
+
+	for i := 0; i < typeof.NumField(); i++ {
+		field := typeof.Field(i)
 		props = append(props, field.Tag.Get("json"))
 	}
 

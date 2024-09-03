@@ -4,12 +4,17 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/kanthorlabs/kanthorq/pkg/xid"
 )
 
 func TaskId() string {
 	return xid.New("task")
+}
+
+func TaskIdFromTime(t time.Time) string {
+	return xid.NewWithTime("task", t)
 }
 
 type Task struct {
