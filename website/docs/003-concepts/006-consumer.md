@@ -45,15 +45,17 @@ There is the definition of the `Consumer Registry` in different places in Kantho
   <TabItem value="go" label="Go" default>
     ```go
     type ConsumerRegistry struct {
-      StreamId      string `json:"stream_id" validate:"required"`
-      StreamName    string `json:"stream_name" validate:"required,is_collection_name"`
-      Id            string `json:"id" validate:"required"`
-      Name          string `json:"name" validate:"required,is_collection_name"`
-      SubjectFilter string `json:"subject_filter" validate:"required,is_subject_filter"`
-      Cursor        string `json:"cursor"`
-      AttemptMax    int16  `json:"attempt_max"`
-      CreatedAt     int64  `json:"created_at"`
-      UpdatedAt     int64  `json:"updated_at"`
+      StreamId          string   `json:"stream_id" validate:"required"`
+      StreamName        string   `json:"stream_name" validate:"required,is_collection_name"`
+      Id                string   `json:"id" validate:"required"`
+      Name              string   `json:"name" validate:"required,is_collection_name"`
+      SubjectIncludes   []string `json:"subject_includes" validate:"required,gt=0,dive,is_subject_filter"`
+      SubjectExcludes   []string `json:"subject_excludes" validate:"gte=0,dive,is_subject_filter"`
+      Cursor            string   `json:"cursor"`
+      AttemptMax        int16    `json:"attempt_max"`
+      VisibilityTimeout int64    `json:"visibility_timeout" validate:"required,gt=1000"`
+      CreatedAt         int64    `json:"created_at"`
+      UpdatedAt         int64    `json:"updated_at"`
     }
     ```
   </TabItem>
@@ -64,9 +66,11 @@ There is the definition of the `Consumer Registry` in different places in Kantho
       stream_name VARCHAR(256) NOT NULL,
       id VARCHAR(64) NOT NULL,
       name VARCHAR(256) NOT NULL,
-      subject_filter VARCHAR(256) NOT NULL,
+      subject_includes VARCHAR(256) ARRAY NOT NULL,
+      subject_excludes VARCHAR(256) ARRAY NOT NULL DEFAULT '{}',
       cursor VARCHAR(64) NOT NULL,
-      attempt_max SMALLINT NOT NULL DEFAULT 3,
+      attempt_max SMALLINT NOT NULL DEFAULT 16,
+      visibility_timeout BIGINT NOT NULL DEFAULT 300000,
       created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
       updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000,
       PRIMARY KEY (name)

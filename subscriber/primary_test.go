@@ -19,7 +19,7 @@ func TestPrimary_Receive(t *testing.T) {
 		Connection:                os.Getenv("KANTHORQ_POSTGRES_URI"),
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{"system.>"},
+		ConsumerSubjectIncludes:   []string{"system.>"},
 		ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
 		ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
 		Puller: puller.PullerIn{

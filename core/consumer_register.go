@@ -20,7 +20,8 @@ var ConsumerRegisterCollectionSql string
 type ConsumerRegisterReq struct {
 	StreamName                string   `validate:"required,is_collection_name"`
 	ConsumerName              string   `validate:"required,is_collection_name"`
-	ConsumerSubjectFilter     []string `validate:"required,gt=0,dive,is_subject_filter"`
+	ConsumerSubjectIncludes   []string `validate:"required,gt=0,dive,is_subject_filter"`
+	ConsumerSubjectExcludes   []string `validate:"gte=0,dive,is_subject_filter"`
 	ConsumerAttemptMax        int16    `validate:"required,gt=0"`
 	ConsumerVisibilityTimeout int64    `validate:"required,gt=0"`
 }
@@ -35,6 +36,10 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 	if err != nil {
 		return nil, err
 	}
+	// cast nil value to []string
+	if req.ConsumerSubjectExcludes == nil {
+		req.ConsumerSubjectExcludes = []string{}
+	}
 
 	stream, err := (&StreamRegisterReq{StreamName: req.StreamName}).Do(ctx, tx)
 	if err != nil {
@@ -47,7 +52,8 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 		"stream_name":                 stream.StreamRegistry.Name,
 		"consumer_id":                 entities.ConsumerId(),
 		"consumer_name":               req.ConsumerName,
-		"consumer_subject_filter":     req.ConsumerSubjectFilter,
+		"consumer_subject_includes":   req.ConsumerSubjectIncludes,
+		"consumer_subject_excludes":   req.ConsumerSubjectExcludes,
 		"consumer_cursor":             entities.EventIdFromTime(time.UnixMilli(stream.StreamRegistry.CreatedAt)),
 		"consumer_attempt_max":        req.ConsumerAttemptMax,
 		"consumer_visibility_timeout": req.ConsumerVisibilityTimeout,
@@ -59,7 +65,8 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 			&registry.StreamName,
 			&registry.Id,
 			&registry.Name,
-			&registry.SubjectFilter,
+			&registry.SubjectIncludes,
+			&registry.SubjectExcludes,
 			&registry.Cursor,
 			&registry.AttemptMax,
 			&registry.VisibilityTimeout,

@@ -28,7 +28,7 @@ func New() *cobra.Command {
 				Connection:                xcmd.GetString(cmd.Flags(), "connection"),
 				StreamName:                xcmd.GetString(cmd.Flags(), "stream"),
 				ConsumerName:              xcmd.GetString(cmd.Flags(), "consumer"),
-				ConsumerSubjectFilter:     xcmd.GetStringSlice(cmd.Flags(), "subjects"),
+				ConsumerSubjectIncludes:   xcmd.GetStringSlice(cmd.Flags(), "subjects"),
 				ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
 				ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
 				Puller: puller.PullerIn{

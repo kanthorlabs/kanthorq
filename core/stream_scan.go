@@ -112,11 +112,22 @@ func (req *StreamScanReq) scan(ctx context.Context, tx pgx.Tx, res *StreamScanRe
 }
 
 func (req *StreamScanReq) match(subject string) bool {
-	for i := 0; i < len(req.Consumer.SubjectFilter); i++ {
-		if MatchSubject(req.Consumer.SubjectFilter[i], subject) {
+	// match any excludes subject, return FALSE
+	if len(req.Consumer.SubjectExcludes) > 0 {
+		for i := 0; i < len(req.Consumer.SubjectIncludes); i++ {
+			if MatchSubject(req.Consumer.SubjectExcludes[i], subject) {
+				return false
+			}
+		}
+	}
+
+	// match any includes subject, return TRUE
+	for i := 0; i < len(req.Consumer.SubjectIncludes); i++ {
+		if MatchSubject(req.Consumer.SubjectIncludes[i], subject) {
 			return true
 		}
 	}
 
+	// otherwise return FALSE
 	return false
 }

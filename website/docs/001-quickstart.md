@@ -101,7 +101,7 @@ func main() {
     ConsumerName:              entities.DefaultConsumerName,
     // we will only receive events that match with the filter
     // so both system.say_hello and system.say_goodbye will be processed
-    ConsumerSubjectFilter:     []string{"system.>"},
+    ConsumerSubjectIncludes:   []string{"system.>"},
     // if task is failed, it will be retried it with this number of times
     ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
     // if task is stuck, we will wait this amount of time to reprocess it

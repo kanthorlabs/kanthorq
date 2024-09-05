@@ -45,7 +45,7 @@ func (sub *primary) Start(ctx context.Context) (err error) {
 	req := &core.ConsumerRegisterReq{
 		StreamName:                sub.options.StreamName,
 		ConsumerName:              sub.options.ConsumerName,
-		ConsumerSubjectFilter:     sub.options.ConsumerSubjectFilter,
+		ConsumerSubjectIncludes:   sub.options.ConsumerSubjectIncludes,
 		ConsumerAttemptMax:        sub.options.ConsumerAttemptMax,
 		ConsumerVisibilityTimeout: sub.options.ConsumerVisibilityTimeout,
 	}

@@ -50,7 +50,7 @@ func TestTaskConvert_NoEvent(t *testing.T) {
 
 	_, consumer := Seed(t, ctx, conn)
 
-	events := tester.FakeEvents(xfaker.SubjectWihtPattern(consumer.SubjectFilter[0]), xfaker.F.IntBetween(100, 500))
+	events := tester.FakeEvents(xfaker.SubjectWihtPattern(consumer.SubjectIncludes[0]), xfaker.F.IntBetween(100, 500))
 
 	req := &TaskConvertReq{
 		Consumer:     consumer,

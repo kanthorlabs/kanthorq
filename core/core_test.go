@@ -19,7 +19,8 @@ func Seed(
 	req := &ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
+		ConsumerSubjectExcludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
@@ -38,7 +39,7 @@ func SeedEvents(
 	consumer *entities.ConsumerRegistry,
 	count int,
 ) []*entities.Event {
-	events := tester.FakeEvents(xfaker.SubjectWihtPattern(consumer.SubjectFilter[0]), count)
+	events := tester.FakeEvents(xfaker.SubjectWihtPattern(consumer.SubjectIncludes[0]), count)
 
 	req := &StreamPutEventsReq{
 		Stream: stream,

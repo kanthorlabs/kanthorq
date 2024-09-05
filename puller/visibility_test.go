@@ -28,7 +28,7 @@ func TestVisibility_Do(t *testing.T) {
 	res, err := core.DoWithCM(ctx, &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}, cm)
@@ -36,7 +36,7 @@ func TestVisibility_Do(t *testing.T) {
 
 	// need 2 batches of events to pull
 	count := xfaker.F.IntBetween(101, 199)
-	events := tester.FakeEvents(xfaker.SubjectWihtPattern(res.ConsumerRegistry.SubjectFilter[0]), count)
+	events := tester.FakeEvents(xfaker.SubjectWihtPattern(res.ConsumerRegistry.SubjectIncludes[0]), count)
 	_, err = core.DoWithCM(ctx, &core.StreamPutEventsReq{
 		Stream: res.StreamRegistry,
 		Events: events,
@@ -96,7 +96,7 @@ func TestVisibility_Do_NoVisiableTask(t *testing.T) {
 	res, err := core.DoWithCM(ctx, &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}, cm)
@@ -104,7 +104,7 @@ func TestVisibility_Do_NoVisiableTask(t *testing.T) {
 
 	// need 2 batches of events to pull
 	count := xfaker.F.IntBetween(101, 199)
-	events := tester.FakeEvents(xfaker.SubjectWihtPattern(res.ConsumerRegistry.SubjectFilter[0]), count)
+	events := tester.FakeEvents(xfaker.SubjectWihtPattern(res.ConsumerRegistry.SubjectIncludes[0]), count)
 	_, err = core.DoWithCM(ctx, &core.StreamPutEventsReq{
 		Stream: res.StreamRegistry,
 		Events: events,
@@ -145,7 +145,7 @@ func TestVisibility_Do_NoTask(t *testing.T) {
 	res, err := core.DoWithCM(ctx, &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}, cm)

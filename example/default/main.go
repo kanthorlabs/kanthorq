@@ -58,7 +58,7 @@ func main() {
 		Connection:                DATABASE_URI,
 		StreamName:                entities.DefaultStreamName,
 		ConsumerName:              entities.DefaultConsumerName,
-		ConsumerSubjectFilter:     []string{"system.>"},
+		ConsumerSubjectIncludes:   []string{"system.>"},
 		ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
 		ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
 		Puller: puller.PullerIn{

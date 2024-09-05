@@ -23,7 +23,7 @@ func TestConsumerRegister(t *testing.T) {
 	req := &ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(1, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
@@ -50,7 +50,7 @@ func TestConsumerRegister_Parallel(t *testing.T) {
 	req := &ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(1, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}

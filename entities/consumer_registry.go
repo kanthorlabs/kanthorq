@@ -19,7 +19,8 @@ type ConsumerRegistry struct {
 	StreamName        string   `json:"stream_name" validate:"required,is_collection_name"`
 	Id                string   `json:"id" validate:"required"`
 	Name              string   `json:"name" validate:"required,is_collection_name"`
-	SubjectFilter     []string `json:"subject_filter" validate:"required,gt=0,dive,is_subject_filter"`
+	SubjectIncludes   []string `json:"subject_includes" validate:"required,gt=0,dive,is_subject_filter"`
+	SubjectExcludes   []string `json:"subject_excludes" validate:"gte=0,dive,is_subject_filter"`
 	Cursor            string   `json:"cursor"`
 	AttemptMax        int16    `json:"attempt_max"`
 	VisibilityTimeout int64    `json:"visibility_timeout" validate:"required,gt=1000"`

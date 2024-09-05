@@ -27,11 +27,11 @@ func TestMessage_Ack(t *testing.T) {
 	options := &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
-	options.ConsumerSubjectFilter = append(options.ConsumerSubjectFilter, events[0].Subject)
+	options.ConsumerSubjectIncludes = append(options.ConsumerSubjectIncludes, events[0].Subject)
 
 	res, err := core.DoWithCM(ctx, options, cm)
 	require.NoError(t, err)
@@ -59,11 +59,11 @@ func TestMessage_Ack_Error(t *testing.T) {
 	options := &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
-	options.ConsumerSubjectFilter = append(options.ConsumerSubjectFilter, events[0].Subject)
+	options.ConsumerSubjectIncludes = append(options.ConsumerSubjectIncludes, events[0].Subject)
 
 	res, err := core.DoWithCM(ctx, options, cm)
 	require.NoError(t, err)
@@ -96,11 +96,11 @@ func TestMessage_Nack(t *testing.T) {
 	options := &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
-	options.ConsumerSubjectFilter = append(options.ConsumerSubjectFilter, events[0].Subject)
+	options.ConsumerSubjectIncludes = append(options.ConsumerSubjectIncludes, events[0].Subject)
 
 	res, err := core.DoWithCM(ctx, options, cm)
 	require.NoError(t, err)
@@ -128,11 +128,11 @@ func TestMessage_Nack_Error(t *testing.T) {
 	options := &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
-		ConsumerSubjectFilter:     []string{xfaker.Subject()},
+		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
-	options.ConsumerSubjectFilter = append(options.ConsumerSubjectFilter, events[0].Subject)
+	options.ConsumerSubjectIncludes = append(options.ConsumerSubjectIncludes, events[0].Subject)
 
 	res, err := core.DoWithCM(ctx, options, cm)
 	require.NoError(t, err)
