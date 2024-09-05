@@ -37,3 +37,22 @@ func TestTaskStateTransition(t *testing.T) {
 
 	require.Equal(t, len(tasks), len(res.Tasks))
 }
+
+func TestTaskStateTransition_Validate(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	_, consumer := Seed(t, ctx, conn)
+
+	req := &TaskStateTransitionReq{
+		Consumer:  consumer,
+		FromState: entities.StateRetryable,
+		ToState:   entities.StateRunning,
+	}
+	_, err = Do(ctx, req, conn)
+	require.Error(t, err)
+}

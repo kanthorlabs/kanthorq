@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -84,28 +83,12 @@ func (pub *primary) Send(ctx context.Context, events []*entities.Event) error {
 	}
 
 	req := &core.StreamPutEventsReq{Stream: pub.stream, Events: events}
-	res, err := core.DoWithCM(ctx, req, pub.cm)
-	if err != nil {
-		return err
-	}
-
-	if res.InsertCount != int64(len(events)) {
-		log.Println("inserted ", res.InsertCount, " events, expected ", len(events))
-	}
-
-	return nil
+	_, err := core.DoWithCM(ctx, req, pub.cm)
+	return err
 }
 
 func (pub *primary) SendTx(ctx context.Context, events []*entities.Event, tx pgx.Tx) error {
 	req := &core.StreamPutEventsReq{Stream: pub.stream, Events: events}
-	res, err := req.Do(ctx, tx)
-	if err != nil {
-		return err
-	}
-
-	if res.InsertCount != int64(len(events)) {
-		log.Println("inserted ", res.InsertCount, " events, expected ", len(events))
-	}
-
-	return nil
+	_, err := req.Do(ctx, tx)
+	return err
 }

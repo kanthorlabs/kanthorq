@@ -13,6 +13,7 @@ func EventId() string {
 func EventIdFromTime(t time.Time) string {
 	return xid.NewWithTime("event", t)
 }
+
 func NewEvent(subject string, body []byte) *Event {
 	return &Event{
 		Id:        EventId(),

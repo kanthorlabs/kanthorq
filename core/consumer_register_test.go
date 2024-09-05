@@ -34,6 +34,24 @@ func TestConsumerRegister(t *testing.T) {
 	require.Equal(t, req.ConsumerName, res.ConsumerRegistry.Name)
 }
 
+func TestConsumerRegister_Validate(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	req := &ConsumerRegisterReq{
+		StreamName:              xfaker.StreamName(),
+		ConsumerName:            xfaker.ConsumerName(),
+		ConsumerSubjectIncludes: []string{xfaker.Subject()},
+		ConsumerAttemptMax:      xfaker.F.Int16Between(1, 10),
+	}
+	_, err = Do(ctx, req, conn)
+	require.Error(t, err)
+}
+
 func TestConsumerRegister_Parallel(t *testing.T) {
 	ctx := context.Background()
 

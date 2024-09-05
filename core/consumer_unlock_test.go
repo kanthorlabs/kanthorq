@@ -31,6 +31,23 @@ func TestConsumerUnlock(t *testing.T) {
 	require.Equal(t, req.Cursor, res.Consumer.Cursor)
 }
 
+func TestConsumerUnlock_Validate(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	_, consumer := Seed(t, ctx, conn)
+
+	req := &ConsumerUnlockReq{
+		Name: consumer.Name,
+	}
+	_, err = Do(ctx, req, conn)
+	require.Error(t, err)
+}
+
 func TestConsumerUnlock_Failure(t *testing.T) {
 	ctx := context.Background()
 	conn, err := tester.SetupPostgres(ctx)

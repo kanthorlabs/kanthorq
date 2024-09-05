@@ -15,6 +15,11 @@ test:
 	@rm -rf ./checksum
 	@./scripts/ci_test.sh
 	@./scripts/ci_coverage.sh
+	
+testc:
+	@rm -rf ./checksum
+	@./scripts/ci_test.sh
+	@go tool cover -html=cover.out
 
 refresh:
 	@docker compose -f docker/docker-compose.yaml down

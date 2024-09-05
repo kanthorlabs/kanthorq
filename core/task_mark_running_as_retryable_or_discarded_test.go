@@ -91,3 +91,32 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToDiscarded(t *testing.T) {
 		require.Equal(t, entities.StateDiscarded, state)
 	}
 }
+
+func TestTaskMarkRunningAsRetryableOrDiscarded_Validate(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	stream, consumer := Seed(t, ctx, conn)
+
+	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
+	tasks := SeedTasks(t, ctx, conn, consumer, events, entities.StateRunning)
+
+	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
+	noopTasks := SeedTasks(t, ctx, conn, consumer, noopEvents, entities.StateCancelled)
+
+	req := &TaskMarkRunningAsRetryableOrDiscardedReq{
+		Consumer: consumer,
+		Tasks:    append(tasks, noopTasks...),
+		Error: entities.AttemptedError{
+			// missing At
+			Error: "error",
+			Stack: string(debug.Stack()),
+		},
+	}
+	_, err = Do(ctx, req, conn)
+	require.Error(t, err)
+}

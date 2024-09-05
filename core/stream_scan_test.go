@@ -33,6 +33,26 @@ func TestStreamScan(t *testing.T) {
 	require.Equal(t, req.Size, len(res.Ids))
 }
 
+func TestStreamScan_Validate(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	stream, consumer := Seed(t, ctx, conn)
+	_ = SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(101, 999))
+
+	req := &StreamScanReq{
+		Stream:   stream,
+		Consumer: consumer,
+		Size:     xfaker.F.IntBetween(10, 100),
+	}
+	_, err = Do(ctx, req, conn)
+	require.Error(t, err)
+}
+
 func TestStreamScan_Excludes(t *testing.T) {
 	ctx := context.Background()
 	conn, err := tester.SetupPostgres(ctx)

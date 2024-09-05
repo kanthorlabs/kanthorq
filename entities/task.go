@@ -85,6 +85,8 @@ func (state TaskState) String() string {
 		return "discarded"
 	case StateCancelled:
 		return "cancelled"
+	case StatePending:
+		return "pending"
 	case StateAvailable:
 		return "available"
 	case StateRunning:

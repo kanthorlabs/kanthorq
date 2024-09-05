@@ -21,7 +21,7 @@ type StreamScanReq struct {
 	Consumer *entities.ConsumerRegistry `validate:"required"`
 
 	Size        int           `validate:"required,gt=0"`
-	WaitingTime time.Duration `validate:"gte=1000"`
+	WaitingTime time.Duration `validate:"required"`
 }
 
 type StreamScanRes struct {

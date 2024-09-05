@@ -28,3 +28,19 @@ func TestStreamPutEvents(t *testing.T) {
 
 	require.Equal(t, int64(len(events)), res.InsertCount)
 }
+
+func TestStreamPutEvents_Validate(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	stream, err := Do(ctx, &StreamRegisterReq{StreamName: xfaker.StreamName()}, conn)
+	require.NoError(t, err)
+
+	req := &StreamPutEventsReq{Stream: stream.StreamRegistry}
+	_, err = Do(ctx, req, conn)
+	require.Error(t, err)
+}

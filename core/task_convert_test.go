@@ -40,6 +40,22 @@ func TestTaskConvert(t *testing.T) {
 	require.Equal(t, 0, len(dupres.Tasks))
 }
 
+func TestTaskConvert_Validate(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	_, consumer := Seed(t, ctx, conn)
+	req := &TaskConvertReq{
+		Consumer: consumer,
+	}
+	_, err = Do(ctx, req, conn)
+	require.Error(t, err)
+}
+
 func TestTaskConvert_NoEvent(t *testing.T) {
 	ctx := context.Background()
 	conn, err := tester.SetupPostgres(ctx)

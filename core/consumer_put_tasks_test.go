@@ -30,3 +30,19 @@ func TestConsumerPutTasks(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(len(tasks)), res.InsertCount)
 }
+
+func TestConsumerPutTasks_Validate(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	_, consumer := Seed(t, ctx, conn)
+	req := &ConsumerPutTasksReq{
+		Consumer: consumer,
+	}
+	_, err = Do(ctx, req, conn)
+	require.Error(t, err)
+}

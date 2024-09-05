@@ -68,3 +68,18 @@ func TestConsumerLock_Failure(t *testing.T) {
 	_, err = Do(ctx, req, conn)
 	require.ErrorIs(t, err, pgx.ErrNoRows)
 }
+
+func TestConsumerLock_Validate(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	_, _ = Seed(t, ctx, conn)
+
+	req := &ConsumerLockReq{}
+	_, err = Do(ctx, req, conn)
+	require.Error(t, err)
+}

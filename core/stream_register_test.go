@@ -30,6 +30,19 @@ func TestStreamRegister(t *testing.T) {
 	require.Equal(t, req.StreamName, res.StreamRegistry.Name)
 }
 
+func TestStreamRegister_Validate(t *testing.T) {
+	ctx := context.Background()
+	conn, err := tester.SetupPostgres(ctx)
+	defer func() {
+		require.NoError(t, conn.Close(ctx))
+	}()
+	require.NoError(t, err)
+
+	req := &StreamRegisterReq{}
+	_, err = Do(ctx, req, conn)
+	require.Error(t, err)
+}
+
 func TestStreamRegister_Parallel(t *testing.T) {
 	ctx := context.Background()
 
