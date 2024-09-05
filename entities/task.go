@@ -16,6 +16,21 @@ func TaskId() string {
 func TaskIdFromTime(t time.Time) string {
 	return xid.NewWithTime("task", t)
 }
+func TaskFromEvent(e *Event) *Task {
+	return &Task{
+		EventId:        e.Id,
+		Subject:        e.Subject,
+		State:          StateAvailable,
+		ScheduleAt:     time.Now().UnixMilli(),
+		AttemptCount:   0,
+		AttemptedAt:    0,
+		AttemptedError: []AttemptedError{},
+		FinalizedAt:    0,
+		Metadata:       e.Metadata,
+		CreatedAt:      time.Now().UnixMilli(),
+		UpdatedAt:      0,
+	}
+}
 
 type Task struct {
 	EventId string `json:"event_id" validate:"required"`

@@ -28,6 +28,7 @@ func RandomErrorHandler(mod int64) Handler {
 			panic(fmt.Sprintf("random error because %d %% %d = 1", msg.Event.CreatedAt, mod))
 		}
 
+		// simulate execution time
 		select {
 		case <-ctx.Done():
 			return ctx.Err()

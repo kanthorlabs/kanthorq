@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
 
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/kanthorlabs/kanthorq/entities"
@@ -86,13 +85,6 @@ func (sub *primary) Receive(ctx context.Context, handler Handler) error {
 				return err
 			}
 			if len(out.Events) == 0 {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				case <-time.After(time.Millisecond * 500):
-					// wait for a while
-					log.Println("waiting for events...")
-				}
 				continue
 			}
 

@@ -28,17 +28,20 @@ func TestPrimary_Receive(t *testing.T) {
 		},
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	var bodyc = make(chan *entities.Event)
 	go func() {
 		sub, err := New(options)
 		require.NoError(t, err)
 
-		sub.Start(context.Background())
+		sub.Start(ctx)
 		defer func() {
-			require.NoError(t, sub.Stop(context.Background()))
+			require.NoError(t, sub.Stop(ctx))
 		}()
 
-		err = sub.Receive(context.Background(), func(ctx context.Context, msg *Message) error {
+		err = sub.Receive(ctx, func(ctx context.Context, msg *Message) error {
 			if msg.Event.Subject == "system.test.panic" {
 				panic(errors.New(string(msg.Event.Body)))
 			}
@@ -48,25 +51,23 @@ func TestPrimary_Receive(t *testing.T) {
 			bodyc <- msg.Event
 			return nil
 		})
-		require.NoError(t, err)
+		require.ErrorIs(t, err, context.Canceled)
 	}()
 
 	go func() {
-		pub, err := publisher.New(
-			&publisher.Options{
-				Connection: os.Getenv("KANTHORQ_POSTGRES_URI"),
-				StreamName: options.StreamName,
-			},
-		)
+		pub, err := publisher.New(&publisher.Options{
+			Connection: os.Getenv("KANTHORQ_POSTGRES_URI"),
+			StreamName: options.StreamName,
+		})
 		require.NoError(t, err)
 
-		require.NoError(t, pub.Start(context.Background()))
+		require.NoError(t, pub.Start(ctx))
 		defer func() {
-			require.NoError(t, pub.Stop(context.Background()))
+			require.NoError(t, pub.Stop(ctx))
 		}()
 
 		// first message, it's ok
-		err = pub.Send(context.Background(), []*entities.Event{
+		err = pub.Send(ctx, []*entities.Event{
 			entities.NewEvent("system.test.ok", []byte("ok")),
 		})
 		require.NoError(t, err)
@@ -94,8 +95,9 @@ func TestPrimary_Receive(t *testing.T) {
 
 	for e := range bodyc {
 		if e.Subject == "system.test.done" {
+			cancel()
 			// wait for a while to let message to be acked
-			time.Sleep(time.Millisecond * time.Duration(2*options.Puller.WaitingTime))
+			time.Sleep(time.Millisecond * time.Duration(options.Puller.WaitingTime))
 			return
 		}
 	}
