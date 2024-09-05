@@ -13,6 +13,7 @@ if [ "$CHECKSUM_NEW" != "$CHECKSUM_OLD" ];
 then
   echo "--> coverage"
   go test -timeout 1m30s --count=1 -cover -coverprofile cover.out \
+    github.com/kanthorlabs/kanthorq \
     github.com/kanthorlabs/kanthorq/entities \
     github.com/kanthorlabs/kanthorq/core \
     github.com/kanthorlabs/kanthorq/publisher \

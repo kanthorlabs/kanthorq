@@ -15,13 +15,14 @@ if test -f $COVEROUT_FILE; then
     exit 1
   fi
 
+  echo "actual:$COVERAGE_ACUTAL > expected:$COVERAGE_EXPECTED"
+
   COVERAGE_OLD=$(cat $COVERAGE_FILE)
   # warn if coverage is decreased
   if [ $(echo "${COVERAGE_ACUTAL} < ${COVERAGE_OLD}" | bc) -eq 1 ]; 
   then
     echo "WARN: new:$COVERAGE_ACUTAL < old:$COVERAGE_OLD"
   fi
-  
   
 else
   echo "$COVEROUT_FILE is not found"

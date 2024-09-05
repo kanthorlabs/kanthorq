@@ -12,7 +12,6 @@ default:
 	$(warning oops, select specific command pls)
 
 test:
-	@rm -rf ./checksum
 	@./scripts/ci_test.sh
 	@./scripts/ci_coverage.sh
 	

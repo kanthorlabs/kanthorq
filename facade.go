@@ -12,13 +12,13 @@ import (
 func Pub(ctx context.Context, options *publisher.Options) (p publisher.Publisher, c func()) {
 	p, err := publisher.New(options)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	startctx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 	if err := p.Start(startctx); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	return p, func() {
@@ -52,7 +52,7 @@ func Sub(ctx context.Context, options *subscriber.Options, handler subscriber.Ha
 		return err
 	}
 
-	// defer stop all clients
+	//  stop all clients
 	defer func() {
 		stopctx, cancel := context.WithTimeout(ctx, time.Second*5)
 		defer cancel()
