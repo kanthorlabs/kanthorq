@@ -10,6 +10,7 @@ import (
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
 	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
+	"github.com/kanthorlabs/kanthorq/pkg/xlogger"
 	"github.com/kanthorlabs/kanthorq/tester"
 	"github.com/stretchr/testify/require"
 )
@@ -48,7 +49,7 @@ func TestPrimary_Do(t *testing.T) {
 		Size:        100,
 		WaitingTime: 3000,
 	}
-	p := New(cm, res.StreamRegistry, res.ConsumerRegistry, in)
+	p := New(xlogger.NewNoop(), cm, res.StreamRegistry, res.ConsumerRegistry, in)
 
 	first, err := p.Do(ctx)
 	require.NoError(t, err)
@@ -116,7 +117,7 @@ func TestPrimary_Do_LockFailure(t *testing.T) {
 		Size:        100,
 		WaitingTime: 3000,
 	}
-	p := New(cm, res.StreamRegistry, res.ConsumerRegistry, in)
+	p := New(xlogger.NewNoop(), cm, res.StreamRegistry, res.ConsumerRegistry, in)
 
 	first, err := p.Do(ctx)
 	require.NoError(t, err)
@@ -153,7 +154,7 @@ func TestPrimary_Do_NoEvent(t *testing.T) {
 		Size:        100,
 		WaitingTime: 3000,
 	}
-	p := New(cm, res.StreamRegistry, res.ConsumerRegistry, in)
+	p := New(xlogger.NewNoop(), cm, res.StreamRegistry, res.ConsumerRegistry, in)
 
 	out, err := p.Do(ctx)
 	require.NoError(t, err)

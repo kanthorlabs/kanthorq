@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/kanthorlabs/kanthorq/entities"
+	"github.com/kanthorlabs/kanthorq/pkg/xlogger"
 	"github.com/kanthorlabs/kanthorq/puller"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +25,7 @@ func TestNew(t *testing.T) {
 		},
 	}
 
-	_, err := New(options)
+	_, err := New(options, xlogger.NewNoop())
 	require.NoError(t, err)
 }
 
@@ -33,7 +34,7 @@ func TestNew_Validate(t *testing.T) {
 		Connection: os.Getenv("KANTHORQ_POSTGRES_URI"),
 	}
 
-	_, err := New(options)
+	_, err := New(options, xlogger.NewNoop())
 	require.Error(t, err)
 }
 
@@ -52,7 +53,7 @@ func TestNewRetry(t *testing.T) {
 		},
 	}
 
-	_, err := NewRetry(options)
+	_, err := NewRetry(options, xlogger.NewNoop())
 	require.NoError(t, err)
 }
 
@@ -61,7 +62,7 @@ func TestNewRetry_Validate(t *testing.T) {
 		Connection: os.Getenv("KANTHORQ_POSTGRES_URI"),
 	}
 
-	_, err := NewRetry(options)
+	_, err := NewRetry(options, xlogger.NewNoop())
 	require.Error(t, err)
 }
 
@@ -80,7 +81,7 @@ func TestNewVisibility(t *testing.T) {
 		},
 	}
 
-	_, err := NewVisibility(options)
+	_, err := NewVisibility(options, xlogger.NewNoop())
 	require.NoError(t, err)
 }
 
@@ -89,6 +90,6 @@ func TestNewVisibility_Validate(t *testing.T) {
 		Connection: os.Getenv("KANTHORQ_POSTGRES_URI"),
 	}
 
-	_, err := NewVisibility(options)
+	_, err := NewVisibility(options, xlogger.NewNoop())
 	require.Error(t, err)
 }

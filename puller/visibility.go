@@ -6,20 +6,30 @@ import (
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
+	"go.uber.org/zap"
 )
 
 var _ Puller = (*visibility)(nil)
 
 func NewVisibility(
+	logger *zap.Logger,
 	cm pgcm.ConnectionManager,
 	stream *entities.StreamRegistry,
 	consumer *entities.ConsumerRegistry,
 	in PullerIn,
 ) Puller {
-	return &visibility{cm: cm, stream: stream, consumer: consumer, in: in}
+	logger = logger.With(zap.String("puller", "visibility"))
+	return &visibility{
+		logger:   logger,
+		cm:       cm,
+		stream:   stream,
+		consumer: consumer,
+		in:       in,
+	}
 }
 
 type visibility struct {
+	logger   *zap.Logger
 	cm       pgcm.ConnectionManager
 	stream   *entities.StreamRegistry
 	consumer *entities.ConsumerRegistry

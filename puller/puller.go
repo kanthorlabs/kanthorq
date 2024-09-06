@@ -5,9 +5,16 @@ import (
 
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
+	"go.uber.org/zap"
 )
 
-type PullerFactory func(cm pgcm.ConnectionManager, stream *entities.StreamRegistry, consumer *entities.ConsumerRegistry, in PullerIn) Puller
+type PullerFactory func(
+	logger *zap.Logger,
+	cm pgcm.ConnectionManager,
+	stream *entities.StreamRegistry,
+	consumer *entities.ConsumerRegistry,
+	in PullerIn,
+) Puller
 
 type Puller interface {
 	Do(ctx context.Context) (*PullerOut, error)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
+	"github.com/kanthorlabs/kanthorq/pkg/xlogger"
 	"github.com/kanthorlabs/kanthorq/publisher"
 	"github.com/kanthorlabs/kanthorq/puller"
 	"github.com/stretchr/testify/require"
@@ -33,7 +34,7 @@ func TestPrimary_Receive(t *testing.T) {
 
 	var bodyc = make(chan *entities.Event)
 	go func() {
-		sub, err := New(options)
+		sub, err := New(options, xlogger.NewNoop())
 		require.NoError(t, err)
 
 		sub.Start(ctx)
@@ -55,10 +56,12 @@ func TestPrimary_Receive(t *testing.T) {
 	}()
 
 	go func() {
-		pub, err := publisher.New(&publisher.Options{
-			Connection: os.Getenv("KANTHORQ_POSTGRES_URI"),
-			StreamName: options.StreamName,
-		})
+		pub, err := publisher.New(
+			&publisher.Options{
+				Connection: os.Getenv("KANTHORQ_POSTGRES_URI"),
+				StreamName: options.StreamName,
+			},
+			xlogger.NewNoop())
 		require.NoError(t, err)
 
 		require.NoError(t, pub.Start(ctx))

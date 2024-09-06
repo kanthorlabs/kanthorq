@@ -3,45 +3,48 @@ package subscriber
 import (
 	"context"
 
-	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
 	"github.com/kanthorlabs/kanthorq/pkg/xvalidator"
 	"github.com/kanthorlabs/kanthorq/puller"
+	"go.uber.org/zap"
 )
 
-func New(options *Options) (Subscriber, error) {
+func New(options *Options, logger *zap.Logger) (Subscriber, error) {
 	if err := xvalidator.Validate.Struct(options); err != nil {
 		return nil, err
 	}
-	cm, err := pgcm.New(options.Connection)
-	if err != nil {
-		return nil, err
-	}
 
-	return &primary{options: options, cm: cm, pullerF: puller.New}, nil
+	logger = logger.With(
+		zap.String("subscriber", "primary"),
+		zap.String("stream_name", options.StreamName),
+		zap.String("consumer_name", options.ConsumerName),
+	)
+	return &primary{options: options, logger: logger, pullerF: puller.New}, nil
 }
 
-func NewRetry(options *Options) (Subscriber, error) {
+func NewRetry(options *Options, logger *zap.Logger) (Subscriber, error) {
 	if err := xvalidator.Validate.Struct(options); err != nil {
 		return nil, err
 	}
-	cm, err := pgcm.New(options.Connection)
-	if err != nil {
-		return nil, err
-	}
 
-	return &primary{options: options, cm: cm, pullerF: puller.NewRetry}, nil
+	logger = logger.With(
+		zap.String("subscriber", "primary"),
+		zap.String("stream_name", options.StreamName),
+		zap.String("consumer_name", options.ConsumerName),
+	)
+	return &primary{options: options, logger: logger, pullerF: puller.NewRetry}, nil
 }
 
-func NewVisibility(options *Options) (Subscriber, error) {
+func NewVisibility(options *Options, logger *zap.Logger) (Subscriber, error) {
 	if err := xvalidator.Validate.Struct(options); err != nil {
 		return nil, err
 	}
-	cm, err := pgcm.New(options.Connection)
-	if err != nil {
-		return nil, err
-	}
 
-	return &primary{options: options, cm: cm, pullerF: puller.NewVisibility}, nil
+	logger = logger.With(
+		zap.String("subscriber", "primary"),
+		zap.String("stream_name", options.StreamName),
+		zap.String("consumer_name", options.ConsumerName),
+	)
+	return &primary{options: options, logger: logger, pullerF: puller.NewVisibility}, nil
 }
 
 type Subscriber interface {

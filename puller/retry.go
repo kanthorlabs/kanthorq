@@ -6,20 +6,30 @@ import (
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
+	"go.uber.org/zap"
 )
 
 var _ Puller = (*retry)(nil)
 
 func NewRetry(
+	logger *zap.Logger,
 	cm pgcm.ConnectionManager,
 	stream *entities.StreamRegistry,
 	consumer *entities.ConsumerRegistry,
 	in PullerIn,
 ) Puller {
-	return &retry{cm: cm, stream: stream, consumer: consumer, in: in}
+	logger = logger.With(zap.String("puller", "retry"))
+	return &retry{
+		logger:   logger,
+		cm:       cm,
+		stream:   stream,
+		consumer: consumer,
+		in:       in,
+	}
 }
 
 type retry struct {
+	logger   *zap.Logger
 	cm       pgcm.ConnectionManager
 	stream   *entities.StreamRegistry
 	consumer *entities.ConsumerRegistry

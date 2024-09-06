@@ -9,20 +9,30 @@ import (
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
+	"go.uber.org/zap"
 )
 
 var _ Puller = (*primary)(nil)
 
 func New(
+	logger *zap.Logger,
 	cm pgcm.ConnectionManager,
 	stream *entities.StreamRegistry,
 	consumer *entities.ConsumerRegistry,
 	in PullerIn,
 ) Puller {
-	return &primary{cm: cm, stream: stream, consumer: consumer, in: in}
+	logger = logger.With(zap.String("puller", "primary"))
+	return &primary{
+		logger:   logger,
+		cm:       cm,
+		stream:   stream,
+		consumer: consumer,
+		in:       in,
+	}
 }
 
 type primary struct {
+	logger   *zap.Logger
 	cm       pgcm.ConnectionManager
 	stream   *entities.StreamRegistry
 	consumer *entities.ConsumerRegistry

@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
 	"github.com/kanthorlabs/kanthorq/puller"
+	"go.uber.org/zap"
 )
 
 var _ Subscriber = (*primary)(nil)
@@ -19,8 +19,9 @@ type primary struct {
 	mu sync.Mutex
 
 	options *Options
-	cm      pgcm.ConnectionManager
+	logger  *zap.Logger
 	pullerF puller.PullerFactory
+	cm      pgcm.ConnectionManager
 
 	stream   *entities.StreamRegistry
 	consumer *entities.ConsumerRegistry
@@ -31,6 +32,11 @@ func (sub *primary) Start(ctx context.Context) (err error) {
 	sub.mu.Lock()
 	defer sub.mu.Unlock()
 
+	cm, err := pgcm.New(sub.options.Connection)
+	if err != nil {
+		return err
+	}
+	sub.cm = cm
 	if err = sub.cm.Start(ctx); err != nil {
 		return
 	}
@@ -45,6 +51,7 @@ func (sub *primary) Start(ctx context.Context) (err error) {
 		StreamName:                sub.options.StreamName,
 		ConsumerName:              sub.options.ConsumerName,
 		ConsumerSubjectIncludes:   sub.options.ConsumerSubjectIncludes,
+		ConsumerSubjectExcludes:   sub.options.ConsumerSubjectExcludes,
 		ConsumerAttemptMax:        sub.options.ConsumerAttemptMax,
 		ConsumerVisibilityTimeout: sub.options.ConsumerVisibilityTimeout,
 	}
@@ -55,7 +62,9 @@ func (sub *primary) Start(ctx context.Context) (err error) {
 
 	sub.stream = res.StreamRegistry
 	sub.consumer = res.ConsumerRegistry
-	sub.puller = sub.pullerF(sub.cm, sub.stream, sub.consumer, sub.options.Puller)
+	sub.logger.Info("started")
+
+	sub.puller = sub.pullerF(sub.logger, sub.cm, sub.stream, sub.consumer, sub.options.Puller)
 	return nil
 }
 
@@ -106,32 +115,34 @@ func (sub *primary) Receive(ctx context.Context, handler Handler) error {
 }
 
 func (sub *primary) handle(ctx context.Context, handler Handler, msg *Message, wg *sync.WaitGroup) {
-	defer func(msg *Message) {
-		if r := recover(); r != nil {
-			var reason error
-			if e, ok := r.(error); ok {
-				reason = e
-			} else {
-				reason = fmt.Errorf("%v", r)
-			}
-			fmt.Println("Recovered in f", reason)
-
-			if err := msg.Nack(ctx, reason); err != nil {
-				log.Println(fmt.Errorf("failed to nack message: %w", err))
-			}
-		}
-
-		wg.Done()
-	}(msg)
+	defer sub.panic(ctx, msg, wg)
 
 	if err := handler(ctx, msg); err != nil {
 		if nerr := msg.Nack(ctx, err); nerr != nil {
-			log.Println(fmt.Errorf("failed to nack message: %w", errors.Join(err, nerr)))
+			sub.logger.Error("failed to ack message", zap.Error(err))
 		}
 		return
 	}
 
 	if err := msg.Ack(ctx); err != nil {
-		log.Println(fmt.Errorf("failed to ack message: %w", err))
+		sub.logger.Error("failed to ack message", zap.Error(err))
 	}
+}
+
+func (sub *primary) panic(ctx context.Context, msg *Message, wg *sync.WaitGroup) {
+	if r := recover(); r != nil {
+		var reason error
+		if e, ok := r.(error); ok {
+			reason = e
+		} else {
+			reason = fmt.Errorf("%v", r)
+		}
+		sub.logger.Error("catched panic", zap.Error(reason))
+
+		if err := msg.Nack(ctx, reason); err != nil {
+			sub.logger.Error("failed to nack message", zap.Error(err))
+		}
+	}
+
+	wg.Done()
 }
