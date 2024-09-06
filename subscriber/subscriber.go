@@ -15,6 +15,7 @@ func New(options *Options, logger *zap.Logger) (Subscriber, error) {
 
 	logger = logger.With(
 		zap.String("subscriber", "primary"),
+		zap.String("puller", "primary"),
 		zap.String("stream_name", options.StreamName),
 		zap.String("consumer_name", options.ConsumerName),
 	)
@@ -28,6 +29,7 @@ func NewRetry(options *Options, logger *zap.Logger) (Subscriber, error) {
 
 	logger = logger.With(
 		zap.String("subscriber", "primary"),
+		zap.String("puller", "retry"),
 		zap.String("stream_name", options.StreamName),
 		zap.String("consumer_name", options.ConsumerName),
 	)
@@ -41,6 +43,7 @@ func NewVisibility(options *Options, logger *zap.Logger) (Subscriber, error) {
 
 	logger = logger.With(
 		zap.String("subscriber", "primary"),
+		zap.String("puller", "visibility"),
 		zap.String("stream_name", options.StreamName),
 		zap.String("consumer_name", options.ConsumerName),
 	)
@@ -48,8 +51,8 @@ func NewVisibility(options *Options, logger *zap.Logger) (Subscriber, error) {
 }
 
 type Subscriber interface {
-	Start(ctx context.Context) (err error)
-	Stop(ctx context.Context) (err error)
+	Start(ctx context.Context) error
+	Stop(ctx context.Context) error
 	Receive(ctx context.Context, handler Handler) error
 }
 

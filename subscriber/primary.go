@@ -28,7 +28,7 @@ type primary struct {
 	puller   puller.Puller
 }
 
-func (sub *primary) Start(ctx context.Context) (err error) {
+func (sub *primary) Start(ctx context.Context) error {
 	sub.mu.Lock()
 	defer sub.mu.Unlock()
 
@@ -38,7 +38,7 @@ func (sub *primary) Start(ctx context.Context) (err error) {
 	}
 	sub.cm = cm
 	if err = sub.cm.Start(ctx); err != nil {
-		return
+		return err
 	}
 
 	conn, err := sub.cm.Acquire(ctx)
@@ -57,7 +57,7 @@ func (sub *primary) Start(ctx context.Context) (err error) {
 	}
 	res, err := core.Do(ctx, req, conn)
 	if err != nil {
-		return
+		return err
 	}
 
 	sub.stream = res.StreamRegistry
@@ -68,10 +68,11 @@ func (sub *primary) Start(ctx context.Context) (err error) {
 	return nil
 }
 
-func (sub *primary) Stop(ctx context.Context) (err error) {
+func (sub *primary) Stop(ctx context.Context) error {
 	sub.mu.Lock()
 	defer sub.mu.Unlock()
 
+	var err error
 	if cmerr := sub.cm.Stop(ctx); cmerr != nil {
 		err = errors.Join(err, cmerr)
 	}
@@ -79,7 +80,8 @@ func (sub *primary) Stop(ctx context.Context) (err error) {
 	sub.stream = nil
 	sub.consumer = nil
 	sub.puller = nil
-	return
+	sub.logger.Info("stopped")
+	return err
 }
 
 func (sub *primary) Receive(ctx context.Context, handler Handler) error {

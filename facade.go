@@ -2,9 +2,10 @@ package kanthorq
 
 import (
 	"context"
-	"reflect"
+	"errors"
 	"time"
 
+	"github.com/kanthorlabs/kanthorq/pkg/utils"
 	"github.com/kanthorlabs/kanthorq/pkg/xlogger"
 	"github.com/kanthorlabs/kanthorq/publisher"
 	"github.com/kanthorlabs/kanthorq/subscriber"
@@ -31,8 +32,8 @@ func Pub(ctx context.Context, options *publisher.Options) (publisher.Publisher, 
 		stopctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 
-		name := reflect.TypeOf(pub).Name()
-		if err := pub.Stop(stopctx); err != nil {
+		name := utils.NameOf(pub)
+		if err := pub.Stop(stopctx); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("publisher stop with error", zap.String("publisher", name), zap.Error(err))
 		}
 
@@ -68,13 +69,11 @@ func Sub(ctx context.Context, options *subscriber.Options, handler subscriber.Ha
 		defer cancel()
 
 		for _, client := range clients {
-			name := reflect.TypeOf(client).Name()
 			if err := client.Stop(stopctx); err != nil {
-				logger.Error("subscriber stop with error", zap.String("subscriber", name), zap.Error(err))
+				logger.Error("subscriber stop with error", zap.Error(err))
 				return
 			}
 
-			logger.Info("subscriber stopped", zap.String("subscriber", name))
 		}
 	}()
 
@@ -92,9 +91,8 @@ func Sub(ctx context.Context, options *subscriber.Options, handler subscriber.Ha
 
 	for _, client := range clients {
 		go func(c subscriber.Subscriber) {
-			name := reflect.TypeOf(client).Name()
-			if err := c.Receive(rctx, handler); err != nil {
-				logger.Error("subscriber receive with error", zap.String("subscriber", name), zap.Error(err))
+			if err := c.Receive(rctx, handler); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("subscriber receive with error", zap.Error(err))
 			}
 
 			stop()
