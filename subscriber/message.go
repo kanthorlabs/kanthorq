@@ -30,9 +30,10 @@ func (msg *Message) Ack(ctx context.Context) error {
 	defer msg.mu.Unlock()
 
 	if msg.nacked {
-		return errors.New("message already nacked")
+		return errors.New("message is already nacked")
 	}
 
+	// already ack, don't do it again
 	if msg.acked {
 		return nil
 	}
@@ -43,7 +44,6 @@ func (msg *Message) Ack(ctx context.Context) error {
 		Tasks:    []*entities.Task{msg.Task},
 	}
 
-	// @TODO: if res.Noop has value, should log it here
 	_, err := core.DoWithCM(ctx, req, msg.cm)
 	return err
 }
@@ -54,9 +54,10 @@ func (msg *Message) Nack(ctx context.Context, reason error) error {
 	defer msg.mu.Unlock()
 
 	if msg.acked {
-		return errors.New("message already acked")
+		return errors.New("message is already acked")
 	}
 
+	// already nack, don't do it again
 	if msg.nacked {
 		return nil
 	}
@@ -72,9 +73,6 @@ func (msg *Message) Nack(ctx context.Context, reason error) error {
 		},
 	}
 
-	// @TODO: if res.Noop has value, should log it here
-	if _, err := core.DoWithCM(ctx, req, msg.cm); err != nil {
-		return err
-	}
-	return nil
+	_, err := core.DoWithCM(ctx, req, msg.cm)
+	return err
 }

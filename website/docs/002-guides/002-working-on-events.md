@@ -191,6 +191,8 @@ func main() {
 }
 ```
 
+See the [Primary Subscriber example](https://github.com/kanthorlabs/kanthorq/blob/main/example/primary-subscriber/main.go) for complete code.
+
 ### Using the Retry Subscriber
 
 If a task of event is failed and you mark it as retryable, this subscriber will help you retry it. It will

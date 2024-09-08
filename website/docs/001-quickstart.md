@@ -162,6 +162,4 @@ After running the example, you should see the following output:
 2024/08/30 09:18:45 RECEIVED: event_01j6gh7x3pvmk6demx3cq27j1q | system.say_goodbye | 2024-08-30T09:18:45+07:00
 ```
 
-## Conclusion
-
-By this tutorial, we showed you how quickly use Kanthorq in your project, the full and interactive example can be found in the [Default Example](https://github.com/kanthorlabs/kanthorq/blob/main/example/default/main.go).
+See the [Defaule Subscriber example](https://github.com/kanthorlabs/kanthorq/blob/main/example/default/main.go) for complete code.

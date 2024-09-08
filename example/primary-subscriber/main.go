@@ -50,6 +50,9 @@ func main() {
 	defer stop()
 
 	logger := xlogger.New()
+	// replace subscriber.New with different intialization method you get different subscriber
+	// - subscriber.NewRetry for Retry Subscriber
+	// - subscriber.NewAvailability for Availability Subscriber
 	sub, err := subscriber.New(options, logger)
 	if err != nil {
 		panic(err)
