@@ -1,6 +1,6 @@
 ---
-title: "Working on events"
-sidebar_label: "Working on events"
+title: "Process events and tasks"
+sidebar_label: "Process events and tasks"
 sidebar_position: 2
 ---
 
