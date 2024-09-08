@@ -1,6 +1,6 @@
 ---
-title: "Do tasks of events"
-sidebar_label: "Do tasks of events"
+title: "Working on events"
+sidebar_label: "Working on events"
 sidebar_position: 2
 ---
 
@@ -196,4 +196,41 @@ func main() {
 If a task of event is failed and you mark it as retryable, this subscriber will help you retry it. It will
 
 - Transition the state of task from `Retryable` to `Running`
-- Return task that transitioned successfully to you to execute your business logic
+- Return tasks that transitioned successfully to you to execute your business logic
+
+The different between the Primary Subscriber and the Retry Subscriber in your point of view is small, you only need to change one line of code to get your Retry Subscriber to work.
+
+```go
+  // other codes is same as the primary subscriber
+
+  // ------------ THE DIFFERENT IS HERE ---------
+  // use subscriber.NewRetry instead of subscriber.New
+  sub, err := subscriber.NewRetry(options, logger)
+  if err != nil {
+    panic(err)
+  }
+
+  // other codes is same as the primary subscriber
+```
+
+### Using the Availability Subscriber
+
+If a task of event stays in the consumer for a long time and exceeds the visibility timeout, the Availability Subscriber will help you pull it out and work on it again.
+
+- Set the new visibility time tasks
+- Return tasks that has updated successfully to you to execute your business logic
+
+The different between the Primary Subscriber and the Retry Subscriber in your point of view is small, you only need to change one line of code to get your Retry Subscriber to work.
+
+```go
+  // other codes is same as the primary subscriber
+
+  // ------------ THE DIFFERENT IS HERE ---------
+  // use subscriber.NewRetry instead of subscriber.New
+  sub, err := subscriber.NewAvailability(options, logger)
+  if err != nil {
+    panic(err)
+  }
+
+  // other codes is same as the primary subscriber
+```
