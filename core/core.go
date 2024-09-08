@@ -14,7 +14,7 @@ type Doable[T any] interface {
 
 func Do[T any](ctx context.Context, req Doable[T], conn *pgx.Conn) (*T, error) {
 	// there is no auto-rollback on context cancellation.
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -65,7 +65,7 @@ func (puller *primary) convert(ctx context.Context, out *PullerOut) error {
 	defer puller.cm.Release(ctx, conn)
 
 	// there is no auto-rollback on context cancellation.
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}

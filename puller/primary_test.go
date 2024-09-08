@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/kanthorlabs/kanthorq/core"
 	"github.com/kanthorlabs/kanthorq/entities"
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
@@ -99,7 +98,7 @@ func TestPrimary_Do_LockFailure(t *testing.T) {
 	require.NoError(t, err)
 
 	// use another connection to lock consumer
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := conn.Begin(ctx)
 	require.NoError(t, err)
 	_, err = (&core.ConsumerLockReq{Name: res.ConsumerRegistry.Name}).Do(ctx, tx)
 	require.NoError(t, err)

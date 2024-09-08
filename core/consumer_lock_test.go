@@ -25,7 +25,7 @@ func TestConsumerLock(t *testing.T) {
 		Name: consumer.Name,
 	}
 
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := conn.Begin(ctx)
 	require.NoError(t, err)
 	_, err = req.Do(ctx, tx)
 	require.NoError(t, err)

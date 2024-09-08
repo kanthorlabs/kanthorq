@@ -8,4 +8,4 @@ This page lists all limits (or constraints) about KanthorQ system you should kno
 
 ## Events
 
-- The body property can store up to **1GB** of binary data ([Storing Binary Data](https://jdbc.postgresql.org/documentation/binary-data/)) but we do not recommend that action because of penalty of performance
+- The body property of an event can store up to **1GB** of binary data ([Storing Binary Data](https://jdbc.postgresql.org/documentation/binary-data/)) but we do not recommend that action because of penalty of performance

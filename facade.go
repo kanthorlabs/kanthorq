@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/kanthorlabs/kanthorq/pkg/utils"
 	"github.com/kanthorlabs/kanthorq/pkg/xlogger"
 	"github.com/kanthorlabs/kanthorq/publisher"
 	"github.com/kanthorlabs/kanthorq/subscriber"
@@ -22,22 +21,21 @@ func Pub(ctx context.Context, options *publisher.Options) (publisher.Publisher, 
 		panic(err)
 	}
 
-	startctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	if err := pub.Start(startctx); err != nil {
+	startCtx, startCancel := context.WithTimeout(ctx, timeout)
+	defer startCancel()
+	if err := pub.Start(startCtx); err != nil {
 		panic(err)
 	}
 
 	return pub, func() {
-		stopctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
+		stopCtx, stopCancel := context.WithTimeout(ctx, timeout)
+		defer stopCancel()
 
-		name := utils.NameOf(pub)
-		if err := pub.Stop(stopctx); err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("publisher stop with error", zap.String("publisher", name), zap.Error(err))
+		if err := pub.Stop(stopCtx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("publisher stop with error", zap.Error(err))
 		}
 
-		logger.Info("publisher stopped", zap.String("publisher", name))
+		logger.Info("publisher stopped")
 	}
 }
 
@@ -65,11 +63,14 @@ func Sub(ctx context.Context, options *subscriber.Options, handler subscriber.Ha
 
 	//  stop all clients
 	defer func() {
-		stopctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
+		// graceful shutdown starting
+		// don't reuse ctx here because it already done
+		// you also need timeout here
+		stopCtx, stopCancel := context.WithTimeout(context.Background(), timeout)
+		defer stopCancel()
 
 		for _, client := range clients {
-			if err := client.Stop(stopctx); err != nil {
+			if err := client.Stop(stopCtx); err != nil {
 				logger.Error("subscriber stop with error", zap.Error(err))
 				return
 			}
@@ -78,27 +79,27 @@ func Sub(ctx context.Context, options *subscriber.Options, handler subscriber.Ha
 	}()
 
 	// start all clients
-	startctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+	startCtx, startCancel := context.WithTimeout(ctx, timeout)
+	defer startCancel()
 	for _, client := range clients {
-		if err := client.Start(startctx); err != nil {
+		if err := client.Start(startCtx); err != nil {
 			return err
 		}
 	}
 
-	rctx, stop := context.WithCancel(ctx)
-	defer stop()
+	receiveCtx, receiveCancel := context.WithCancel(ctx)
+	defer receiveCancel()
 
 	for _, client := range clients {
 		go func(c subscriber.Subscriber) {
-			if err := c.Receive(rctx, handler); err != nil && !errors.Is(err, context.Canceled) {
+			if err := c.Receive(receiveCtx, handler); err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("subscriber receive with error", zap.Error(err))
 			}
 
-			stop()
+			receiveCancel()
 		}(client)
 	}
 
-	<-rctx.Done()
+	<-receiveCtx.Done()
 	return ctx.Err()
 }
