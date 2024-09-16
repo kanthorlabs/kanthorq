@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS kanthorq_consumer_registry (
   stream_name VARCHAR(256) NOT NULL,
   id VARCHAR(64) NOT NULL,
   name VARCHAR(256) NOT NULL,
+  kind SMALLINT NOT NULL DEFAULT 1,
   subject_includes VARCHAR(256) ARRAY NOT NULL,
   subject_excludes VARCHAR(256) ARRAY NOT NULL DEFAULT '{}',
   cursor VARCHAR(64) NOT NULL,

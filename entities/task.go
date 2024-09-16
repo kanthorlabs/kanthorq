@@ -67,8 +67,6 @@ type Task struct {
 	UpdatedAt int64 `json:"updated_at" validate:"gte=0"`
 }
 
-type TaskState int16
-
 const (
 	// StateDiscarded is the state for tasks that have errored enough times
 	// that they're no longer eligible to be retried. Manual user invention
@@ -93,6 +91,8 @@ const (
 	// retried.
 	StateRetryable TaskState = 102
 )
+
+type TaskState int16
 
 func (state TaskState) String() string {
 	switch state {
