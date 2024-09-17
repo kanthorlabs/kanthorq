@@ -7,13 +7,13 @@ sidebar_position: 1
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-Learn how to install KanthorQ packages for Go, run migrations to set up KanthorQ's database schema, and start working with KanthorQ's publisher and subscriber.
+To help you start working with KanthorQ, here's a guide on how to install the necessary packages, run database migrations, and begin publishing and subscribing to events in Go. This will walk you through setting up the core elements of KanthorQ and getting everything up and running.
 
 ## Prerequisites
 
-To get started with KanthorQ, you only need one external service: a PostgreSQL database. However, you can use other databases that support the PostgreSQL wire protocol, such as CockroachDB or Amazon Aurora (PostgreSQL-compatible edition).
+Before diving into KanthorQ, you’ll need a PostgreSQL database. This can be a PostgreSQL instance running locally or in the cloud. Alternatively, you can use any database that supports the PostgreSQL wire protocol, such as CockroachDB or Amazon Aurora (PostgreSQL-compatible edition).
 
-If you don't have a PostgreSQL instance, you can start one locally using Docker:
+If you don’t have a PostgreSQL instance running, you can quickly start one locally using Docker:
 
 ```bash
 docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=changemenow -d postgres:16
@@ -21,7 +21,7 @@ docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=changemenow -d post
 
 ## Installation
 
-To install KanthorQ, run the following command in a Go project directory (where a `go.mod` file is present):
+To install KanthorQ, make sure you're in a Go project directory (one that contains a `go.mod` file). Then run the following command:
 
 ```bash
 go get github.com/kanthorlabs/kanthorq
@@ -29,25 +29,23 @@ go get github.com/kanthorlabs/kanthorq
 
 ## Running migrations
 
-KanthorQ system is replied on PosgreSQL database, and needs a small sets of tables to persist management and tasks data. You need to install the command line tool which executes migrations, and provides other features of KanthorQ system.
+KanthorQ relies on PostgreSQL to manage its events and tasks. To set up the necessary database schema, you’ll need to run some migrations. First, install the KanthorQ command-line tool:
 
-- Install the command line tool
+```bash
+go install github.com/kanthorlabs/kanthorq/cmd/kanthorq@latest
+```
 
-  ```bash
-  go install github.com/kanthorlabs/kanthorq/cmd/kanthorq@latest
-  ```
+Next, run the migrations to set up KanthorQ’s database schema:
 
-- Run the migration up
+```bash
+kanthorq migrate up -s 'github://kanthorlabs/kanthorq/migration#main' -d 'postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable'
+```
 
-  ```bash
-  kanthorq migrate up -s 'github://kanthorlabs/kanthorq/migration#main' -d 'postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable'
-  ```
-
-  :::info
-  Replace the `-d` option with your database URI if you're using a different instance.
-  :::
+Make sure to replace the -d option with the URI of your PostgreSQL instance if you're using a different database setup.
 
 ## Sending Events with a Publisher
+
+Once the migration is complete, you’re ready to start sending events using the publisher. Here’s an example of how to publish events in Go:
 
 ```go
 import (
@@ -91,7 +89,11 @@ func main() {
 }
 ```
 
+In this example, you initialize a publisher that sends three events with different messages. The publisher handles event sending and interacts with the PostgreSQL database to persist those events.
+
 ## Handling Events with a Subscriber
+
+Once you’ve sent some events, you’ll want to handle them using a subscriber. Here’s a basic example of how to subscribe to events:
 
 ```go
 import (
@@ -154,7 +156,9 @@ func main() {
 }
 ```
 
-After running the example, you should see the following output:
+This example shows a subscriber listening for events matching the subject filter `system.>`. The subscriber processes all events with subjects such as `system.say_hello` or `system.say_goodbye`.
+
+After running the above example, you should see output similar to the following:
 
 ```bash
 2024/08/30 09:18:43 RECEIVED: event_01j6gh7t5v6j2q9ma0n78hw9fe | system.say_hello | 2024-08-30T09:18:42+07:00

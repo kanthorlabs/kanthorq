@@ -4,11 +4,11 @@ sidebar_label: "Insert events"
 sidebar_position: 1
 ---
 
-The first step in working with KanthorQ is inserting events into the system, which will remain there for you to process later (until you delete them). To do this, you need to understand the event structure in KanthorQ. Once familiar with it, I'll show you how to insert events in a basic way, as well as how to do so transactionally.
+The first step in working with the KanthorQ system is inserting events. Once an event is inserted, it will remain in the system indefinitely, ready to be processed at any time (unless you delete it). Before you can insert events, it’s important to understand the structure of events in the KanthorQ system. This section will cover the structure of events, how to insert them in a basic manner, and how to do so transactionally, ensuring that events are only added if the associated transaction succeeds.
 
 ## The event structure
 
-An event in the KanthorQ system has the following structure. The most important properties you'll work with often are `Subject` and `Body`.
+An event in the KanthorQ system follows a predefined structure, as shown below. The most frequently used properties in the event structure are `Subject` and `Body`, which you will interact with often.
 
 ```go
 type Event struct {
@@ -22,23 +22,25 @@ type Event struct {
 
 ### The `Subject`
 
-The `Subject` property allows you to organize your events in a hierarchical structure. This concept is inspired by [NATS Subject-Based Messaging](https://docs.nats.io/nats-concepts/subjects). If you're familiar with RabbitMQ, it's similar to a [Routing Key](https://www.rabbitmq.com/tutorials/tutorial-five-go#topic-exchange).
+The Subject field is a crucial part of an event's structure. It allows you to organize your events in a hierarchical manner, similar to the concept of [NATS Subject-Based Messaging](https://docs.nats.io/nats-concepts/subjects). If you're familiar with RabbitMQ, you can think of it as being similar to a[Routing Key](https://www.rabbitmq.com/tutorials/tutorial-five-go#topic-exchange), which determines how messages (or in this case, events) are routed to different consumers.
 
-For example, if you have an event for an order update, you might define the subject as `order.updated`. You can then write logic to handle this event.
+For example, if you are working with events related to order updates, you can define a subject like `order.updated`. This allows you to easily organize all events that deal with order updates under a single subject. You can also define more granular subjects depending on your needs.
 
-As your business evolves, you might need to handle different versions of this event. You could either modify the existing logic or write new logic for the updated version.
+As your system evolves, you may need to introduce new logic to handle the events, perhaps as a result of changing business requirements. In such cases, you will need to decide whether to update the existing logic or create a new version of the event processing logic.
 
-- To support both old and new logic, you can define a new subject like `order.updated.v2`. You can filter all versions using the pattern `order.updated.>` so that both old and new events will be matched.
+- If you choose to support both the old and the new logic simultaneously, you can define a new subject like `order.updated.v2`. This will allow you to filter both the old and new versions of the event using a single pattern, such as `order.updated.>`, which would match all versions of the `order.updated` subject.
 
-- Alternatively, to keep old and new versions separate, you could define a subject like `v2.order.updated`. Then `order.updated.>` will match the old version, and `v2.order.updated.>` will match the new one.
+- On the other hand, if you choose to keep the new logic separate from the old, you can define a subject like `v2.order.updated`. In this case, the filter `order.updated.>` would match only the old version, while `v2.order.updated.>` would match only the new one.
 
-If your business expands to multiple regions, you could further specify subjects like `ap-southeast-1.order.created`, `ap-southeast-2.order.created`, and so on.
+Furthermore, if your business grows and expands to multiple regions, you can organize your subjects by region. For example, you could define subjects like `ap-southeast-1.order.created` and `ap-southeast-2.order.created`, along with regional versions like `ap-southeast-1.v2.order.created `and `ap-southeast-2.v2.order.created`. This kind of flexibility allows you to organize and filter events in a way that suits the evolving structure of your business and its operational needs.
 
 ### The `Body`
 
-The Body is an arbitrary byte array where you can store any kind of data. The most common use case is storing a JSON string, but you could also store binary data, such as images, or even encrypt the body before storing it.
+The `Body` of an event is another important part of its structure. It is essentially an arbitrary byte array where you can store any kind of data you need. In most cases, developers use the `Body` field to store a JSON string, which represents structured data about the event. However, you are not limited to JSON; the `Body` field can also be used to store binary data, such as images, or even encoded or encrypted data, depending on your use case.
 
-For example:
+For example, you may choose to encrypt the data stored in the event body before saving it to the database. This approach ensures the security of your event data and can be useful in situations where sensitive information is involved. The data can then be decrypted when the event is consumed.
+
+Here's an example of how you might encrypt the body of an event:
 
 ```go
 // pseudo code for demonstration
@@ -52,69 +54,69 @@ events := []*entities.Event{
 }
 pub.Send(ctx, events)
 
-// Decrypt when receiving the event
+// Decrypt the data when receiving the event
 sub.Receive(ctx, func(ctx context.Context, msg *entities.Message) error {
   data, err := decrypt(msg.Event.Body)
   if err !=nil {
     log.Fatal(err)
   }
 
-  // Work with the decrypted data
+  // Work with your decrypted data here
 })
 ```
 
+This flexibility in handling the `Body` of an event makes KanthorQ adaptable to a wide range of use cases, whether you need to work with simple JSON strings or more complex binary data formats.
+
 ### Other properties
 
-- `Metadata`: An arbitrary map to store additional information about your event, like telemetry tracing.
+In addition to the `Subject` and `Body` fields, events in KanthorQ have other properties that serve specific purposes:
 
-- `Id`: A crucial property serving as the primary and partition key of the stream. It must be lexicographically sortable. Common options include [ULID](https://github.com/ulid/spec) and [KSUID](https://github.com/segmentio/ksuid).
+- `Metadata`: This is an arbitrary map that can store additional information about the event. You can use this field to add any custom data related to the event. For instance, KanthorQ itself uses the `Metadata` field to store telemetry tracing information, which helps track the flow of events within distributed systems.
 
-:::info
-KanthorQ is using `ULID` by default.
-:::
+- `Id`: The `Id` field is a unique identifier for the event and plays a critical role in KanthorQ. It serves as both the primary key and the partition key within the event stream. This identifier must be lexicographically sortable, meaning the order in which events are inserted can be determined by their IDs. To ensure this, KanthorQ uses [ULID](https://github.com/ulid/spec) as the default method for generating event IDs, but other options are also available, such as [KSUID](https://github.com/segmentio/ksuid). However, ULID is preferred because it offers better guarantees for maintaining the correct order of events.
 
 ## Inserting Events (Basic Way)
 
-To simplify the process, KanthorQ provides helper methods for initializing both the publisher and the event.
+To make event publishing easier, KanthorQ provides helper methods that simplify the process of initializing both the publisher and the event itself.
 
-To initialize a publisher, you need to define two options:
+When initializing a publisher, you must define two key options:
 
-- `Connection`: The connection string for the PostgreSQL database.
-- `StreamName`: The name of the stream where events will be stored. It serves same as [NATS JetStream Streams](https://docs.nats.io/nats-concepts/jetstream/streams) or [RabbitMQ Exchange](https://www.rabbitmq.com/tutorials/tutorial-three-go#exchanges).
+- `Connection`: This is the connection string for the PostgreSQL database where events will be stored. You should replace this with the appropriate URI for your database.
 
-```go
-options := &publisher.Options{
-  Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
-  // Using default stream for demo
-  StreamName: entities.DefaultStreamName,
-}
-// Initialize a publisher
-pub, cleanup := kanthorq.Pub(ctx, options)
-// Clean up after done
-defer cleanup()
-```
-
-To initialize an event, define the `Subject` and `Body` using the `NewEvent` method:
-
-```go
-subject := "system.say_hello"
-body := []byte("{\"msg\": \"Hello World!\"}")
-event := entities.NewEvent(subject, body)
-event.Metadata["version"] = "2"
-event.Metadata["traceparent"] = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
-```
-
-Bringing it all together:
+- `StreamName`: This is the name of the stream in which you want to store your events. It’s akin to the concept of a stream in [NATS JetStream Streams](https://docs.nats.io/nats-concepts/jetstream/streams) or an exchange in [RabbitMQ Exchange](https://www.rabbitmq.com/tutorials/tutorial-three-go#exchanges).
 
 ```go
 options := &publisher.Options{
   Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
   // Using default stream for demo
+  StreamName: entities.DefaultStreamName, // Using the default stream for this example
+}
+// Initialize the publisher
+pub, cleanup := kanthorq.Pub(ctx, options)
+// Clean up the publisher after you're done
+defer cleanup()
+```
+
+To initialize an event, you only need to define the `Subject` and `Body`. If you're using KanthorQ's helper methods, this process becomes even simpler. The `NewEvent` method can be used to create a new event, where the `Subject` describes the type of event, and the `Body` contains the event data (typically in JSON format).
+
+```go
+subject := "system.say_hello"
+body := []byte("{\"msg\": \"Hello World!\"}")
+event := entities.NewEvent(subject, body)
+
+// Add some additional metadata to the event
+event.Metadata["version"] = "2"
+event.Metadata["traceparent"] = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+```
+
+Now, you can bring everything together by publishing the event:
+
+```go
+options := &publisher.Options{
+  Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
   StreamName: entities.DefaultStreamName,
 }
-// Initialize a publisher
 pub, cleanup := kanthorq.Pub(ctx, options)
-// Clean up after done
 defer cleanup()
 
 subject := "system.say_hello"
@@ -123,18 +125,21 @@ event := entities.NewEvent(subject, body)
 event.Metadata["version"] = "2"
 event.Metadata["traceparent"] = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
 
-// Publish events
 events := []*entities.Event{event}
 if err:= pub.Send(ctx, events); err != nil {
-  // Handle error
+  // Handle any errors that occur during event publishing
 }
 ```
+
+This is the basic process for inserting events into KanthorQ. It's simple but effective, allowing you to get up and running quickly.
 
 ## Inserting Events (Transactional Way)
 
-One of the key features of KanthorQ is the ability to publish events transactionally, ensuring events are only published if the entire transaction is successful.
+One of the most powerful features of KanthorQ is its ability to handle event publishing in a transactional manner. This means you can ensure that events are only published if the entire transaction is successful. This feature is especially useful in scenarios where you need consistency between your business logic and event publishing.
 
-For example, when updating an order as the example we mentioned at the beginning, you can ensure that both the update and the event publishing are either fully successful or both fail.
+For example, if you're updating an order in your system, you want to ensure that the order update and the event publication both either succeed or fail together. With transactional publishing, you can guarantee that no event is published unless the corresponding database transaction completes successfully.
+
+Here’s how you can insert events transactionally:
 
 ```go
 options := &publisher.Options{
@@ -164,16 +169,18 @@ if err != nil {
 
 // Publish events transactionally
 if err:= pub.SendTx(ctx, events, tx); err != nil {
-  // handle error
+  // Handle any errors that occur during transactional publishing
 }
 
-// do other stuff
+// Do whatever you need to do with the transaction
 // call tx.Rollback(ctx) to abort the transaction
 
 // Commit the transaction
 if err := tx.Commit(ctx); err != nil {
-  // handle error
+  // Handle commit error
 }
 ```
 
-For a full example, see our documentation on [Transactional Publisher](https://github.com/kanthorlabs/kanthorq/blob/main/example/transactional-publisher/main.go)
+This code ensures that events are only published if the transaction completes successfully. If the transaction fails, the events will not be inserted into the stream. This feature provides a higher level of consistency and reliability in your event-driven system.
+
+For more details and examples, refer to our full documentation on the [Transactional Publisher](https://github.com/kanthorlabs/kanthorq/blob/main/example/transactional-publisher/main.go)
