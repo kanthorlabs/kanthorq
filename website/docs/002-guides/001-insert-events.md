@@ -4,11 +4,11 @@ sidebar_label: "Insert events"
 sidebar_position: 1
 ---
 
-The first step at a journey of working with KanthorQ is inserting events into KanthorQ system. So that it will be there for you to handle it later forever (until you delete it). To insert events into KanthorQ system, you need to know the structure of the events in KanthorQ system firstly. Then I will show you how to insert events in a basic way and in transactional way.
+The first step in working with KanthorQ is inserting events into the system, which will remain there for you to process later (until you delete them). To do this, you need to understand the event structure in KanthorQ. Once familiar with it, I'll show you how to insert events in a basic way, as well as how to do so transactionally.
 
 ## The event structure
 
-The representation of an event in KanthorQ system is shown below. The most common properties you will work with a lots later are the `Subject` and the `Body`.
+An event in the KanthorQ system has the following structure. The most important properties you'll work with often are `Subject` and `Body`.
 
 ```go
 type Event struct {
@@ -22,20 +22,23 @@ type Event struct {
 
 ### The `Subject`
 
-The `Subject` is a property that allows you organize your events in a hierarchical structure. I borrowed it from [NATS Subject-Based Messaging](https://docs.nats.io/nats-concepts/subjects). If you are familiar with RabbitMQ, you can think it's kind of [Routing Key](https://www.rabbitmq.com/tutorials/tutorial-five-go#topic-exchange)
+The `Subject` property allows you to organize your events in a hierarchical structure. This concept is inspired by [NATS Subject-Based Messaging](https://docs.nats.io/nats-concepts/subjects). If you're familiar with RabbitMQ, it's similar to a [Routing Key](https://www.rabbitmq.com/tutorials/tutorial-five-go#topic-exchange).
 
-Lets say you need to work with event of order that is updated, you can define a subject like this `order.updated`. Then you can write your own logic to handle it.
+For example, if you have an event for an order update, you might define the subject as `order.updated`. You can then write logic to handle this event.
 
-After a period of time, your business requirements may change and you need another logic to handle the event that is belong. Then you have to decide whether you should modify the old logic to support the new version of just write another completely logic to handle new version.
+As your business evolves, you might need to handle different versions of this event. You could either modify the existing logic or write new logic for the updated version.
 
-- If you decide to support both old and new logic, you can define a new subject like this `order.updated.v2` so you can filter all events that match both the old and new version with the filter `order.updated.>`.
-- If you choose the other soluton, you can define a new subject like this `v2.order.updated` so that the filter `order.updated.>` will only match the old one, and `v2.order.updated.>` only match the new one. Then you can register an other subscriber to working on the filter `v2.order.updated.>`
+- To support both old and new logic, you can define a new subject like `order.updated.v2`. You can filter all versions using the pattern `order.updated.>` so that both old and new events will be matched.
 
-Later, you got a bump, your business grows rapidly and you decide that you need to support multiple regions. Then you can define another subject like this `ap-southeast-1.order.created`, `ap-southeast-2.order.created`, `ap-southeast-1.v2.order.created` and `ap-southeast-2.v2.order.created`
+- Alternatively, to keep old and new versions separate, you could define a subject like `v2.order.updated`. Then `order.updated.>` will match the old version, and `v2.order.updated.>` will match the new one.
+
+If your business expands to multiple regions, you could further specify subjects like `ap-southeast-1.order.created`, `ap-southeast-2.order.created`, and so on.
 
 ### The `Body`
 
-The `body` is an arbitrary byte array that you can use to store any data you want. Most commone usage are json string, but you can also use image binary or base64 as well. And other example usage is you encrypt the `body` in the event before it's stored in the database. Then you can decrypt it when you need it.
+The Body is an arbitrary byte array where you can store any kind of data. The most common use case is storing a JSON string, but you could also store binary data, such as images, or even encrypt the body before storing it.
+
+For example:
 
 ```go
 // pseudo code for demonstration
@@ -49,118 +52,107 @@ events := []*entities.Event{
 }
 pub.Send(ctx, events)
 
-// other logic
-
+// Decrypt when receiving the event
 sub.Receive(ctx, func(ctx context.Context, msg *entities.Message) error {
   data, err := decrypt(msg.Event.Body)
   if err !=nil {
     log.Fatal(err)
   }
 
-  // working with your data here
+  // Work with the decrypted data
 })
 ```
 
 ### Other properties
 
-The `Metadata` is an arbitrary map that you can use to store additional information about your event. For example, KanthorQ will use it to store the Telemetry Tracing information
+- `Metadata`: An arbitrary map to store additional information about your event, like telemetry tracing.
 
-The `Id` is the most important property of an event but I think you should not touch it. It's a primary key as well as parition key of the stream. We use it to scan through the stream to get events so it must be lexicographically sortable. Some candidates that can be use here is
+- `Id`: A crucial property serving as the primary and partition key of the stream. It must be lexicographically sortable. Common options include [ULID](https://github.com/ulid/spec) and [KSUID](https://github.com/segmentio/ksuid).
 
-    - Our choice is [ULID](https://github.com/ulid/spec)
-    - [KSUID](https://github.com/segmentio/ksuid). Uses UNIX-time in seconds, if your insert rate is about 1000 events per second, you loose the order of your inserting events.
-    - Auto-increment ID of Postgres. Not unique if you try to looking in different streams as well as not available until you inserted it successfully.
+:::info
+KanthorQ is using `ULID` by default.
+:::
 
-## Insert events in a basic way
+## Inserting Events (Basic Way)
 
-To make your coding experience a lot easier, I have define some facade methods to help you initialize both the publisher and event
+To simplify the process, KanthorQ provides helper methods for initializing both the publisher and the event.
 
-To intialize the publisher, you must define two options:
+To initialize a publisher, you need to define two options:
 
-    - The `Connection` is the connection string of PostgreSQl database
-    - The `StreamName` is the name of the stream you want to store events. Think about [NATS JetStream Streams](https://docs.nats.io/nats-concepts/jetstream/streams) or [RabbitMQ Exchange](https://www.rabbitmq.com/tutorials/tutorial-three-go#exchanges)
+- `Connection`: The connection string for the PostgreSQL database.
+- `StreamName`: The name of the stream where events will be stored. It serves same as [NATS JetStream Streams](https://docs.nats.io/nats-concepts/jetstream/streams) or [RabbitMQ Exchange](https://www.rabbitmq.com/tutorials/tutorial-three-go#exchanges).
 
 ```go
 options := &publisher.Options{
-  // replace connection string with your database URI
   Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
-  // using default stream for demo
+  // Using default stream for demo
   StreamName: entities.DefaultStreamName,
 }
 // Initialize a publisher
 pub, cleanup := kanthorq.Pub(ctx, options)
-// clean up the publisher after everything is done
+// Clean up after done
 defer cleanup()
 ```
 
-Initialize an event is easier, you only need to define the `Subject` and `Body` if you use the facade method `NewEvent`
+To initialize an event, define the `Subject` and `Body` using the `NewEvent` method:
 
 ```go
 subject := "system.say_hello"
 body := []byte("{\"msg\": \"Hello World!\"}")
 event := entities.NewEvent(subject, body)
-// add some additional metadata
 event.Metadata["version"] = "2"
 event.Metadata["traceparent"] = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
 ```
 
-Bring them up together, we will have a pseudo code like this
+Bringing it all together:
 
 ```go
 options := &publisher.Options{
-  // replace connection string with your database URI
   Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
-  // using default stream for demo
+  // Using default stream for demo
   StreamName: entities.DefaultStreamName,
 }
 // Initialize a publisher
 pub, cleanup := kanthorq.Pub(ctx, options)
-// clean up the publisher after everything is done
+// Clean up after done
 defer cleanup()
 
 subject := "system.say_hello"
 body := []byte("{\"msg\": \"Hello World!\"}")
 event := entities.NewEvent(subject, body)
-// add some additional metadata
 event.Metadata["version"] = "2"
 event.Metadata["traceparent"] = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
 
-// publish events
+// Publish events
 events := []*entities.Event{event}
 if err:= pub.Send(ctx, events); err != nil {
-  // handle error
+  // Handle error
 }
 ```
 
-## Insert events in a transactional way
+## Inserting Events (Transactional Way)
 
-One of the coolest features we have at KanthorQ is you can publish events in a transactional way. That means you can garantee that your events are only published if and only if the whole transcation is success. Is it cool, right?
+One of the key features of KanthorQ is the ability to publish events transactionally, ensuring events are only published if the entire transaction is successful.
 
-If you get back to the example before about the order events, you can realise that you can expect that both your updating and the event publishing are either success or failure. You will not be able to fall into a case that you publish an event success but your updating is failed or vice versa.
+For example, when updating an order as the example we mentioned at the beginning, you can ensure that both the update and the event publishing are either fully successful or both fail.
 
 ```go
 options := &publisher.Options{
-  // replace connection string with your database URI
   Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
-  // using default stream for demo
   StreamName: entities.DefaultStreamName,
 }
-// Initialize a publisher
 pub, cleanup := kanthorq.Pub(ctx, options)
-// clean up the publisher after everything is done
 defer cleanup()
 
-subject := "system.say_hello"
-body := []byte("{\"msg\": \"Hello World!\"}")
+subject := "order.updated"
+body := []byte("{\"txn_id\": \"afe86f5d-66a0-49ca-8c18-fbea71dc2a98\"}")
 event := entities.NewEvent(subject, body)
-// add some additional metadata
-event.Metadata["version"] = "2"
-event.Metadata["traceparent"] = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+event.Metadata["traceparent"] = "00-80e1afed08e019fc1110464cfa66635c-7a085853722dc6d2-01"
 
-// publish events
 events := []*entities.Event{event}
+
 // ------------ THE DIFFERENT IS HERE ---------
-// start a different connection
+// Start a new transaction
 conn, err := pgx.Connect(ctx, cm.uri)
 if err != nil {
   return nil, err
@@ -170,9 +162,18 @@ if err != nil {
   return nil, err
 }
 
+// Publish events transactionally
 if err:= pub.SendTx(ctx, events, tx); err != nil {
+  // handle error
+}
+
+// do other stuff
+// call tx.Rollback(ctx) to abort the transaction
+
+// Commit the transaction
+if err := tx.Commit(ctx); err != nil {
   // handle error
 }
 ```
 
-The full example can be found at our example of [Transactional Publisher](https://github.com/kanthorlabs/kanthorq/blob/main/example/transactional-publisher/main.go)
+For a full example, see our documentation on [Transactional Publisher](https://github.com/kanthorlabs/kanthorq/blob/main/example/transactional-publisher/main.go)
