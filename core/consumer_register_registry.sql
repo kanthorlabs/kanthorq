@@ -28,6 +28,7 @@ RETURNING
   stream_name,
   id,
   name,
+  kind,
   subject_includes,
   subject_excludes,
   cursor,

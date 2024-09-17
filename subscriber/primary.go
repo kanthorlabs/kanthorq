@@ -73,8 +73,11 @@ func (sub *primary) Stop(ctx context.Context) error {
 	defer sub.mu.Unlock()
 
 	var err error
-	if cmerr := sub.cm.Stop(ctx); cmerr != nil {
-		err = errors.Join(err, cmerr)
+
+	if sub.cm != nil {
+		if cmerr := sub.cm.Stop(ctx); cmerr != nil {
+			err = errors.Join(err, cmerr)
+		}
 	}
 
 	sub.stream = nil

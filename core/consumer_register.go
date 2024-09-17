@@ -65,6 +65,7 @@ func (req *ConsumerRegisterReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerReg
 			&registry.StreamName,
 			&registry.Id,
 			&registry.Name,
+			&registry.Kind,
 			&registry.SubjectIncludes,
 			&registry.SubjectExcludes,
 			&registry.Cursor,

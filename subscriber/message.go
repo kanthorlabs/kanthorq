@@ -13,9 +13,17 @@ import (
 	"github.com/kanthorlabs/kanthorq/pkg/pgcm"
 )
 
+type msgstate = int16
+
 var (
-	nacked = -1
-	acked  = 1
+	nacked  msgstate = -1
+	pending msgstate = 0
+	acked   msgstate = 1
+)
+
+var (
+	ErrAlreadyAcknowledged = errors.New("already acknowledged")
+	ErrInvalidMessageState = errors.New("invalid message state")
 )
 
 type Message struct {
@@ -26,7 +34,7 @@ type Message struct {
 	consumer *entities.ConsumerRegistry
 
 	mu           sync.Mutex
-	acknowledged int
+	acknowledged msgstate
 }
 
 // Ack is safe to call multiple times
@@ -34,12 +42,11 @@ func (msg *Message) Ack(ctx context.Context) error {
 	msg.mu.Lock()
 	defer msg.mu.Unlock()
 
-	acked, err := msg.acked()
-	if err != nil {
+	if err := msg.acked(); err != nil {
+		if errors.Is(err, ErrAlreadyAcknowledged) {
+			return nil
+		}
 		return err
-	}
-	if acked {
-		return nil
 	}
 
 	req := &core.TaskMarkRunningAsCompletedReq{
@@ -47,7 +54,7 @@ func (msg *Message) Ack(ctx context.Context) error {
 		Tasks:    []*entities.Task{msg.Task},
 	}
 
-	_, err = core.DoWithCM(ctx, req, msg.cm)
+	_, err := core.DoWithCM(ctx, req, msg.cm)
 	return err
 }
 
@@ -55,12 +62,11 @@ func (msg *Message) AckTx(ctx context.Context, tx pgx.Tx) error {
 	msg.mu.Lock()
 	defer msg.mu.Unlock()
 
-	acked, err := msg.acked()
-	if err != nil {
+	if err := msg.acked(); err != nil {
+		if errors.Is(err, ErrAlreadyAcknowledged) {
+			return nil
+		}
 		return err
-	}
-	if acked {
-		return nil
 	}
 
 	req := &core.TaskMarkRunningAsCompletedReq{
@@ -68,22 +74,23 @@ func (msg *Message) AckTx(ctx context.Context, tx pgx.Tx) error {
 		Tasks:    []*entities.Task{msg.Task},
 	}
 
-	_, err = req.Do(ctx, tx)
+	_, err := req.Do(ctx, tx)
 	return err
 }
 
-func (msg *Message) acked() (bool, error) {
-	if msg.acknowledged == nacked {
-		return false, errors.New("message is already nacked")
+func (msg *Message) acked() error {
+	// safely call multiple times
+	if msg.acknowledged == acked {
+		return ErrAlreadyAcknowledged
 	}
 
-	// already ack, don't do it again
-	if msg.acknowledged != acked {
+	// only allow move from pending to acked
+	if msg.acknowledged == pending {
 		msg.acknowledged = acked
-		return false, nil
+		return nil
 	}
 
-	return true, nil
+	return ErrInvalidMessageState
 }
 
 // Nack is safe to call multiple times
@@ -91,12 +98,11 @@ func (msg *Message) Nack(ctx context.Context, reason error) error {
 	msg.mu.Lock()
 	defer msg.mu.Unlock()
 
-	nacked, err := msg.nacked()
-	if err != nil {
+	if err := msg.nacked(); err != nil {
+		if errors.Is(err, ErrAlreadyAcknowledged) {
+			return nil
+		}
 		return err
-	}
-	if nacked {
-		return nil
 	}
 
 	req := &core.TaskMarkRunningAsRetryableOrDiscardedReq{
@@ -109,7 +115,7 @@ func (msg *Message) Nack(ctx context.Context, reason error) error {
 		},
 	}
 
-	_, err = core.DoWithCM(ctx, req, msg.cm)
+	_, err := core.DoWithCM(ctx, req, msg.cm)
 	return err
 }
 
@@ -117,12 +123,11 @@ func (msg *Message) NackTx(ctx context.Context, reason error, tx pgx.Tx) error {
 	msg.mu.Lock()
 	defer msg.mu.Unlock()
 
-	nacked, err := msg.nacked()
-	if err != nil {
+	if err := msg.nacked(); err != nil {
+		if errors.Is(err, ErrAlreadyAcknowledged) {
+			return nil
+		}
 		return err
-	}
-	if nacked {
-		return nil
 	}
 
 	req := &core.TaskMarkRunningAsRetryableOrDiscardedReq{
@@ -135,19 +140,21 @@ func (msg *Message) NackTx(ctx context.Context, reason error, tx pgx.Tx) error {
 		},
 	}
 
-	_, err = req.Do(ctx, tx)
+	_, err := req.Do(ctx, tx)
 	return err
 }
 
-func (msg *Message) nacked() (bool, error) {
-	if msg.acknowledged == acked {
-		return false, errors.New("message is already acked")
+func (msg *Message) nacked() error {
+	// safely call multiple times
+	if msg.acknowledged == nacked {
+		return ErrAlreadyAcknowledged
 	}
 
-	if msg.acknowledged != nacked {
+	// only allow move from pending to nnacked
+	if msg.acknowledged == pending {
 		msg.acknowledged = nacked
-		return false, nil
+		return nil
 	}
 
-	return true, nil
+	return ErrInvalidMessageState
 }

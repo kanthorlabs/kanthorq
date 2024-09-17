@@ -81,7 +81,7 @@ func TestMessage_Ack_Error(t *testing.T) {
 	// call it twice should be safe
 	require.NoError(t, msg.Ack(ctx))
 	// only allow call either ack or nack once
-	require.ErrorContains(t, msg.Nack(ctx, errors.New(time.Now().Format(time.RFC3339Nano))), "message is already acked")
+	require.ErrorIs(t, msg.Nack(ctx, errors.New(time.Now().Format(time.RFC3339Nano))), ErrInvalidMessageState)
 }
 
 func TestMessage_AckTx(t *testing.T) {
@@ -197,7 +197,7 @@ func TestMessage_Nack_Error(t *testing.T) {
 	// call it twice should be safe
 	require.NoError(t, msg.Nack(ctx, ferr))
 	// only allow call either ack or nack once
-	require.ErrorContains(t, msg.Ack(ctx), "message is already nacked")
+	require.ErrorIs(t, msg.Ack(ctx), ErrInvalidMessageState)
 }
 
 func TestMessage_NackTx(t *testing.T) {

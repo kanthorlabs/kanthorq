@@ -74,7 +74,7 @@ func TestRandomErrorHandler_ContextTimeout(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		// Call  function that uses fmt.Printf
-		err := RandomErrorHandler(event.CreatedAt/100)(ctx, &Message{Event: event, Task: task})
+		err := RandomErrorHandler(event.CreatedAt+2)(ctx, &Message{Event: event, Task: task})
 		require.ErrorIs(t, err, context.Canceled)
 	}()
 	cancel()

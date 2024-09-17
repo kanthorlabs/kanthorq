@@ -37,6 +37,7 @@ func (req *ConsumerUnlockReq) Do(ctx context.Context, tx pgx.Tx) (*ConsumerUnloc
 		&res.Consumer.StreamName,
 		&res.Consumer.Id,
 		&res.Consumer.Name,
+		&res.Consumer.Kind,
 		&res.Consumer.SubjectIncludes,
 		&res.Consumer.SubjectExcludes,
 		&res.Consumer.Cursor,
