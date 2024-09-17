@@ -7,13 +7,13 @@ sidebar_position: 1
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-Learn how to install KanthorQ packages for Go, run migrations to get KanthorQ's database schema in place, and start working with KanthorQ publisher and subscriber.
+Learn how to install KanthorQ packages for Go, run migrations to set up KanthorQ's database schema, and start working with KanthorQ's publisher and subscriber.
 
 ## Prerequisites
 
-To get started with KanthorQ you needs only one external service, a PostgreSQL database. But you can use others database that supports PostgreSQL wire protocol: CockroachDB or Amazon Aurora (PostgreSQL-compatible edition) for example.
+To get started with KanthorQ, you only need one external service: a PostgreSQL database. However, you can use other databases that support the PostgreSQL wire protocol, such as CockroachDB or Amazon Aurora (PostgreSQL-compatible edition).
 
-If you don't have an instance of PostgreSQL, just start a new one in your local machine with Docker
+If you don't have a PostgreSQL instance, you can start one locally using Docker:
 
 ```bash
 docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=changemenow -d postgres:16
@@ -21,7 +21,7 @@ docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=changemenow -d post
 
 ## Installation
 
-To install KanthorQ, run the following in the directory of a Go project (where a go.mod file is present):
+To install KanthorQ, run the following command in a Go project directory (where a `go.mod` file is present):
 
 ```bash
 go get github.com/kanthorlabs/kanthorq
@@ -44,10 +44,10 @@ KanthorQ system is replied on PosgreSQL database, and needs a small sets of tabl
   ```
 
   :::info
-  Change the `-d` option with your database URI if you have a different database instance running rather than the default one
+  Replace the `-d` option with your database URI if you're using a different instance.
   :::
 
-## Sending event with a publisher
+## Sending Events with a Publisher
 
 ```go
 import (
@@ -63,34 +63,35 @@ func main() {
 
 	// Initialize a publisher
 	pub, cleanup := kanthorq.Pub(ctx, &publisher.Options{
-		// replace connection string with your database URI
+		// Replace the connection string with your database URI
 		Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
-		// using default stream for demo
+		// Using the default stream for demo purposes
 		StreamName: entities.DefaultStreamName,
 	})
-	// clean up the publisher after everything is done
+	// Clean up the publisher after use
 	defer cleanup()
 
 	subject := "system.say_hello"
 	body := []byte("{\"msg\": \"Hello World!\"}")
-	// define your first event
+
+	// Define your first event
 	event := entities.NewEvent(subject, body)
 
 	events := []*entities.Event{
 		event,
-		// another event
+		// Another  event
 		entities.NewEvent("system.say_hello", []byte("{\"msg\": \"I'm comming!\"}")),
-		// and yet another event
+		// And yet another event
 		entities.NewEvent("system.say_goodbye", []byte("{\"msg\": \"See you!!\"}")),
 	}
 
 	if err := pub.Send(ctx, events); err != nil {
-		// handle error
+		// Handle error
 	}
 }
 ```
 
-## Handling events with a subscriber
+## Handling Events with a Subscriber
 
 ```go
 import (
@@ -110,42 +111,41 @@ import (
 )
 
 func main() {
-	// listen for SIGTERM so if you press Ctrl-C you can stop the program
+	// Listen for SIGTERM, so pressing Ctrl-C stops the program
 	ctx, stop := signal.NotifyContext(context.TODO(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	var options = &subscriber.Options{
-		// replace connection string with your database URI
+		// Replace the connection string with your database URI
 		Connection: "postgres://postgres:changemenow@localhost:5432/postgres?sslmode=disable",
-		// we use default stream for demo
+		// Use the default stream for demo purposes
 		StreamName: entities.DefaultStreamName,
-		// we use default consumer for demo
+		// Use the default consumer for demo purposes
 		ConsumerName: entities.DefaultConsumerName,
-		// we will only receive events that match with the filter
-		// so both system.say_hello and system.say_goodbye will be processed
+		// Receive only events matching the filter,
+		// so that both system.say_hello and system.say_goodbye will be processed
 		ConsumerSubjectIncludes: []string{"system.>"},
-		// if task is failed, it will be retried it with this number of times
+		// Retry the task if it fails this many times
 		ConsumerAttemptMax: entities.DefaultConsumerAttemptMax,
-		// if task is stuck, we will wait this amount of time to reprocess it
+		// Reprocess stuck tasks after this duration
 		ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
 		Puller: puller.PullerIn{
-			// Size is how many events you want to pull at one batch
+			// Number of events to pull in one batch
 			Size: 100,
-			// WaitingTime is how long you want to wait before finish current batch
-			// because you don't get enough events defined in the Size attribute
+			// Wait time before completing the batch if Size isn’t reached
 			WaitingTime: 1000,
 		},
 	}
 
-	// hanlding events, the gorouting will be block until you press Ctrl-C
+	// Handle events; this goroutine will block until Ctrl-C is pressed
 	err := kanthorq.Sub(ctx, options, func(ctx context.Context, msg *subscriber.Message) error {
 		ts := time.UnixMilli(msg.Event.CreatedAt).Format(time.RFC3339)
-		// print out recevied event
+		// Print the received event
 		fmt.Printf("RECEIVED: %s | %s | %s\n", msg.Event.Id, msg.Event.Subject, ts)
 		return nil
 	})
 
-	// print out error if any
+	// Print any errors, if applicable
 	if err != nil && !errors.Is(err, context.Canceled) {
 		log.Fatal(err)
 	}
@@ -162,4 +162,4 @@ After running the example, you should see the following output:
 2024/08/30 09:18:45 RECEIVED: event_01j6gh7x3pvmk6demx3cq27j1q | system.say_goodbye | 2024-08-30T09:18:45+07:00
 ```
 
-See the [Defaule Subscriber example](https://github.com/kanthorlabs/kanthorq/blob/main/example/default/main.go) for complete code.
+See the [Defaule Subscriber example](https://github.com/kanthorlabs/kanthorq/blob/main/example/default/main.go) for the complete code.
