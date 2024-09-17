@@ -4,17 +4,17 @@ sidebar_label: "Task acknowledgement"
 sidebar_position: 3
 ---
 
-## Implicit acknowledgement
+## Implicit Acknowledgement
 
-By default, all subscribers will use implicit acknowledgement. That means KanthorQ system will automatically acknowledge tasks if there are no returng error in your handler. Otherwise, it will mark the task is not acknowledged and it should be retried.
+By default, all subscribers in KanthorQ use implicit acknowledgement. This means that the system automatically acknowledges tasks if no error is returned from your handler. If an error occurs, the system will mark the task as not acknowledged, and it will be retried.
 
-The handler interface is described like this
+The handler interface is defined as follows:
 
 ```go
 type Handler func(ctx context.Context, msg *Message) error
 ```
 
-And there is the `Message` struct which contains the event and task information.
+The `Message` struct, passed to the handler, contains information about the event and task:
 
 ```go
 type Message struct {
@@ -26,54 +26,69 @@ type Message struct {
 }
 ```
 
-## Explicit acknowledgement
+## Explicit Acknowledgement
 
-Sometime, you want to acknowledge the task manually, commit the acknowledgement to the database along with your business logic. So either you do something successfully and commit it to be done or nothing will be commited at all.
+In some cases, you may want to acknowledge tasks manually—committing the acknowledgment to the database along with your business logic. This ensures that either everything is committed (including the acknowledgment) or nothing is committed, maintaining data consistency.
 
-The `Message` struct provide two methods `Ack` and `Nack` to acknowledge or no-acknowledge the message respectively. Both of them are safe to call multiple times and concurrently.
+The `Message` struct provides two methods for manual acknowledgement:
 
 ```go
 func (msg *Message) Ack(ctx context.Context) error
-// Nack requires one more parameter `reason`
-// so that we can know why the message is nacked and you can retrie it later
+// Nack requires a reason parameter, so you can log why the task wasn't acknowledged
 func (msg *Message) Nack(ctx context.Context, reason error) error
 ```
 
 :::danger
-So what happen if `Ack` and `Nack` are not successful? You need to retry it manually by yourself to guarantee consistency across your application.
-:::
+**What happens if Ack or Nack fail?**
+If they fail, you need to manually retry to ensure consistency across your application.:::
 
-And there is an demonstration of how to use `Ack` and `Nack` explicitly. See [Acknowledgement example](https://github.com/kanthorlabs/kanthorq/blob/main/example/acknowledgement/main.go) for complete code.
+Here's a demonstration of how to use Ack and Nack explicitly:
 
 ```go
 func(ctx context.Context, msg *subscriber.Message) error {
-  // someone say hello, accept it
+  // Accept and acknowledge if the subject is "system.say_hello"
   if msg.Event.Subject == "system.say_hello" {
-    return msg.Ack(ctx)
+    if err := msg.Ack(ctx); err != nil {
+      // Handle ack error
+    }
   }
   // I will miss you don't want to say goodbye, not acknowledge it
-  return msg.Nack(ctx, errors.New("not saying goodbye"))
-}
-```
-
-## Transactional acknowledgement
-
-KanthorQ takes advantages of PostgreSQL's ACID transactional model to provide many features that ensures data consistency across your application. Like previous article about [Insert events in a transactional way](./001-insert-events.md#insert-events-in-a-transactional-way), you can also acknowledge task in a transactional way.
-
-```go
-// start the transcation
-tx, err := conn.Begin(ctx)
-if err != nil {
-  return err
-}
-// do some business logic with the transaction
-
-kanthorq.Sub(ctx, options,	func(ctx context.Context, msg *subscriber.Message) error {
-  if msg.Event.Subject == "system.say_hello" {
-    // acknowledge it with the transaction
-    return msg.AckTx(ctx, tx)
+  if msg.Event.Subject == "system.say_goodbye" {
+    if err := msg.Nack(ctx, errors.New("not saying goodbye")); err != nil {
+      // Handle nack error
+    }
   }
-  // or nack it, also with the transaction
-  return msg.NackTx(ctx, errors.New("not saying goodbye"))
-})
+
+  return nil
+}
 ```
+
+See [Acknowledgement example](https://github.com/kanthorlabs/kanthorq/blob/main/example/acknowledgement/main.go) for the complete code.
+
+## Transactional Acknowledgement
+
+KanthorQ leverages PostgreSQL’s ACID transactional model to ensure data consistency. This allows you to acknowledge tasks within a transaction, ensuring that both your business logic and the task acknowledgment are committed together.
+
+Here’s how to acknowledge tasks transactionally:
+
+- Begin a PostgreSQL transaction:
+
+  ```go
+  tx, err := conn.Begin(ctx)
+  if err != nil {
+    return err
+  }
+  ```
+
+- Perform your business logic within the transaction and acknowledge or not acknowledge the task using the transaction:
+
+  ```go
+  kanthorq.Sub(ctx, options, func(ctx context.Context, msg *subscriber.Message) error {
+    if msg.Event.Subject == "system.say_hello" {
+      // Acknowledge the task within the transaction
+      return msg.AckTx(ctx, tx)
+    }
+    // Nack the task within the transaction if not appropriate
+    return msg.NackTx(ctx, errors.New("not saying goodbye"))
+  })
+  ```
