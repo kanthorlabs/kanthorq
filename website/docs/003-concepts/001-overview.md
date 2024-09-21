@@ -4,82 +4,71 @@ sidebar_label: "Overview"
 sidebar_position: 1
 ---
 
-Let's discover what the KanthorQ architecture is and how the components communicate with each other.
+Let's discover what the KanthorQ architecture is and how components communicate with each others.
 
 ## Architecture
 
-The KanthorQ architecture, depicted in the diagram below, comprises four components:
+The KanthorQ architecture consists of four key components:
 
-- **Publisher**: Application code responsible for inserting events into the KanthorQ system. This can be a Command Line Toolor Golang code within your application.
-- **Stream**: Receives events and persists them within the KanthorQ system, categorized by subjects.
-- **Consumer**: Stores tasks generated from events in the Stream. One event can generate many tasks in different _Consumers_, but in the same _Consumer_, there must be only one task that belongs to an event
-- **Subscriber**: Part of your application that pulls tasks to execute your business logic.
+- **Publisher**: Responsible for inserting events into the KanthorQ system. This can be done via a Command Line Tool or Golang code within your application.
+- **Stream**: Receives events and persists them within the system, organized by subjects.
+- **Consumer**: Stores tasks generated from events in the Stream. An event can create multiple tasks across different Consumers, but within a single Consumer, only one task can be tied to an event.
+- **Subscriber**: Part of your application that retrieves tasks from the Consumer and executes business logic.
 
-![KanthorQ Architecture](/002-concepts/001-overview/kanthorq-architecture.svg)
+![KanthorQ Architecture](/003-concepts/001-overview/kanthorq-architecture.svg)
 
 ## The Publisher
 
-The Publisher is a component that interacts with KanthorQ Stream component to let you insert events into KanthorQ system. So that you need to specify the stream when you initialize the consumer to let it know where it should put the event into.
+The Publisher interacts with the KanthorQ Stream to insert events into the system. When initializing a Consumer, you must specify the associated Stream, so the system knows where to send the event.
 
-Because the Publisher is just an application code, so it can be your GO code, CLI or HTTP request (comming soon).
+As the Publisher is simply application code, it can be implemented using Go, a CLI, or even an HTTP request (coming soon).
 
 ## The Stream
 
-You need to store your events somewhere so you can retrieve it later to do your work. The Stream is that place! It will receive events from the Publisher, organize it as a **time-series** then store it until you explicitly remove it.
+The Stream is where events are stored, allowing you to retrieve them later for processing. It receives events from the Publisher, organizes them in a _time-series_ format, and retains them until explicitly removed.
 
-A Stream in KanthorQ system can store any kind of events. For example you can store all your internal events and your business events in the same stream with name `default`. It's okay but not well organized. That why we recommend you should define what a Stream should do then only put relative events into it. In the diagram we already showed you an example of how to organize a Stream and its events
+A Stream in KanthorQ can store any type of event. For example, both internal and business-related events can be stored in a single stream named "default," but this may not be well-organized. We recommend defining specific Streams for different purposes. For instance:
 
-- The `order_update` Stream will only receive events that are related to order changes like `order.created`, `order.confirmed`, `order.cancelled` and so on
-- The `parcel_update` Stream for Third-party Logistics events like `parcel.shipping`, `parcel.lost`, `parcel.received` and so on
+The `order_update` Stream only contains events related to order statuses, such as `order.created`, `order.confirmed`, and `order.cancelled`.
+The `parcel_update` Stream is for third-party logistics events, like `parcel.shipping`, `parcel.lost`, and `parcel.received`.
 
 :::info
-
-When we said that a Stream is time-series data, that mean you should only perform scan query on a Stream based on the timestamp column to achieve best performance.
-
+Since Streams are organized as time-series data, it’s best to query them using the timestamp column for optimal performance.
 :::
 
-An event in a Stream will be categorized by `subject` what is dot-separated words. We can use it in various usecases an handle them differently
+:::tip
+Events in Stream are sorted ascending by default because we use the [ULID](https://github.com/ulid/spec) as the primary key.
+:::
 
-- `order.cancelled` and `order.created` is normal usecase that events are belonged to different type.
-- `order.cancelled` and `v1.order.cancelled` indicate that events are published by different codebases that has different versions.
-- `order.cancelled` and `ap-southeast-.order.cancelled` indicate that events are belonged to different regions.
-- `order.cancelled` and `tier-starter.order.cancelled` indicate that events are tier-based.
+Events in a Stream are categorized by subjects, which are dot-separated words. You can use this structure in various scenarios:
+
+- `order.cancelled` and `order.created`: Different event types.
+- `order.cancelled` and `v1.order.cancelled`: Events published by different codebases or versions.
+- `order.cancelled` and `ap-southeast-1.order.cancelled`: Events categorized by region.
+- `order.cancelled` and `tier-starter.order.cancelled`: Events distinguished by tier.
 
 ## The Consumer
 
-Whenever you published an event, you expect it should be handle later with your business logic. The action of handling that event can be successful or failed. If it is successful, it's easy because you may only want to mark that event as completed and move to next event. But failed processing invloves more complicated flow to handle it:
+When an event is published, it needs to be processed based on your business logic. The event processing could succeed or fail. If successful, the event is simply marked as completed, and you move to the next event. However, handling a failed event is more complex:
 
-- If an event is failed to process, should we retry it?
-- Retry? When? 15mins, 30mins or arbitrary value?
-- If yes, how many time do we want to retry it?
-- After configurable retries, the event is not successful yet, what next? Delete it?
-- `Place here a thousand question about handling failed event...`
+- Should the event be retried?
+- When should the retry occur? 15 minutes? 30 minutes?
+- How many retries should be attempted?
+- What happens if retries are exhausted? Should the event be deleted?
+- More and more question will be raised ...
 
-But it's not enough to introduce new component in our system because we can simply embedded metadata in the event itself to tell use what to do with failed event. The main question that leads to the born of The Consumer is
-
-- Given an event, can I do more than one action independently for that event. For instance, if `order.cancelled` is fired, I want to not only sending our customer an nofication email about the cancellation but also do the refund cleanup works
-
-Then we will have 2 separated Consumers that stores same event references but with different metadata about how events are handling. The same event with id `1` in refund handler can be retry 10 times but the one in email sending handler should only retry 3 times
+A Consumer helps answer these questions by storing tasks generated from events, each with its own metadata. For example, if `order.cancelled` is triggered, you may want two separate actions: sending a notification email and handling refund processing. These actions can be managed by different Consumers, each with distinct retry logic. One Consumer could retry 10 times for refund processing, while another only retries 3 times for email notifications.
 
 :::tip
-
-Although the diagram showed that each consumer contains only one subject, you can have as many subject as you want to have in a consumer. For example you can define a consumer that contains both `order.cancelled` and `order.failed` to send excuse emails to your customer.
-
-:::
-
-:::note
-
-Friendly reminder that a Consumer stores many Tasks that are referenced to Events in a Stream
-
+Although each Consumer in the diagram handles a single subject, you can define a Consumer to handle multiple subjects, such as both `order.cancelled` and `order.failed` for sending customer apology emails.
 :::
 
 ## The Subscriber
 
-Yoh we reach the final component that is the most important component because it contains your business logic to handle event tasks. The Subscriber need to know what Consumer it will subscribe to pull tasks from it, execute your business logic, then put back the metadata about that task
+Finally, the Subscriber plays the most crucial role, executing the business logic for event tasks. The Subscriber pulls tasks from the Consumer, processes them, and updates the task metadata accordingly:
 
-- If the task was executed successfully, mark the task as `Completed`
-- If the task need retrying, the Subscriber need putting back what time it should be retried
-- If the task retried many times and it finally reached the maximum retry times, the Subscriber should mark it as `Discarded`
-- `Place here a thousand case about handling failed event...`
+- If the task is successful, it is marked as `Completed`.
+- If a retry is needed, the Subscriber sets a time for the next attempt.
+- If retries are exhausted, the task is marked as `Discarded`.
 
-You can have many subscribers for a consumer as long as your system can handle system throughput. So that you can achieve Parallelism processing. In the diagram, we showed you that the _Email Subscriber I_ executed 2 tasks with id `1` and `3` and the _Email Subscriber II_ executed only one task with id `2`
+Multiple Subscribers can handle tasks from a single Consumer, allowing parallel processing. For instance, in the diagram, _Email Subscriber I_ processes tasks with IDs 1 and 4, while _Email Subscriber II_ handles the task with ID 3.

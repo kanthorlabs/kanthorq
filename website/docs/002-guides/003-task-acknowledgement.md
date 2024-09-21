@@ -84,11 +84,17 @@ Here’s how to acknowledge tasks transactionally:
 
   ```go
   kanthorq.Sub(ctx, options, func(ctx context.Context, msg *subscriber.Message) error {
+    // Accept and acknowledge if the subject is "system.say_hello"
     if msg.Event.Subject == "system.say_hello" {
-      // Acknowledge the task within the transaction
-      return msg.AckTx(ctx, tx)
+      if err := msg.AckTx(ctx); err != nil {
+        // Handle ack error
+      }
     }
-    // Nack the task within the transaction if not appropriate
-    return msg.NackTx(ctx, errors.New("not saying goodbye"))
+    // I will miss you don't want to say goodbye, not acknowledge it
+    if msg.Event.Subject == "system.say_goodbye" {
+      if err := msg.NackTx(ctx, errors.New("not saying goodbye")); err != nil {
+        // Handle nack error
+      }
+    }
   })
   ```
