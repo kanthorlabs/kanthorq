@@ -7,9 +7,7 @@ sidebar_position: 3
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-`Event` is an entity that represents a data transfer object (DTO) between publishers and streams in KanthorQ. It is similar with HTTP request in client-server commication over HTTP or proto definition in gRPC.
-
-There is the definition of the `Event` in different places in KanthorQ
+An `Event` in KanthorQ represents a data transfer object (DTO) used to communicate between publishers and streams.
 
 <Tabs>
   <TabItem value="go" label="Go" default>
@@ -21,9 +19,7 @@ There is the definition of the `Event` in different places in KanthorQ
       Metadata  Metadata `json:"metadata" validate:"required"`
       CreatedAt int64    `json:"created_at"`
     }
-
     ```
-
   </TabItem>
   <TabItem value="postgresql" label="PostgreSQL">
     ```sql
@@ -40,24 +36,22 @@ There is the definition of the `Event` in different places in KanthorQ
 </Tabs>
 
 :::info
-
-You can be confused why we use the name `kanthorq_stream_order_update` to represent the `Event` struct in PostgreSQL. Check [Stream Concept](/docs/concepts/stream#stream) for more information.
-
+You might wonder why the Event struct is named `kanthorq_stream_order_update` in PostgreSQL—this is related to the Stream concept. Check the [Stream Concept](./004-stream.md#stream) section for more information.
 :::
 
-To make the communication is easy to integrate we have define some characteristics you MUST and SHOULD follow.
+To ensure seamless communication and integration, we've established some rules that you MUST and SHOULD follow:
 
-MUST follow requirements includes:
+**MUST Follow Requirements:**
 
-- The `id` property must be Lexicographically Sortable Identifier. For example if you want to use UUID, please use UUIDv7. We are recommend you use the [ULID](https://github.com/ulid/spec)
-- The `subject` property must multiple alphanumeric+hypen strings that could be seperate by a dot.
+- The `id` property must be a Lexicographically Sortable Identifier. For example, if you're using UUIDs, please use UUIDv7. However, we recommend using [ULID](https://github.com/ulid/spec) for this purpose.
+- The `subject` property must consist of multiple alphanumeric and hyphenated strings, separated by dots.
 
-  - OK: `order`, `order.created`, `v2.order.created`, `058434268238.order.created`, `-1002223543143.subscription.created`, `ap-southeast-1.user.created`
-  - KO: `order.`, `order.*`
+  - Correct Examples: `order`, `order.created`, `v2.order.created`, `058434268238.order.created`, `-1002223543143.subscription.created`, `ap-southeast-1.user.created`
+  - Incorrect Examples: `order.`, `order.-`, `order..`
 
-- The `body` property stores arbitrary bytes so only the sender and the receiver know what it stores. It's usefull in the end-to-end encryption implementation where the sender encrypt the data before sending. Then only the receiver know how to descrypt it.
+- The `body` property stores arbitrary bytes, which only the sender and receiver can interpret. This is particularly useful for implementing end-to-end encryption, where the sender encrypts the data before sending it, and only the receiver can decrypt it.
 
-SHOULD follow requirements includes:
+**SHOULD Follow Requirements:**
 
-- The `metadata` property is an json object that store additional information about the event. You can use it to implement event filter logic or telemetry carier for example.
-- The `created_at` property should contains the timestamp that was includes in the `id` property. That allow you get events in datatime order just by ordering events by `id`
+- The `metadata` property should be a JSON object that stores additional information about the event. This can be used for implementing event filtering logic or as a telemetry carrier.
+- The `created_at` property should contain the timestamp included in the id property. This ensures that events can be sorted chronologically by simply ordering them by their id.

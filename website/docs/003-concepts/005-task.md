@@ -7,9 +7,9 @@ sidebar_position: 5
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-If `Event` is DTO of client and KanthorQ publisher, `Task` is DTO of KanthorQ subscriber and client handler.
+If an `Event` is the DTO for client-to-KanthorQ publisher communication, then a `Task` is the DTO for KanthorQ subscriber-to-client handler communication.
 
-So what is relationship between `Event` and `Task`? It's one to many relationship. One event can generate as many tasks as we want but one task can only be referenced to one event
+So, what is the relationship between an Event and a Task? It’s a one-to-many relationship: one event can generate multiple tasks, but each task references only one event.
 
 ```mermaid
 ---
@@ -19,7 +19,7 @@ erDiagram
   Event ||--}| Task: generates
 ```
 
-There is the definition of the `Task` in different places in KanthorQ
+Lets review about the structure of `Task`:
 
 <Tabs>
   <TabItem value="go" label="Go" default>
@@ -54,29 +54,29 @@ There is the definition of the `Task` in different places in KanthorQ
   </TabItem>
 </Tabs>
 
-- `schedule_at` is the time that a task will not be processed before that time. That mean if you schedule a task at _10:00AM_, that task can be processed at any time after _10:00AM_: _10:01AM_ or _11:15AM_ or _02:00PM_ for example
-- `finalized_at` is the KanthorQ finally done with that task. No more action will be performed on a task after that time. If you want to do something with a task after that time, retry `Discarded` for example, you need to do it manually
-- `attempt_count` is how many time we have retried a task.
-- `attempted_at` is the latest attempt we have made for a task
+- `event_id` and `subject` are properties that we copy from an `Event`
+- `state` is the state of a task, indicates the status of a task.
+- `schedule_at` is the time when a task becomes eligible for processing. For example, if you schedule a task at _10:00 AM_, it can be processed at any point after that—such as at _10:01 AM_, _11:15 AM_, or even _2:00 PM_.
+- `finalized_at` is the time when KanthorQ has finished processing a task. No further action will be performed on the task after this time. If you want to take further actions, such as retrying a `Discarded` task, you must do it manually by calling an API.
+- `attempt_count` is the number of times a task has been retried.
+- `attempted_at` is the timestamp of the latest retry attempt.
 
 ### Task State
 
-There are 6 states a task can have:
+There are six possible states for a task:
 
-- `Available`: is the state for tasks that are immediately eligible to be worked.
-- `Discarded`: is the state for tasks that have errored enough times that they're no longer eligible to be retried. Manual user invention is required for them to be tried again.
-- `Cancelled`: is the state for tasks that have been manually cancelled by user request.
-- `Completed` is the state for tasks that have successfully run to completion.
-- `Running`: is the state for tasks that are actively running.
-- `Retryable` is the state for tasks that have errored, but will be retried.
+- `Available`: The task is ready to be processed.
+- `Discarded`: The task has failed too many times and is no longer eligible for retries. Manual intervention is required to retry it.
+- `Cancelled`: The task has been manually canceled by the user.
+- `Completed`: The task has successfully run to completion.
+- `Running`: The task is currently being processed.
+- `Retryable`: The task has failed but is eligible to be retried.
 
-We can categorize them into three groups
+We can categorize states of tasks into three groups
 
-- **Initial States**: The beginning state of a task before picking up to process. Currently we only have one state for this group: `Available`
-
-- **Transitional States**: Tasks will stay at this state for awhile before to be transformed to another state (which maybe as same as the current state based on the business logic). We have `Running` and `Retryable` now.
-
-- **Final States**: Once the task is moved into this state, it will stay at that state until user manually handle it. We have totally three state: `Discarded`, `Cancelled` and `Completed`
+- **Initial States**: These are the starting states before a task is processed. Currently, there is only one: `Available`.
+- **Transitional States**: These states indicate that a task is in progress or being retried. The `Running` and `Retryable` states fall under this category.
+- **Final States**: Once a task reaches one of these states, it remains there until manual action is taken. These states include `Discarded`, `Cancelled`, and `Completed`.
 
 ```mermaid
 ---
@@ -103,7 +103,7 @@ stateDiagram-v2
 
 #### Completed Flow
 
-This is the most expected flow we want to see in the system. Nothing to say about it, lets check the diagram to see the flow
+This is the most desirable flow, where tasks successfully complete without any issues. See the diagram below for the flow:
 
 ```mermaid
 ---
@@ -119,38 +119,38 @@ stateDiagram-v2
 
 #### Cancelled Flow
 
-There are two direction to drive an event to `Cancelled` state.
+There are two paths that can lead a task to the `Cancelled` state:
 
-- Event is cancelled by user directly using system API after the task is initialized.
+1. The event is directly canceled by the user through the system API after the task is initialized.
 
-  ```mermaid
-  ---
-  title: Cancelled by user
-  ---
-  stateDiagram-v2
-      direction LR
-      [*] --> Available
-      Available --> Cancelled
-      Cancelled --> [*]
-  ```
+```mermaid
+---
+title: Cancelled by user
+---
+stateDiagram-v2
+    direction LR
+    [*] --> Available
+    Available --> Cancelled
+    Cancelled --> [*]
+```
 
-- Event is cancelled after running by a program/worker/handler and the program/worker/handler decides to tell KanthorQ system should cancel that task.
+2. The event is canceled while running by a program/worker/handler, which then notifies the KanthorQ system to cancel the task.
 
-  ```mermaid
-  ---
-  title: Cancelled by user
-  ---
-  stateDiagram-v2
-      direction LR
-      [*] --> Available
-      Available --> Running
-      Running --> Cancelled
-      Cancelled --> [*]
-  ```
+```mermaid
+---
+title: Cancelled by user
+---
+stateDiagram-v2
+    direction LR
+    [*] --> Available
+    Available --> Running
+    Running --> Cancelled
+    Cancelled --> [*]
+```
 
 #### Retryable & Discarded Flow
 
-Once the program/worker/handler return an error after processing the event, we will put the state into a state name `Retryable`. Another process need setting up to pick up those events to move them back to `Running` state before processing it again
+When a program/worker/handler encounters an error while processing an event, the task transitions to the `Retryable` state. A separate process must pick up the task and move it back to the `Running` state to retry processing.
 
 ```mermaid
 ---
@@ -164,7 +164,7 @@ stateDiagram-v2
     Retryable --> Running
 ```
 
-But if the event countinuely return an error after configurable times, we should put that event to the `Discarded` state. Once event is in `Discarded` state, user need to investigate on those events by themself to figure out what wrong was happen. They they can move it back to `Available` so they can be processed again
+If the task continues to fail after a configurable number of retries, it transitions to the `Discarded` state. Once in the `Discarded` state, the user must manually investigate and decide whether to move the task back to `Available` for reprocessing.
 
 ```mermaid
 ---
@@ -184,7 +184,7 @@ stateDiagram-v2
 
 #### Stuck Flow
 
-Stuck Flow is designed to handle unexpected behavious when a program/worker/handler picks a task then does not report whether the event is processed successfully or not. It happens when the program/worker/handler is crashed because of various issues around the system.
+The **Stuck Flow** handles situations where a program/worker/handler starts processing a task but doesn’t report the result due to a crash or other unexpected issue.
 
 ```mermaid
 ---
@@ -197,8 +197,8 @@ stateDiagram-v2
     Running --> Running
 ```
 
+Tasks that are stuck in the `Running` state will be retried automatically after a configurable period known as the **Visibility Timeout**. This means that a designated period is reserved for you to complete the task. If the task remains unprocessed after this period, we will attempt to pick it up and process it again.
+
 :::danger
-
-Currently a stuck task will be process forever until it is moved to `Retryable` or `Discarded`. That decision was made because we belived the crashed issue should not be happened persistently. After a fix, all stuck events should be processed normally and no action need taking.
-
+The **Stuck Flow** poses a risk of duplicated execution. It’s crucial to plan your `Subscriber`s carefully to ensure that your logic can be completed in a timely manner. Otherwise, another process may pick up the task and execute it again, leading to potential duplication.
 :::
