@@ -113,7 +113,7 @@ sequenceDiagram
 
 :::danger
 
-If you choose to update the task state manually (e.g., through a PostgreSQL query), ensure you transition the task from one state to another properly. Directly overwriting task states can lead to [Lost Update](https://en.wikipedia.org/wiki/Concurrency_control), which are difficult to detect and debug.
+If you choose to update the task state manually (e.g., through a PostgreSQL query), ensure you transition the task from one state to another properly. Directly overwriting task states can lead to [Lost Update](https://en.wikipedia.org/wiki/Lost_update), which are difficult to detect and debug.
 
 :::
 
