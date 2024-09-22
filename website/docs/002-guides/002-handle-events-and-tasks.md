@@ -67,7 +67,9 @@ func main() {
 ```
 
 :::info
+
 When using the **Subscriber Facade**, the handler you provide will be used for all subscribers under this facade. This means you’ll process tasks for new events, retrying events, and stuck events with the same logic in the handler.
+
 :::
 
 ## Using the Subscriber Directly

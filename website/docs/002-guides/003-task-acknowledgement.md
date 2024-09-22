@@ -39,8 +39,11 @@ func (msg *Message) Nack(ctx context.Context, reason error) error
 ```
 
 :::danger
+
 **What happens if Ack or Nack fail?**
-If they fail, you need to manually retry to ensure consistency across your application.:::
+If they fail, you need to manually retry to ensure consistency across your application.
+
+:::
 
 Here's a demonstration of how to use Ack and Nack explicitly:
 

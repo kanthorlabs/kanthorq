@@ -7,9 +7,9 @@ sidebar_position: 6
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-Consumer is a subject specific filter of events from a stream what stores metadata about how we want to process those events. One consumer can only subscribe to one subject but we can have more than one consumer for only one subject.
+Consumer is a subject-specific filter for events from a stream, storing metadata about how those events should be processed. A single consumer can only subscribe to one subject, but you can have multiple consumers for a single subject.
 
-For example, with the subject `order.cancelled` we may want to spin up two consumer: one for sending notification via email to user to nofiy user that their order is confirmed and another consumer to handle logic of showing that order in a CRM so seller can prepare to ship that order
+For example, with the subject `order.cancelled`, you might want to create two consumers: one to send a notification email to the user, notifying them of the order cancellation, and another to handle CRM logic for refund processing.
 
 ```mermaid
 ---
@@ -23,7 +23,7 @@ flowchart TB
 
 ## Manage consumers
 
-Like stream, when you create or register a consumer, its information will be store in a registry before KanthorQ creates an acutal consumer to store tasks to process later
+Similar to streams, when you create or register a consumer, its information is stored in a registry before KanthorQ creates the actual consumer, which stores tasks for future processing.
 
 ```mermaid
 ---
@@ -39,7 +39,7 @@ sequenceDiagram
 
 ### Consumer Registry
 
-There is the definition of the `Consumer Registry` in different places in KanthorQ
+The **Consumer Registry** stores important runtime configurations that control how the consumer should handle tasks. Here’s an example definition of a consumer in KanthorQ:
 
 <Tabs>
   <TabItem value="go" label="Go" default>
@@ -79,20 +79,19 @@ There is the definition of the `Consumer Registry` in different places in Kantho
   </TabItem>
 </Tabs>
 
-Not like stream, consumer registry contains some runtime configuration that control how a consumer should handle their tasks.
+**Key Runtime Configurations**
 
-- `cursor`: When a consumer is registred, it will be empty. But after any execution, `cursor` is the `id` property of the latest event we can pull out of stream with `subject` filter. For example, after the first execution with subject `order.created`, the latest id we can retrieve is `id_10`, next execution will always take the filter that `id > id_10` as the condition to filter our already processed events or tasks
-
-- `attempt_max` control how many attempt we want to do before give up on error tasks.
+- `cursor`: Initially empty, the cursor stores the id of the most recent event processed by a consumer. For example, after processing an event with the subject `order.created` (e.g., event id_10), the next execution will filter for events where `id > id_10`.
+- `attempt_max`: Defines the maximum number of retry attempts for error-prone tasks. After that number, the task will be mark as `Discarded`.
 
 ### Consumer
 
-A consumer itself store a group of tasks that are generated from events in a stream. If your stream `kanthorq_stream_order_update` has 999 events of subject `order.cancelled` and you have a consumer `kanthorq_consumer_registry` that subscribed to the event, you will have 999 tasks inside the consumer names `kanthorq_consumer_send_cancellation_email`
+A Consumer stores a group of tasks generated from events in a stream. For instance, if your stream `kanthorq_stream_order_update` has 999 events with the subject `order.cancelled` and a consumer subscribed to it, the consumer `kanthorq_consumer_send_cancellation_email` will store 999 tasks.
 
-So when you want to get a list of tasks for your subscriber, you need to perform two action
+To retrieve tasks for your subscriber, you need to:
 
-- Generate a list of tasks for your consumer for matching events of consumer subject
-- Pull out what tasks you have generated before with its information
+- Generate a list of tasks for your consumer based on matching events.
+- Pull previously generated tasks with their metadata.
 
 ```mermaid
 ---
@@ -110,7 +109,7 @@ autonumber
   end
 ```
 
-If definition of `Stream` is as same as `Event`, definition of `Consumer` is as same as `Task` because `Consumer` is where we store metadata of how we will execute an event, aka a task
+If a `Stream` is defined similarly to an `Event`, a `Consumer` is defined similarly to a `Task`, as it stores metadata about how to execute an event (i.e., a task).
 
 ```sql
 TABLE kanthorq_consumer_send_cancellation_email (

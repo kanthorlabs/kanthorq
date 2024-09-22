@@ -19,13 +19,13 @@ The KanthorQ architecture consists of four key components:
 
 ## The Publisher
 
-The Publisher interacts with the KanthorQ Stream to insert events into the system. When initializing a Consumer, you must specify the associated Stream, so the system knows where to send the event.
+The **Publisher** interacts with the KanthorQ Stream to insert events into the system. When initializing a Consumer, you must specify the associated Stream, so the system knows where to send the event.
 
-As the Publisher is simply application code, it can be implemented using Go, a CLI, or even an HTTP request (coming soon).
+As the **Publisher** is simply application code, it can be implemented using Go, a CLI, or even an HTTP request (coming soon).
 
 ## The Stream
 
-The Stream is where events are stored, allowing you to retrieve them later for processing. It receives events from the Publisher, organizes them in a _time-series_ format, and retains them until explicitly removed.
+The Stream is where events are stored, allowing you to retrieve them later for processing. It receives events from the **Publisher**, organizes them in a _time-series_ format, and retains them until explicitly removed.
 
 A Stream in KanthorQ can store any type of event. For example, both internal and business-related events can be stored in a single stream named "default," but this may not be well-organized. We recommend defining specific Streams for different purposes. For instance:
 
@@ -33,11 +33,15 @@ The `order_update` Stream only contains events related to order statuses, such a
 The `parcel_update` Stream is for third-party logistics events, like `parcel.shipping`, `parcel.lost`, and `parcel.received`.
 
 :::info
+
 Since Streams are organized as time-series data, it’s best to query them using the timestamp column for optimal performance.
+
 :::
 
 :::tip
+
 Events in Stream are sorted ascending by default because we use the [ULID](https://github.com/ulid/spec) as the primary key.
+
 :::
 
 Events in a Stream are categorized by subjects, which are dot-separated words. You can use this structure in various scenarios:
@@ -60,7 +64,9 @@ When an event is published, it needs to be processed based on your business logi
 A Consumer helps answer these questions by storing tasks generated from events, each with its own metadata. For example, if `order.cancelled` is triggered, you may want two separate actions: sending a notification email and handling refund processing. These actions can be managed by different Consumers, each with distinct retry logic. One Consumer could retry 10 times for refund processing, while another only retries 3 times for email notifications.
 
 :::tip
+
 Although each Consumer in the diagram handles a single subject, you can define a Consumer to handle multiple subjects, such as both `order.cancelled` and `order.failed` for sending customer apology emails.
+
 :::
 
 ## The Subscriber

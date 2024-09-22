@@ -36,7 +36,9 @@ An `Event` in KanthorQ represents a data transfer object (DTO) used to communica
 </Tabs>
 
 :::info
+
 You might wonder why the Event struct is named `kanthorq_stream_order_update` in PostgreSQL—this is related to the Stream concept. Check the [Stream Concept](./004-stream.md#stream) section for more information.
+
 :::
 
 To ensure seamless communication and integration, we've established some rules that you MUST and SHOULD follow:

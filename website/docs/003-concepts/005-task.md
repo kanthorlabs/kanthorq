@@ -200,5 +200,7 @@ stateDiagram-v2
 Tasks that are stuck in the `Running` state will be retried automatically after a configurable period known as the **Visibility Timeout**. This means that a designated period is reserved for you to complete the task. If the task remains unprocessed after this period, we will attempt to pick it up and process it again.
 
 :::danger
+
 The **Stuck Flow** poses a risk of duplicated execution. It’s crucial to plan your `Subscriber`s carefully to ensure that your logic can be completed in a timely manner. Otherwise, another process may pick up the task and execute it again, leading to potential duplication.
+
 :::

@@ -4,11 +4,14 @@ sidebar_label: "Subscriber"
 sidebar_position: 7
 ---
 
-The Subscriber is the most complicated component in KanthorQ system, but that complexity serves only one purpose: get your a task to work on it then try to get your task moves to **Final State**. If something went wrong with your task, you can ask for retry both manually or automatically from the Subscriber.
+The **Subscriber** is the most complex component in the KanthorQ system, but its purpose is simple: it pulls tasks, processes them, and moves them to their next state. If something goes wrong with a task, the **Subscriber** allows you to retry it, either manually or automatically.
 
 ## Workflows
 
-The Subscriber workflows will contains two parts: the pulling workflow that help you get tasks for your works and the updating workflow that help you update your tasks state after you have done with them
+The **Subscriber** workflow consists of two main parts:
+
+- **Pulling Workflow**: Retrieves tasks for processing.
+- **Updating Workflow**: Updates the task’s state after processing.
 
 ### The Pulling Workflow
 
@@ -42,26 +45,25 @@ sequenceDiagram
   Subscriber ->> +kanthorq_stream_order_update: 85 event ids
   kanthorq_stream_order_update ->> -Subscriber: 85 event records
   end
-
-
 ```
 
-The Pulling flow contains two child workflow: the Converting flow that help you scans events from a stream with given subject then convert to tasks on a stream and the Fulfilling flow that get event records based on the list of converted tasks of the Converting flow.
+The **Pulling Workflow** contains two sub-workflows:
+
+- **Converting Flow**: Scans events from a stream based on a subject and converts them to tasks.
+- **Fulfilling Flow**: Retrieves event records based on the converted tasks and performs the necessary execution logic.
 
 #### The Converting Flow
 
-1. We connect to the Consumer Registry to start our flow.
-2. We ask Consumer Registry to lock the record of requesting consumer
-3. Then use properties of the consumer: a stream name, a subject and a cursor of previous scanning in the stream to make a request to the stream.
-4. Perform the scaning process on the given stream based on the given subject and cursor to obtain enough events
-5. Convert founding events to tasks
-6. Return tasks to the Subscriber
-7. Update the Consumer Registry with latest cursor (the latest `event_id` of tasks)
-8. Release the lock of the Consumer
+- The **Subscriber** connects to the **Consumer Registry** to initiate the flow.
+- It locks the consumer record (e.g., send_cancellation_email) to prevent concurrent executions.
+- Using the consumer’s properties (stream name, subject, and cursor), the **Subscriber** requests the stream for events.
+- It scans the stream for events matching the subject and cursor until it gathers enough events (configurable, default is 100).
+- The found events are converted into tasks and returned to the **Subscriber**.
+- The cursor is updated with the latest event ID, and the consumer lock is released.
 
 :::info
 
-By saying **scanning**, we mean we will query events from a stream from the lower bound that is specify by the **cursor** until we get enough rows (100 events). The simplify query will look like
+When we say **scanning**, we mean querying events from the stream using a lower bound specified by the cursor until the required number of events (e.g., 100) is retrieved. A simplified query might look like this:
 
 ```sql
 SELECT * FROM kanthorq_stream_order_update WHERE subject = 'order.cancelled' AND id > 'evt_01J36ZJACKR5FXDWVKASC4BNCN' LIMIT 100
@@ -71,16 +73,23 @@ SELECT * FROM kanthorq_stream_order_update WHERE subject = 'order.cancelled' AND
 
 #### The Fulfilling Flow
 
-9. We get event records based on the list of tasks we have received (task contains `event_id`)
-10. We receive event records then perform our handler execution logic.
+- Retrieve event records based on the list of tasks received (each task contains an `event_id`).
+- Execute handler logic for each event record.
 
 ### The Updating Workflow
 
-After finished your works, you need to report back to the Subscriber what state of a task should be updated to. For example, there are two main states you want the Subscriber to update: `Completed` and `Retryable` for succeed task and error task respectively. But there are some situation you don't want to let error task to be retried, so you want to mark that task as `Cancelled`
+After processing tasks, you must report back to the **Subscriber** to update the task state. Typically, there are two main states to update:
+
+- `Completed`: For successfully processed tasks.
+- `Retryable`: For tasks that failed but can be retried.
+
+There is one state to update is `Discarded`. It happens when a task fails too many times and is no longer eligible for retries.
+
+In some cases, you may want to mark a task as `Cancelled` if it should not be retried after encountering an error.
 
 :::tip
 
-Checkout our definition about [Task State](./005-task.md#task-state) to see how many state do we have and what categories they are.
+Refer to the [Task State](./005-task.md#task-state) documentation for a detailed breakdown of states and categories.
 
 :::
 
@@ -104,21 +113,34 @@ sequenceDiagram
 
 :::danger
 
-If you plan to update the state by yourself (it's just a PostgreSQL query and you can totally do it by yourslef), make sure you keep in mind that you should only move a task from state-A to state-B, not override the task to state B. Update a task from arbitrary state to state B produces lost update and it's hard to debug what wrong happened.
-
-Example:
-
-```
-# no supprise, if task does not in state-A, nothing will be updated
-task:state-A -> task:state-B
-
-# if concurrency updating happen at the same time, [Lost Update](https://en.wikipedia.org/wiki/Concurrency_control) will happen
-task -> task:state-B
-
-# three updates bellow are executed at the same time, then you will lost update of two tasks and does not know about it to rollback if it's necessary
-task:state-A -> task:state-B
-task:state-X -> task:state-B
-task:state-Y -> task:state-B
-```
+If you choose to update the task state manually (e.g., through a PostgreSQL query), ensure you transition the task from one state to another properly. Directly overwriting task states can lead to [Lost Update](https://en.wikipedia.org/wiki/Concurrency_control), which are difficult to detect and debug.
 
 :::
+
+#### Risk of Lost Update
+
+Concurrent updates can lead to _Lost Updates_ if you do not plan it prorperly. KanthorQ by default can eliminate _Lost Updates_ in the following cases:
+
+**Example**:
+
+If the following three queries are executed simultaneously, only one update will succeed, but all queries will return a message indicating one row was modified. The final state of the task may not reflect the intended state, leading to inconsistent data:
+
+```sql
+UPDATE tasks SET state = 'B' WHERE event_id = 'evt_01J36ZJACKR5FXDWVKASC4BNCN';
+UPDATE tasks SET state = 'C' WHERE event_id = 'evt_01J36ZJACKR5FXDWVKASC4BNCN';
+UPDATE tasks SET state = 'D' WHERE event_id = 'evt_01J36ZJACKR5FXDWVKASC4BNCN';
+```
+
+To avoid _Lost Updates_, ensure that tasks are transitioned from one state to another only if they are currently in the expected state. This ensures that only one update will modify the row, and the other queries will return no rows modified.
+
+**Correct Example:**
+
+In this approach, each query attempts to update the task only if it is in the initial state A. As a result, only one query will succeed, while the others will report no rows modified.
+
+```sql
+UPDATE tasks SET state = 'B' WHERE event_id = 'evt_01J36ZJACKR5FXDWVKASC4BNCN' AND state = 'A';
+UPDATE tasks SET state = 'C' WHERE event_id = 'evt_01J36ZJACKR5FXDWVKASC4BNCN' AND state = 'A';
+UPDATE tasks SET state = 'D' WHERE event_id = 'evt_01J36ZJACKR5FXDWVKASC4BNCN' AND state = 'A';
+```
+
+By using this method, you prevent concurrent updates from overwriting each other and ensure that only valid state transitions occur.
