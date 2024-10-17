@@ -7,6 +7,9 @@ import (
 	"syscall"
 	"time"
 
+	// https://kanishk.io/posts/cpu-throttling-in-containerized-go-apps/
+	_ "go.uber.org/automaxprocs"
+
 	"github.com/kanthorlabs/kanthorq"
 	"github.com/kanthorlabs/kanthorq/pkg/xcmd"
 	"github.com/kanthorlabs/kanthorq/pkg/xfaker"
