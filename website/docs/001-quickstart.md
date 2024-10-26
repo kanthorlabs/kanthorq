@@ -4,9 +4,6 @@ sidebar_label: "Quickstart"
 sidebar_position: 1
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 To help you start working with KanthorQ, here's a guide on how to install the necessary packages, run database migrations, and begin publishing and subscribing to events in Go. This will walk you through setting up the core elements of KanthorQ and getting everything up and running.
 
 ## Prerequisites
