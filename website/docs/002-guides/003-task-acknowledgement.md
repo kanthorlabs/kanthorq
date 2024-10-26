@@ -41,7 +41,8 @@ func (msg *Message) Nack(ctx context.Context, reason error) error
 :::danger
 
 **What happens if Ack or Nack fail?**
-If they fail, you need to manually retry to ensure consistency across your application.
+
+If you cannot acknowledge the message (which represents a task and a corresponding event) on time, the Availability Subscriber will pick it up and start processing it again if you have set that subscriber.
 
 :::
 
@@ -72,32 +73,29 @@ See [Acknowledgement example](https://github.com/kanthorlabs/kanthorq/blob/main/
 
 KanthorQ leverages PostgreSQL’s ACID transactional model to ensure data consistency. This allows you to acknowledge tasks within a transaction, ensuring that both your business logic and the task acknowledgment are committed together.
 
-Here’s how to acknowledge tasks transactionally:
-
-- Begin a PostgreSQL transaction:
-
-  ```go
+```go
+kanthorq.Sub(ctx, options, func(ctx context.Context, msg *subscriber.Message) error {
+  // Begin a PostgreSQL transaction:
   tx, err := conn.Begin(ctx)
   if err != nil {
     return err
   }
-  ```
 
-- Perform your business logic within the transaction and acknowledge or not acknowledge the task using the transaction:
+  // Accept and acknowledge if the subject is "system.say_hello"
+  if msg.Event.Subject == "system.say_hello" {
+    if err := msg.AckTx(ctx, tx); err != nil {
+      // Handle ack error
+    }
+  }
+  // I will miss you don't want to say goodbye, not acknowledge it
+  if msg.Event.Subject == "system.say_goodbye" {
+    if err := msg.NackTx(ctx, errors.New("not saying goodbye"), tx); err != nil {
+      // Handle nack error
+    }
+  }
 
-  ```go
-  kanthorq.Sub(ctx, options, func(ctx context.Context, msg *subscriber.Message) error {
-    // Accept and acknowledge if the subject is "system.say_hello"
-    if msg.Event.Subject == "system.say_hello" {
-      if err := msg.AckTx(ctx); err != nil {
-        // Handle ack error
-      }
-    }
-    // I will miss you don't want to say goodbye, not acknowledge it
-    if msg.Event.Subject == "system.say_goodbye" {
-      if err := msg.NackTx(ctx, errors.New("not saying goodbye")); err != nil {
-        // Handle nack error
-      }
-    }
-  })
-  ```
+  if err:=tx.Commit(ctx); err != nil {
+    // Handle any errors that occur during commit
+  }
+})
+```

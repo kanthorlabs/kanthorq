@@ -1,7 +1,7 @@
 ---
 title: "Publisher"
 sidebar_label: "Publisher"
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 The **Publisher** is responsible for inserting events into the KanthorQ system. Technically, it functions as a simple query that inserts events—nothing particularly special happens at this stage. However, when dealing with the insertion of multiple events in a short time, there are important performance considerations worth discussing.

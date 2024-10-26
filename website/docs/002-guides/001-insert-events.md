@@ -22,7 +22,7 @@ type Event struct {
 
 ### The `Subject`
 
-The Subject field is a crucial part of an event's structure. It allows you to organize your events in a hierarchical manner, similar to the concept of [NATS Subject-Based Messaging](https://docs.nats.io/nats-concepts/subjects). If you're familiar with RabbitMQ, you can think of it as being similar to a[Routing Key](https://www.rabbitmq.com/tutorials/tutorial-five-go#topic-exchange), which determines how messages (or in this case, events) are routed to different consumers.
+The Subject field is a crucial part of an event's structure. It allows you to organize your events in a hierarchical manner, similar to the concept of [NATS Subject-Based Messaging](https://docs.nats.io/nats-concepts/subjects). If you're familiar with RabbitMQ, you can think of it as being similar to a [Routing Key](https://www.rabbitmq.com/tutorials/tutorial-five-go#topic-exchange), which determines how messages (or in this case, events) are routed to different consumers.
 
 For example, if you are working with events related to order updates, you can define a subject like `order.updated`. This allows you to easily organize all events that deal with order updates under a single subject. You can also define more granular subjects depending on your needs.
 
@@ -134,6 +134,10 @@ if err:= pub.Send(ctx, events); err != nil {
 This is the basic process for inserting events into KanthorQ. It's simple but effective, allowing you to get up and running quickly.
 
 ## Inserting Events (Transactional Way)
+
+:::warning
+Currently, KanthorQ only supports [pgx](https://github.com/jackc/pgx) library for PostgreSQL. So that you need to use it to start a transaction.
+:::
 
 One of the most powerful features of KanthorQ is its ability to handle event publishing in a transactional manner. This means you can ensure that events are only published if the entire transaction is successful. This feature is especially useful in scenarios where you need consistency between your business logic and event publishing.
 

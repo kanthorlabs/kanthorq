@@ -1,7 +1,7 @@
 ---
 title: "Limits"
 sidebar_label: "Limits"
-sidebar_position: 4
+sidebar_position: 10
 ---
 
 This page lists all the limits and constraints of the KanthorQ system that you should be aware of.

@@ -1,7 +1,7 @@
 ---
 title: "Event"
 sidebar_label: "Event"
-sidebar_position: 3
+sidebar_position: 4
 ---
 
 import Tabs from '@theme/Tabs';
@@ -37,7 +37,7 @@ An `Event` in KanthorQ represents a data transfer object (DTO) used to communica
 
 :::info
 
-You might wonder why the Event struct is named `kanthorq_stream_order_update` in PostgreSQL—this is related to the Stream concept. Check the [Stream Concept](./004-stream.md#stream) section for more information.
+You might wonder why the Event struct is named `kanthorq_stream_order_update` in PostgreSQL—this is related to the Stream concept. Check the [Stream Concept](./005-stream.md#stream) section for more information.
 
 :::
 

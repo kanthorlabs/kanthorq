@@ -4,7 +4,7 @@ import type * as Preset from "@docusaurus/preset-classic";
 
 const config: Config = {
   title: "KanthorQ",
-  tagline: "Message Queuing backed by PostgreSQL",
+  tagline: "Messaging System backed by PostgreSQL",
   favicon: "img/favicon.ico",
 
   // Set the production url of your site here

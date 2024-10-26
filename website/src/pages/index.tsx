@@ -34,7 +34,7 @@ export default function Home(): JSX.Element {
   return (
     <Layout
       title={siteConfig.title}
-      description="Message Queuing backed by PostgreSQL"
+      description="Messaging System backed by PostgreSQL"
     >
       <HomepageHeader />
       <main>

@@ -1,7 +1,7 @@
 ---
 title: "Subscriber"
 sidebar_label: "Subscriber"
-sidebar_position: 7
+sidebar_position: 8
 ---
 
 The **Subscriber** is the most complex component in the KanthorQ system, but its purpose is simple: it pulls tasks, processes them, and moves them to their next state. If something goes wrong with a task, the **Subscriber** allows you to retry it, either manually or automatically.
@@ -89,7 +89,7 @@ In some cases, you may want to mark a task as `Cancelled` if it should not be re
 
 :::tip
 
-Refer to the [Task State](./005-task.md#task-state) documentation for a detailed breakdown of states and categories.
+Refer to the [Task State](./006-task.md#task-state) documentation for a detailed breakdown of states and categories.
 
 :::
 

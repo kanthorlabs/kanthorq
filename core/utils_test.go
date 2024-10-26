@@ -17,6 +17,7 @@ func TestMatchSubject(t *testing.T) {
 		{"", "time.us.east", false},
 		{"time.*.east", "", false},
 		{"*", "", false},
+
 		// case sensitive
 		{"time.us.east", "time.us.EAST", false},
 
@@ -43,7 +44,6 @@ func TestMatchSubject(t *testing.T) {
 		{"time.us.east.>", "time.us.east.newyork", true},
 		{"time.us.east.>", "time.us.west", false},
 
-		// mixed case
 		{"time.*.east.>", "time.us.east.atlanta", true},
 		{"time.*.east.>", "time.us.west", false},
 		{"time.*.east.>", "time.us.east", false},
