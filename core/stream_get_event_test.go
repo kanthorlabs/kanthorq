@@ -20,7 +20,7 @@ func TestEventGet(t *testing.T) {
 	require.NoError(t, err)
 
 	stream, consumer := Seed(t, ctx, conn)
-	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
+	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
 
 	req := &StreamGetEventReq{
 		Stream:   stream,

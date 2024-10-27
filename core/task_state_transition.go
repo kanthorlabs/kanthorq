@@ -18,7 +18,7 @@ type TaskStateTransitionReq struct {
 	Consumer  *entities.ConsumerRegistry `validate:"required"`
 	FromState entities.TaskState         `validate:"required,is_enum"`
 	ToState   entities.TaskState         `validate:"required,is_enum"`
-	Size      int                        `validate:"required,gt=0"`
+	Size      int                        `validate:"required,gt=0,lte=500"`
 }
 
 type TaskStateTransitionRes struct {
@@ -37,8 +37,8 @@ func (req *TaskStateTransitionReq) Do(ctx context.Context, tx pgx.Tx) (*TaskStat
 		"attempt_max":  req.Consumer.AttemptMax,
 		"attempted_at": now,
 		"schedule_at":  now + req.Consumer.VisibilityTimeout,
-		"from_state":   int(req.FromState),
-		"to_state":     int(req.ToState),
+		"from_state":   int16(req.FromState),
+		"to_state":     int16(req.ToState),
 		"size":         req.Size,
 	}
 	table := pgx.Identifier{entities.Collection(req.Consumer.Id)}.Sanitize()

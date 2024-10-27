@@ -167,6 +167,7 @@ See the [Defaule Subscriber example](https://github.com/kanthorlabs/kanthorq/blo
 
 ## Other features
 
+- [Batch insertion](https://docs.kanthorlabs.com/kanthorq/docs/guides/insert-events/#inserting-events-basic-way)
 - [Transactional publishing events](https://docs.kanthorlabs.com/kanthorq/docs/guides/insert-events#inserting-events-transactional-way)
 - [Transactional acknowledging event](https://docs.kanthorlabs.com/kanthorq/docs/guides/task-acknowledgement#transactional-acknowledgement)
 

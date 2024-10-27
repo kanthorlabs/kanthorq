@@ -21,7 +21,7 @@ func TestTaskConvert(t *testing.T) {
 
 	stream, consumer := Seed(t, ctx, conn)
 
-	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
+	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
 
 	req := &TaskConvertReq{
 		Consumer:     consumer,
@@ -66,7 +66,7 @@ func TestTaskConvert_NoEvent(t *testing.T) {
 
 	_, consumer := Seed(t, ctx, conn)
 
-	events := tester.FakeEvents(xfaker.SubjectWihtPattern(consumer.SubjectIncludes[0]), xfaker.F.IntBetween(100, 500))
+	events := tester.FakeEvents(xfaker.SubjectWihtPattern(consumer.SubjectIncludes[0]), xfaker.F.IntBetween(100, 200))
 
 	req := &TaskConvertReq{
 		Consumer:     consumer,

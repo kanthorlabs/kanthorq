@@ -37,7 +37,7 @@ type Task struct {
 	Subject string `json:"subject" validate:"required,is_subject"`
 
 	// State is the state of task like `available` or `completed`.
-	State TaskState `json:"state" validate:"required,is_enum"`
+	State TaskState `json:"state" validate:"is_enum"`
 	// ScheduledAt is when the task is scheduled to become available to be
 	// worked. Tasks default to running immediately, but may be scheduled
 	// for the future when they're inserted. They may also be scheduled for

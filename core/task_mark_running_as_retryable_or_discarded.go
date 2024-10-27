@@ -17,7 +17,7 @@ var TaskMarkRunningAsRetryableOrDiscardedSql string
 
 type TaskMarkRunningAsRetryableOrDiscardedReq struct {
 	Consumer *entities.ConsumerRegistry `validate:"required"`
-	Tasks    []*entities.Task           `validate:"required,gt=0,dive,required"`
+	Tasks    []*entities.Task           `validate:"required,gt=0,lte=500,dive,required"`
 	Error    entities.AttemptedError    `validate:"required"`
 }
 
@@ -40,9 +40,9 @@ func (req *TaskMarkRunningAsRetryableOrDiscardedReq) Do(ctx context.Context, tx 
 		"attempt_max":     req.Consumer.AttemptMax,
 		"finalized_at":    time.Now().UnixMilli(),
 		"attempted_error": req.Error,
-		"discarded_state": int(entities.StateDiscarded),
-		"retryable_state": int(entities.StateRetryable),
-		"running_state":   int(entities.StateRunning),
+		"discarded_state": int16(entities.StateDiscarded),
+		"retryable_state": int16(entities.StateRetryable),
+		"running_state":   int16(entities.StateRunning),
 	}
 	for i, task := range req.Tasks {
 		// we assume that tasks are not able to update firstly

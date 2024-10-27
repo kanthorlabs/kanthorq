@@ -22,7 +22,7 @@ type Puller interface {
 
 type PullerIn struct {
 	// Size is how many events you want to pull at one batch
-	Size int `validate:"required,gt=0"`
+	Size int `validate:"required,gt=0,lte=500"`
 	// WaitingTime is how long you want to wait before pulling again
 	// if you didn't get enough events in current batch
 	WaitingTime int64 `validate:"gte=1000"`

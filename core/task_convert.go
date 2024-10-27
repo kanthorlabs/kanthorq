@@ -17,7 +17,7 @@ var TaskConvertSql string
 
 type TaskConvertReq struct {
 	Consumer     *entities.ConsumerRegistry `validate:"required"`
-	EventIds     []string                   `validate:"required,gt=0,dive,required"`
+	EventIds     []string                   `validate:"required,gt=0,lte=500,dive,required"`
 	InitialState entities.TaskState         `validate:"required,is_enum"`
 }
 
@@ -33,7 +33,7 @@ func (req *TaskConvertReq) Do(ctx context.Context, tx pgx.Tx) (*TaskConvertRes, 
 	}
 
 	var args = pgx.NamedArgs{
-		"intial_state": int(req.InitialState),
+		"intial_state": int16(req.InitialState),
 		"schedule_at":  time.Now().UnixMilli() + req.Consumer.VisibilityTimeout,
 	}
 	var names = make([]string, len(req.EventIds))

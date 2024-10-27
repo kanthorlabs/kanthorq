@@ -77,9 +77,9 @@ In addition to the `Subject` and `Body` fields, events in KanthorQ have other pr
 
 ## Inserting Events (Basic Way)
 
-To make event publishing easier, KanthorQ provides helper methods that simplify the process of initializing both the publisher and the event itself.
+By default, KanthorQ uses the `PostgreSQL` method `COPY FROM` to insert events so that will be faster if you have a large number of events.
 
-When initializing a publisher, you must define two key options:
+To make event publishing easier, KanthorQ provides helper methods that simplify the process of initializing both the publisher and the event itself. When initializing a publisher, you must define two key options:
 
 - `Connection`: This is the connection string for the PostgreSQL database where events will be stored. You should replace this with the appropriate URI for your database.
 

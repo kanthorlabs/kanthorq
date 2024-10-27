@@ -16,7 +16,7 @@ var StreamGetEventSql string
 
 type StreamGetEventReq struct {
 	Stream   *entities.StreamRegistry `validate:"required"`
-	EventIds []string                 `validate:"required,gt=0,dive,required"`
+	EventIds []string                 `validate:"required,gt=0,lte=500,dive,required"`
 }
 
 type StreamGetEventRes struct {

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConsumerPutTasks(t *testing.T) {
+func TestTaskMarkCancelled(t *testing.T) {
 	ctx := context.Background()
 	conn, err := tester.SetupPostgres(ctx)
 	defer func() {
@@ -19,19 +19,25 @@ func TestConsumerPutTasks(t *testing.T) {
 	require.NoError(t, err)
 
 	stream, consumer := Seed(t, ctx, conn)
-	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
 
-	tasks := tester.FakeTasks(events, entities.StateAvailable)
-	req := &ConsumerPutTasksReq{
+	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
+	tasks := SeedTasks(t, ctx, conn, consumer, events, entities.StatePending)
+
+	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
+	noopTasks := SeedTasks(t, ctx, conn, consumer, noopEvents, entities.StateCancelled)
+
+	req := &TaskMarkCancelledReq{
 		Consumer: consumer,
-		Tasks:    tasks,
+		Tasks:    append(tasks, noopTasks...),
 	}
 	res, err := Do(ctx, req, conn)
 	require.NoError(t, err)
-	require.Equal(t, int64(len(tasks)), res.InsertCount)
+
+	require.Equal(t, len(tasks), len(res.Updated))
+	require.Equal(t, len(noopTasks), len(res.Noop))
 }
 
-func TestConsumerPutTasks_Validate(t *testing.T) {
+func TestTaskMarkCancelled_Validate(t *testing.T) {
 	ctx := context.Background()
 	conn, err := tester.SetupPostgres(ctx)
 	defer func() {
@@ -40,7 +46,8 @@ func TestConsumerPutTasks_Validate(t *testing.T) {
 	require.NoError(t, err)
 
 	_, consumer := Seed(t, ctx, conn)
-	req := &ConsumerPutTasksReq{
+
+	req := &TaskMarkCancelledReq{
 		Consumer: consumer,
 	}
 	_, err = Do(ctx, req, conn)

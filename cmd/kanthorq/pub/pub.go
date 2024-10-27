@@ -8,7 +8,7 @@ import (
 	"time"
 
 	// https://kanishk.io/posts/cpu-throttling-in-containerized-go-apps/
-	_ "go.uber.org/automaxprocs"
+	"go.uber.org/automaxprocs/maxprocs"
 
 	"github.com/kanthorlabs/kanthorq"
 	"github.com/kanthorlabs/kanthorq/pkg/xcmd"
@@ -16,6 +16,10 @@ import (
 	"github.com/kanthorlabs/kanthorq/publisher"
 	"github.com/spf13/cobra"
 )
+
+func init() {
+	maxprocs.Set()
+}
 
 func New() *cobra.Command {
 	command := &cobra.Command{

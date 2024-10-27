@@ -22,10 +22,10 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToRetryable(t *testing.T) {
 
 	stream, consumer := Seed(t, ctx, conn)
 
-	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
+	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
 	tasks := SeedTasks(t, ctx, conn, consumer, events, entities.StateRunning)
 
-	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
+	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
 	noopTasks := SeedTasks(t, ctx, conn, consumer, noopEvents, entities.StateCancelled)
 
 	req := &TaskMarkRunningAsRetryableOrDiscardedReq{
@@ -59,7 +59,7 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToDiscarded(t *testing.T) {
 
 	stream, consumer := Seed(t, ctx, conn)
 
-	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
+	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
 	tasks := tester.FakeTasks(events, entities.StateRunning)
 	for i := range tasks {
 		// simulate that we have reached the max attempts
@@ -68,7 +68,7 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToDiscarded(t *testing.T) {
 	_, err = Do(ctx, &ConsumerPutTasksReq{Consumer: consumer, Tasks: tasks}, conn)
 	require.NoError(t, err)
 
-	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
+	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
 	noopTasks := SeedTasks(t, ctx, conn, consumer, noopEvents, entities.StateCancelled)
 
 	req := &TaskMarkRunningAsRetryableOrDiscardedReq{
@@ -102,10 +102,10 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_Validate(t *testing.T) {
 
 	stream, consumer := Seed(t, ctx, conn)
 
-	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
+	events := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
 	tasks := SeedTasks(t, ctx, conn, consumer, events, entities.StateRunning)
 
-	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 500))
+	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
 	noopTasks := SeedTasks(t, ctx, conn, consumer, noopEvents, entities.StateCancelled)
 
 	req := &TaskMarkRunningAsRetryableOrDiscardedReq{
