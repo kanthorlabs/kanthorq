@@ -39,31 +39,31 @@ func main() {
 	// register a consumer
 	conn, err := pgx.Connect(ctx, DATABASE_URI)
 	NoError(err)
-	registry, err := core.Do(ctx, &core.ConsumerRegisterReq{
+	registry, err := core.Do(ctx, conn, &core.ConsumerRegisterReq{
 		StreamName:                entities.DefaultStreamName,
 		ConsumerName:              entities.DefaultConsumerName,
 		ConsumerSubjectIncludes:   []string{"system.>"},
 		ConsumerAttemptMax:        entities.DefaultConsumerAttemptMax,
 		ConsumerVisibilityTimeout: entities.DefaultConsumerVisibilityTimeout,
-	}, conn)
+	})
 	NoError(err)
 
 	// convert an event to a task
-	results, err := core.Do(ctx, &core.TaskConvertReq{
+	results, err := core.Do(ctx, conn, &core.TaskConvertReq{
 		Consumer:     registry.ConsumerRegistry,
 		EventIds:     []string{event.Id},
 		InitialState: entities.StatePending,
-	}, conn)
+	})
 	NoError(err)
 	eventId := results.EventIds[0]
 	// primary key of task is event id
 	task := results.Tasks[eventId]
 
 	// ----- MAIN ------
-	cancellation, err := core.Do(ctx, &core.TaskMarkCancelledReq{
+	cancellation, err := core.Do(ctx, conn, &core.TaskMarkCancelledReq{
 		Consumer: registry.ConsumerRegistry,
 		Tasks:    []*entities.Task{task},
-	}, conn)
+	})
 	NoError(err)
 
 	fmt.Printf("Canceling task %v \n", cancellation.Updated)

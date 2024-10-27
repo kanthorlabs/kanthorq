@@ -26,7 +26,7 @@ func TestEventGet(t *testing.T) {
 		Stream:   stream,
 		EventIds: lo.Map(events, func(e *entities.Event, _ int) string { return e.Id }),
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, len(events), len(res.Events))
@@ -45,6 +45,6 @@ func TestEventGet_Validate(t *testing.T) {
 	req := &StreamGetEventReq{
 		Stream: stream,
 	}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.Error(t, err)
 }

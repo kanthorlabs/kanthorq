@@ -30,7 +30,7 @@ func TestTaskMarkRunningAsCompleted(t *testing.T) {
 		Consumer: consumer,
 		Tasks:    append(tasks, noopTasks...),
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, len(tasks), len(res.Updated))
@@ -50,6 +50,6 @@ func TestTaskMarkRunningAsCompleted_Validate(t *testing.T) {
 	req := &TaskMarkRunningAsCompletedReq{
 		Consumer: consumer,
 	}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.Error(t, err)
 }

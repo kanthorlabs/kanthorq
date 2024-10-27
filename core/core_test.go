@@ -25,7 +25,7 @@ func Seed(
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
 	// ConsumerRegister also register stream
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	return res.StreamRegistry, res.ConsumerRegistry
@@ -45,7 +45,7 @@ func SeedEvents(
 		Stream: stream,
 		Events: events,
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 	require.Equal(t, int64(count), res.InsertCount)
 
@@ -66,7 +66,7 @@ func SeedTasks(
 		Consumer: consumer,
 		Tasks:    tasks,
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 	require.Equal(t, int64(len(tasks)), res.InsertCount)
 

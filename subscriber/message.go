@@ -54,7 +54,7 @@ func (msg *Message) Ack(ctx context.Context) error {
 		Tasks:    []*entities.Task{msg.Task},
 	}
 
-	_, err := core.DoWithCM(ctx, req, msg.cm)
+	_, err := core.DoWithCM(ctx, msg.cm, req)
 	return err
 }
 
@@ -115,7 +115,7 @@ func (msg *Message) Nack(ctx context.Context, reason error) error {
 		},
 	}
 
-	_, err := core.DoWithCM(ctx, req, msg.cm)
+	_, err := core.DoWithCM(ctx, msg.cm, req)
 	return err
 }
 

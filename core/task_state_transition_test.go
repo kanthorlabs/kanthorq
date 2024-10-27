@@ -32,7 +32,7 @@ func TestTaskStateTransition(t *testing.T) {
 		ToState:   entities.StateRunning,
 		Size:      len(tasks) + len(noopTasks),
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, len(tasks), len(res.Tasks))
@@ -53,6 +53,6 @@ func TestTaskStateTransition_Validate(t *testing.T) {
 		FromState: entities.StateRetryable,
 		ToState:   entities.StateRunning,
 	}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.Error(t, err)
 }

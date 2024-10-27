@@ -12,7 +12,7 @@ type Doable[T any] interface {
 	Do(ctx context.Context, tx pgx.Tx) (*T, error)
 }
 
-func Do[T any](ctx context.Context, req Doable[T], conn *pgx.Conn) (*T, error) {
+func Do[T any](ctx context.Context, conn *pgx.Conn, req Doable[T]) (*T, error) {
 	// there is no auto-rollback on context cancellation.
 	tx, err := conn.Begin(ctx)
 	if err != nil {
@@ -28,12 +28,12 @@ func Do[T any](ctx context.Context, req Doable[T], conn *pgx.Conn) (*T, error) {
 	return res, nil
 }
 
-func DoWithCM[T any](ctx context.Context, req Doable[T], cm pgcm.ConnectionManager) (*T, error) {
+func DoWithCM[T any](ctx context.Context, cm pgcm.ConnectionManager, req Doable[T]) (*T, error) {
 	conn, err := cm.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer cm.Release(ctx, conn)
 
-	return Do(ctx, req, conn)
+	return Do(ctx, conn, req)
 }

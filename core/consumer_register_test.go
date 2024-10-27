@@ -27,7 +27,7 @@ func TestConsumerRegister(t *testing.T) {
 		ConsumerAttemptMax:        xfaker.F.Int16Between(1, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.NotNil(t, res)
@@ -48,7 +48,7 @@ func TestConsumerRegister_Validate(t *testing.T) {
 		ConsumerSubjectIncludes: []string{xfaker.Subject()},
 		ConsumerAttemptMax:      xfaker.F.Int16Between(1, 10),
 	}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.Error(t, err)
 }
 
@@ -78,7 +78,7 @@ func TestConsumerRegister_Parallel(t *testing.T) {
 
 		t.Run(fmt.Sprintf("parallel #%d", i), func(subt *testing.T) {
 			subt.Parallel()
-			res, err := Do(ctx, req, conn)
+			res, err := Do(ctx, conn, req)
 			require.NoError(subt, err)
 
 			require.NotNil(subt, res)

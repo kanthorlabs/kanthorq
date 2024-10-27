@@ -146,7 +146,7 @@ func (puller *primary) fulfill(ctx context.Context, out *PullerOut) error {
 		Stream:   puller.stream,
 		EventIds: out.EventIds,
 	}
-	res, err := core.DoWithCM(ctx, req, puller.cm)
+	res, err := core.DoWithCM(ctx, puller.cm, req)
 	if err != nil {
 		return err
 	}

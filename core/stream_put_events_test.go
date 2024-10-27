@@ -17,13 +17,13 @@ func TestStreamPutEvents(t *testing.T) {
 	}()
 	require.NoError(t, err)
 
-	stream, err := Do(ctx, &StreamRegisterReq{StreamName: xfaker.StreamName()}, conn)
+	stream, err := Do(ctx, conn, &StreamRegisterReq{StreamName: xfaker.StreamName()})
 	require.NoError(t, err)
 
 	events := tester.FakeEvents(xfaker.Subject(), xfaker.F.IntBetween(100, 200))
 
 	req := &StreamPutEventsReq{Stream: stream.StreamRegistry, Events: events}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, int64(len(events)), res.InsertCount)
@@ -37,10 +37,10 @@ func TestStreamPutEvents_Validate(t *testing.T) {
 	}()
 	require.NoError(t, err)
 
-	stream, err := Do(ctx, &StreamRegisterReq{StreamName: xfaker.StreamName()}, conn)
+	stream, err := Do(ctx, conn, &StreamRegisterReq{StreamName: xfaker.StreamName()})
 	require.NoError(t, err)
 
 	req := &StreamPutEventsReq{Stream: stream.StreamRegistry}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.Error(t, err)
 }

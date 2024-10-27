@@ -25,7 +25,7 @@ func TestConsumerUnlock(t *testing.T) {
 		Name:   consumer.Name,
 		Cursor: xid.New("test"),
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, req.Cursor, res.Consumer.Cursor)
@@ -44,7 +44,7 @@ func TestConsumerUnlock_Validate(t *testing.T) {
 	req := &ConsumerUnlockReq{
 		Name: consumer.Name,
 	}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.Error(t, err)
 }
 
@@ -62,6 +62,6 @@ func TestConsumerUnlock_Failure(t *testing.T) {
 		Name:   xfaker.ConsumerName(),
 		Cursor: xid.New("test"),
 	}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.ErrorIs(t, err, pgx.ErrNoRows)
 }

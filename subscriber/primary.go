@@ -55,7 +55,7 @@ func (sub *primary) Start(ctx context.Context) error {
 		ConsumerAttemptMax:        sub.options.ConsumerAttemptMax,
 		ConsumerVisibilityTimeout: sub.options.ConsumerVisibilityTimeout,
 	}
-	res, err := core.Do(ctx, req, conn)
+	res, err := core.Do(ctx, conn, req)
 	if err != nil {
 		return err
 	}

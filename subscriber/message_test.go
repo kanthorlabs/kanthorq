@@ -33,7 +33,7 @@ func TestMessage_Ack(t *testing.T) {
 	}
 	options.ConsumerSubjectIncludes = append(options.ConsumerSubjectIncludes, events[0].Subject)
 
-	res, err := core.DoWithCM(ctx, options, cm)
+	res, err := core.DoWithCM(ctx, cm, options)
 	require.NoError(t, err)
 
 	msg := &Message{
@@ -65,7 +65,7 @@ func TestMessage_Ack_Error(t *testing.T) {
 	}
 	options.ConsumerSubjectIncludes = append(options.ConsumerSubjectIncludes, events[0].Subject)
 
-	res, err := core.DoWithCM(ctx, options, cm)
+	res, err := core.DoWithCM(ctx, cm, options)
 	require.NoError(t, err)
 
 	msg := &Message{
@@ -102,7 +102,7 @@ func TestMessage_AckTx(t *testing.T) {
 	}
 	options.ConsumerSubjectIncludes = append(options.ConsumerSubjectIncludes, events[0].Subject)
 
-	res, err := core.DoWithCM(ctx, options, cm)
+	res, err := core.DoWithCM(ctx, cm, options)
 	require.NoError(t, err)
 
 	conn, err := cm.Acquire(ctx)
@@ -145,7 +145,7 @@ func TestMessage_Nack(t *testing.T) {
 	}
 	options.ConsumerSubjectIncludes = append(options.ConsumerSubjectIncludes, events[0].Subject)
 
-	res, err := core.DoWithCM(ctx, options, cm)
+	res, err := core.DoWithCM(ctx, cm, options)
 	require.NoError(t, err)
 
 	msg := &Message{
@@ -179,7 +179,7 @@ func TestMessage_Nack_Error(t *testing.T) {
 	}
 	options.ConsumerSubjectIncludes = append(options.ConsumerSubjectIncludes, events[0].Subject)
 
-	res, err := core.DoWithCM(ctx, options, cm)
+	res, err := core.DoWithCM(ctx, cm, options)
 	require.NoError(t, err)
 
 	msg := &Message{
@@ -218,7 +218,7 @@ func TestMessage_NackTx(t *testing.T) {
 	}
 	options.ConsumerSubjectIncludes = append(options.ConsumerSubjectIncludes, events[0].Subject)
 
-	res, err := core.DoWithCM(ctx, options, cm)
+	res, err := core.DoWithCM(ctx, cm, options)
 	require.NoError(t, err)
 
 	conn, err := cm.Acquire(ctx)

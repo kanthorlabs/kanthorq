@@ -37,7 +37,7 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToRetryable(t *testing.T) {
 			Stack: string(debug.Stack()),
 		},
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, len(tasks), len(res.Updated))
@@ -65,7 +65,7 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToDiscarded(t *testing.T) {
 		// simulate that we have reached the max attempts
 		tasks[i].AttemptCount = consumer.AttemptMax + 1
 	}
-	_, err = Do(ctx, &ConsumerPutTasksReq{Consumer: consumer, Tasks: tasks}, conn)
+	_, err = Do(ctx, conn, &ConsumerPutTasksReq{Consumer: consumer, Tasks: tasks})
 	require.NoError(t, err)
 
 	noopEvents := SeedEvents(t, ctx, conn, stream, consumer, xfaker.F.IntBetween(100, 200))
@@ -80,7 +80,7 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_ToDiscarded(t *testing.T) {
 			Stack: string(debug.Stack()),
 		},
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, len(tasks), len(res.Updated))
@@ -117,6 +117,6 @@ func TestTaskMarkRunningAsRetryableOrDiscarded_Validate(t *testing.T) {
 			Stack: string(debug.Stack()),
 		},
 	}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.Error(t, err)
 }

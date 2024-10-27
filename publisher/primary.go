@@ -59,7 +59,7 @@ func (pub *primary) Start(ctx context.Context) error {
 	defer pub.cm.Release(ctx, conn)
 
 	req := &core.StreamRegisterReq{StreamName: pub.options.StreamName}
-	res, err := core.Do(ctx, req, conn)
+	res, err := core.Do(ctx, conn, req)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (pub *primary) Send(ctx context.Context, events []*entities.Event) error {
 	}
 
 	req := &core.StreamPutEventsReq{Stream: pub.stream, Events: events}
-	res, err := core.DoWithCM(ctx, req, pub.cm)
+	res, err := core.DoWithCM(ctx, pub.cm, req)
 	if err != nil {
 		return err
 	}

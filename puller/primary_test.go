@@ -25,23 +25,23 @@ func TestPrimary_Do(t *testing.T) {
 	cm, err := pgcm.New(os.Getenv("KANTHORQ_POSTGRES_URI"))
 	require.NoError(t, err)
 
-	res, err := core.DoWithCM(ctx, &core.ConsumerRegisterReq{
+	res, err := core.DoWithCM(ctx, cm, &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
 		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
-	}, cm)
+	})
 	require.NoError(t, err)
 
 	// need 2 batches of events to pull
 	count := xfaker.F.IntBetween(101, 199)
 	events := tester.FakeEvents(xfaker.SubjectWihtPattern(res.ConsumerRegistry.SubjectIncludes[0]), count)
 
-	_, err = core.DoWithCM(ctx, &core.StreamPutEventsReq{
+	_, err = core.DoWithCM(ctx, cm, &core.StreamPutEventsReq{
 		Stream: res.StreamRegistry,
 		Events: events,
-	}, cm)
+	})
 	require.NoError(t, err)
 
 	in := PullerIn{
@@ -88,13 +88,13 @@ func TestPrimary_Do_LockFailure(t *testing.T) {
 	cm, err := pgcm.New(os.Getenv("KANTHORQ_POSTGRES_URI"))
 	require.NoError(t, err)
 
-	res, err := core.DoWithCM(ctx, &core.ConsumerRegisterReq{
+	res, err := core.DoWithCM(ctx, cm, &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
 		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
-	}, cm)
+	})
 	require.NoError(t, err)
 
 	// use another connection to lock consumer
@@ -106,10 +106,10 @@ func TestPrimary_Do_LockFailure(t *testing.T) {
 	count := xfaker.F.IntBetween(101, 199)
 	events := tester.FakeEvents(xfaker.SubjectWihtPattern(res.ConsumerRegistry.SubjectIncludes[0]), count)
 
-	_, err = core.DoWithCM(ctx, &core.StreamPutEventsReq{
+	_, err = core.DoWithCM(ctx, cm, &core.StreamPutEventsReq{
 		Stream: res.StreamRegistry,
 		Events: events,
-	}, cm)
+	})
 	require.NoError(t, err)
 
 	in := PullerIn{
@@ -140,13 +140,13 @@ func TestPrimary_Do_NoEvent(t *testing.T) {
 	cm, err := pgcm.New(os.Getenv("KANTHORQ_POSTGRES_URI"))
 	require.NoError(t, err)
 
-	res, err := core.DoWithCM(ctx, &core.ConsumerRegisterReq{
+	res, err := core.DoWithCM(ctx, cm, &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
 		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
-	}, cm)
+	})
 	require.NoError(t, err)
 
 	in := PullerIn{

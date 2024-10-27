@@ -28,14 +28,14 @@ func TestTaskConvert(t *testing.T) {
 		EventIds:     lo.Map(events, func(e *entities.Event, _ int) string { return e.Id }),
 		InitialState: entities.StateRunning,
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, len(events), len(res.Tasks))
 	require.Equal(t, len(events), len(res.EventIds))
 
 	// duplicated
-	dupres, err := Do(ctx, req, conn)
+	dupres, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(dupres.Tasks))
 }
@@ -52,7 +52,7 @@ func TestTaskConvert_Validate(t *testing.T) {
 	req := &TaskConvertReq{
 		Consumer: consumer,
 	}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.Error(t, err)
 }
 
@@ -73,7 +73,7 @@ func TestTaskConvert_NoEvent(t *testing.T) {
 		EventIds:     lo.Map(events, func(e *entities.Event, _ int) string { return e.Id }),
 		InitialState: entities.StateRunning,
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(res.Tasks))
 }

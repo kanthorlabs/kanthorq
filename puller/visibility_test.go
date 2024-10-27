@@ -26,28 +26,28 @@ func TestVisibility_Do(t *testing.T) {
 	cm, err := pgcm.New(os.Getenv("KANTHORQ_POSTGRES_URI"))
 	require.NoError(t, err)
 
-	res, err := core.DoWithCM(ctx, &core.ConsumerRegisterReq{
+	res, err := core.DoWithCM(ctx, cm, &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
 		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
-	}, cm)
+	})
 	require.NoError(t, err)
 
 	// need 2 batches of events to pull
 	count := xfaker.F.IntBetween(101, 199)
 	events := tester.FakeEvents(xfaker.SubjectWihtPattern(res.ConsumerRegistry.SubjectIncludes[0]), count)
-	_, err = core.DoWithCM(ctx, &core.StreamPutEventsReq{
+	_, err = core.DoWithCM(ctx, cm, &core.StreamPutEventsReq{
 		Stream: res.StreamRegistry,
 		Events: events,
-	}, cm)
+	})
 	require.NoError(t, err)
 	tasks := tester.FakeTasks(events, entities.StateRunning)
-	_, err = core.DoWithCM(ctx, &core.ConsumerPutTasksReq{
+	_, err = core.DoWithCM(ctx, cm, &core.ConsumerPutTasksReq{
 		Consumer: res.ConsumerRegistry,
 		Tasks:    tasks,
-	}, cm)
+	})
 	require.NoError(t, err)
 
 	in := PullerIn{
@@ -94,28 +94,28 @@ func TestVisibility_Do_NoVisiableTask(t *testing.T) {
 	cm, err := pgcm.New(os.Getenv("KANTHORQ_POSTGRES_URI"))
 	require.NoError(t, err)
 
-	res, err := core.DoWithCM(ctx, &core.ConsumerRegisterReq{
+	res, err := core.DoWithCM(ctx, cm, &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
 		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
-	}, cm)
+	})
 	require.NoError(t, err)
 
 	// need 2 batches of events to pull
 	count := xfaker.F.IntBetween(101, 199)
 	events := tester.FakeEvents(xfaker.SubjectWihtPattern(res.ConsumerRegistry.SubjectIncludes[0]), count)
-	_, err = core.DoWithCM(ctx, &core.StreamPutEventsReq{
+	_, err = core.DoWithCM(ctx, cm, &core.StreamPutEventsReq{
 		Stream: res.StreamRegistry,
 		Events: events,
-	}, cm)
+	})
 	require.NoError(t, err)
 	tasks := tester.FakeTasksWithSchedule(events, entities.StateRunning, time.Now().Add(time.Hour))
-	_, err = core.DoWithCM(ctx, &core.ConsumerPutTasksReq{
+	_, err = core.DoWithCM(ctx, cm, &core.ConsumerPutTasksReq{
 		Consumer: res.ConsumerRegistry,
 		Tasks:    tasks,
-	}, cm)
+	})
 	require.NoError(t, err)
 
 	in := PullerIn{
@@ -143,13 +143,13 @@ func TestVisibility_Do_NoTask(t *testing.T) {
 	cm, err := pgcm.New(os.Getenv("KANTHORQ_POSTGRES_URI"))
 	require.NoError(t, err)
 
-	res, err := core.DoWithCM(ctx, &core.ConsumerRegisterReq{
+	res, err := core.DoWithCM(ctx, cm, &core.ConsumerRegisterReq{
 		StreamName:                xfaker.StreamName(),
 		ConsumerName:              xfaker.ConsumerName(),
 		ConsumerSubjectIncludes:   []string{xfaker.Subject()},
 		ConsumerAttemptMax:        xfaker.F.Int16Between(2, 10),
 		ConsumerVisibilityTimeout: xfaker.F.Int64Between(15000, 300000),
-	}, cm)
+	})
 	require.NoError(t, err)
 
 	in := PullerIn{

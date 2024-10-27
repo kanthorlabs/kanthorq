@@ -27,7 +27,7 @@ func TestStreamScan(t *testing.T) {
 		Size:        xfaker.F.IntBetween(10, 100),
 		WaitingTime: time.Second,
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, req.Size, len(res.Ids))
@@ -49,7 +49,7 @@ func TestStreamScan_Validate(t *testing.T) {
 		Consumer: consumer,
 		Size:     xfaker.F.IntBetween(10, 100),
 	}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.Error(t, err)
 }
 
@@ -65,7 +65,7 @@ func TestStreamScan_Excludes(t *testing.T) {
 
 	// insert excluded events
 	events := tester.FakeEvents(xfaker.SubjectWihtPattern(consumer.SubjectExcludes[0]), xfaker.F.IntBetween(101, 999))
-	_, err = Do(ctx, &StreamPutEventsReq{Stream: stream, Events: events}, conn)
+	_, err = Do(ctx, conn, &StreamPutEventsReq{Stream: stream, Events: events})
 	require.NoError(t, err)
 
 	req := &StreamScanReq{
@@ -74,7 +74,7 @@ func TestStreamScan_Excludes(t *testing.T) {
 		Size:        xfaker.F.IntBetween(10, 100),
 		WaitingTime: time.Second,
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, 0, len(res.Ids))
@@ -97,7 +97,7 @@ func TestStreamScan_ExactReqSize(t *testing.T) {
 		Size:        len(events),
 		WaitingTime: time.Second,
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, req.Size, len(res.Ids))
@@ -120,7 +120,7 @@ func TestStreamScan_LessThanReqSize(t *testing.T) {
 		Size:        len(events) + 1,
 		WaitingTime: time.Second,
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, len(events), len(res.Ids))
@@ -141,7 +141,7 @@ func TestStreamScan_MixEventSubjects(t *testing.T) {
 	_ = SeedEvents(t, ctx, conn, stream, consumer, count/2+1)
 	// then seed events with other subjects
 	events := tester.FakeEvents(xfaker.Subject(), xfaker.F.IntBetween(100, 200))
-	_, err = Do(ctx, &StreamPutEventsReq{Stream: stream, Events: events}, conn)
+	_, err = Do(ctx, conn, &StreamPutEventsReq{Stream: stream, Events: events})
 	require.NoError(t, err)
 	// finally, seed event with given subject pattern again
 	_ = SeedEvents(t, ctx, conn, stream, consumer, count/2+1)
@@ -152,7 +152,7 @@ func TestStreamScan_MixEventSubjects(t *testing.T) {
 		Size:        count,
 		WaitingTime: time.Second,
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, count, len(res.Ids))
@@ -174,7 +174,7 @@ func TestStreamScan_NoEvent(t *testing.T) {
 		Size:        xfaker.F.IntBetween(10, 100),
 		WaitingTime: time.Second,
 	}
-	res, err := Do(ctx, req, conn)
+	res, err := Do(ctx, conn, req)
 	require.NoError(t, err)
 
 	require.Equal(t, 0, len(res.Ids))

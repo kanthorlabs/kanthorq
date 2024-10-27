@@ -43,7 +43,7 @@ func TestConsumerLock(t *testing.T) {
 				require.NoError(t, conn.Close(ctx))
 			}()
 
-			_, err = Do(ctx, req, conn)
+			_, err = Do(ctx, conn, req)
 			require.ErrorIs(t, err, pgx.ErrNoRows)
 		}()
 	}
@@ -65,7 +65,7 @@ func TestConsumerLock_Failure(t *testing.T) {
 	req := &ConsumerLockReq{
 		Name: xfaker.ConsumerName(),
 	}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.ErrorIs(t, err, pgx.ErrNoRows)
 }
 
@@ -80,6 +80,6 @@ func TestConsumerLock_Validate(t *testing.T) {
 	_, _ = Seed(t, ctx, conn)
 
 	req := &ConsumerLockReq{}
-	_, err = Do(ctx, req, conn)
+	_, err = Do(ctx, conn, req)
 	require.Error(t, err)
 }
