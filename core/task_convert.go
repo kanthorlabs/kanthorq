@@ -18,7 +18,7 @@ var TaskConvertSql string
 type TaskConvertReq struct {
 	Consumer     *entities.ConsumerRegistry `validate:"required"`
 	EventIds     []string                   `validate:"required,gt=0,lte=500,dive,required"`
-	InitialState entities.TaskState         `validate:"required,is_enum"`
+	InitialState entities.TaskState         `validate:"is_enum"`
 }
 
 type TaskConvertRes struct {

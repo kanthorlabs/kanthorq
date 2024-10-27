@@ -16,8 +16,8 @@ var TaskStateTransitionSql string
 
 type TaskStateTransitionReq struct {
 	Consumer  *entities.ConsumerRegistry `validate:"required"`
-	FromState entities.TaskState         `validate:"required,is_enum"`
-	ToState   entities.TaskState         `validate:"required,is_enum"`
+	FromState entities.TaskState         `validate:"is_enum"`
+	ToState   entities.TaskState         `validate:"is_enum"`
 	Size      int                        `validate:"required,gt=0,lte=500"`
 }
 
