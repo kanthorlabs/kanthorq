@@ -173,7 +173,7 @@ See the [Defaule Subscriber example](https://github.com/kanthorlabs/kanthorq/blo
 
 ## Thank you
 
-I want to send many thanks to these wonderful libraries, framework, and community
+I want to send many thanks to these wonderful libraries, framework, and communities
 
 - [nats-io](https://github.com/nats-io)
 - [River Queue](https://github.com/riverqueue/river)
