@@ -40,10 +40,10 @@ func (req *TaskMarkCancelledReq) Do(ctx context.Context, tx pgx.Tx) (*TaskMarkCa
 	// that why we use IN instead of ANY
 	var names = make([]string, len(req.Tasks))
 	var args = pgx.NamedArgs{
-		"cancelled_state": int16(entities.StateCancelled),
-		"pending_state":   int16(entities.StatePending),
-		"available_state": int16(entities.StateAvailable),
-		"retryable_state": int16(entities.StateRetryable),
+		"state_cancelled": int16(entities.StateCancelled),
+		"state_pending":   int16(entities.StatePending),
+		"state_available": int16(entities.StateAvailable),
+		"state_retryable": int16(entities.StateRetryable),
 		"finalized_at":    time.Now().UnixMilli(),
 	}
 

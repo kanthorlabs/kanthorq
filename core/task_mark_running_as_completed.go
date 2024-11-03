@@ -35,8 +35,8 @@ func (req *TaskMarkRunningAsCompletedReq) Do(ctx context.Context, tx pgx.Tx) (*T
 
 	var names = make([]string, len(req.Tasks))
 	var args = pgx.NamedArgs{
-		"running_state":   int16(entities.StateRunning),
-		"completed_state": int16(entities.StateCompleted),
+		"state_running":   int16(entities.StateRunning),
+		"state_completed": int16(entities.StateCompleted),
 		"finalized_at":    time.Now().UnixMilli(),
 	}
 	for i, task := range req.Tasks {

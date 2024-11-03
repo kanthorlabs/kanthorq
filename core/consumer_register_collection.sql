@@ -14,5 +14,5 @@ CREATE TABLE IF NOT EXISTS %s (
 	PRIMARY KEY (event_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_state_scheduling ON %s USING btree("state", "schedule_at");
+CREATE INDEX IF NOT EXISTS idx_state_scheduling ON %s USING btree("state", "schedule_at", "event_id");
 ---<<< consumer_register_collection
